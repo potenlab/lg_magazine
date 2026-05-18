@@ -411,7 +411,7 @@ function V3Inner() {
       )}
 
       <div className="relative z-20 flex min-h-screen flex-col items-center justify-end px-5 pb-12 pt-24 lg:px-10">
-        <section className="relative w-full max-w-[1156px]">
+        <section className={`relative w-full ${spec.kind === "valueCards" && stage === "content" ? "mb-24" : "max-w-[1156px]"}`}>
           {!spec.hideSpeakerLabel && stage !== "hidden" && stage !== "ambient" && (
             <p
               className="mb-3 ml-1 text-[20px] tracking-wide text-[#e9d5a8]"

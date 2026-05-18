@@ -96,7 +96,7 @@ export function ValueReflectionScene({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
-              className="text-[18px] font-bold leading-[1.55] text-[#3d2414] md:text-[20px]"
+              className="text-[14px] font-bold leading-[1.6] text-[#3d2414] md:text-[15px]"
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             >
               <EditorialInline text={reflection} />

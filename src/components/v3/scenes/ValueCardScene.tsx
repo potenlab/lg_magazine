@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
@@ -47,7 +48,7 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
   if (!showLines && narration) {
     return (
       <div
-        className="flex flex-1 cursor-pointer flex-col rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/95 p-7 shadow-2xl"
+        className="flex flex-1 cursor-pointer flex-col"
         onClick={() => setShowLines(true)}
       >
         <div className="flex-1">
@@ -67,10 +68,14 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
           card grid feels like the cabin's wall-mounted value menu rather
           than a generic web form. */}
       <div
-        className="relative rounded-lg p-4 shadow-2xl ring-1 ring-[#7a5a2e]/50 sm:p-5"
+        className="fixed inset-0 z-10 overflow-y-auto p-6 shadow-2xl sm:p-8"
         style={{
           background:
             "linear-gradient(180deg, #3a2818 0%, #2a1d12 100%)",
+          // Full-viewport dark menu board; chrome (ChapterHeader z-20,
+          // ChapterIndexPanel z-[55+]) sits above thanks to higher z-index.
+          paddingTop: "80px", // leave room for the masthead
+          paddingBottom: "80px", // leave room for ProgressRail
         }}
       >
         {/* Gilded inner frame */}
@@ -186,40 +191,57 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
             <span className="font-semibold tracking-[0.3em]">L-OWL</span>
           </div>
         )}
+
+        {/* Selected chips — sit at the bottom of the dark menu board */}
+        {settled && picked.length > 0 && (
+          <div className="relative mt-4 flex flex-wrap items-center gap-2 px-2">
+            <span className="text-xs text-[#d4b88a]">선택:</span>
+            {picked.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPicked((prev) => prev.filter((c) => c !== p))}
+                className="group inline-flex items-center gap-1.5 rounded-full border border-[#d4b88a]/40 bg-[#f6efdf]/10 px-3 py-1 text-xs text-[#f6efdf] transition hover:border-[#f5d97a] hover:bg-[#f6efdf]/20"
+                title="클릭하면 빼요"
+              >
+                {p}
+                <span className="text-[#d4b88a] transition group-hover:text-[#f5d97a]">×</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Selected chips — sit on the dark page background */}
-      {settled && picked.length > 0 && (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-[#d4b88a]">선택:</span>
-          {picked.map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setPicked((prev) => prev.filter((c) => c !== p))}
-              className="group inline-flex items-center gap-1.5 rounded-full border border-[#d4b88a]/40 bg-[#f6efdf]/10 px-3 py-1 text-xs text-[#f6efdf] transition hover:border-[#f5d97a] hover:bg-[#f6efdf]/20"
-              title="클릭하면 빼요"
-            >
-              {p}
-              <span className="text-[#d4b88a] transition group-hover:text-[#f5d97a]">×</span>
-            </button>
-          ))}
-        </div>
+      {/* Center popup — appears once participant has filled all 3 picks.
+          Sits above the dark menu board (z-[20] > board's z-10) so the
+          handoff CTA is unmissable. */}
+      {settled && picked.length >= 3 && (
+        <motion.div
+          className="pointer-events-none fixed inset-0 z-[20] flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.35 }}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 10 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="pointer-events-auto rounded-lg border border-[#d4b88a]/40 bg-[#1c120a]/95 px-8 py-6 shadow-2xl backdrop-blur"
+          >
+            <p className="mb-3 text-center text-[13px] tracking-[0.18em] text-[#d4b88a]">
+              세 단어를 모두 골랐어요
+            </p>
+            <div className="flex justify-center">
+              <StoryButtonV3
+                label={spec.buttonLabel ?? "전달하기"}
+                onClick={submit}
+                disabled={picked.length === 0}
+                ritual
+              />
+            </div>
+          </motion.div>
+        </motion.div>
       )}
-
-      {/* Submit row */}
-      <div
-        className={`sticky bottom-0 z-10 mt-auto flex justify-end pt-3 transition-opacity duration-500 ${
-          settled ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-      >
-        <StoryButtonV3
-          label={spec.buttonLabel ?? "전달하기"}
-          onClick={submit}
-          disabled={picked.length === 0}
-          ritual
-        />
-      </div>
     </div>
   );
 }

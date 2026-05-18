@@ -24,7 +24,9 @@ const BG_BY_TIME: Record<TimeOfDay, string> = {
 // naming preserved from the source asset filenames.
 const BG_BY_CHAPTER: Record<number, string> = {
   1: `${COMMON}/Chapter_01.webp`,
-  2: `${COMMON}/Chapter_02.webp`,
+  // ch2 기본 배경 — 객실 램프가 켜진 (Chapter02-3) 이미지로 통일.
+  // 사용자가 1-6b에서 램프를 켠 이후부터 ch2 전체가 같은 조명 분위기여야 자연스럽다.
+  2: `${COMMON}/Chapter02-3.webp`,
   3: `${COMMON}/Chapter03.webp`,
   4: `${COMMON}/chapter04.webp`,
 };

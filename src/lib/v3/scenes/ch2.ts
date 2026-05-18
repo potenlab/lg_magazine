@@ -33,12 +33,9 @@ export const CH2_SCENES: SceneSpec[] = [
     owl: "explaining",
     lines: [
       "우리는 같은 일을 하더라도 무게를 두는 곳이 다르거든요.",
-      "어떤 사람은 결과를 위해 일하고,",
-      "어떤 사람은 관계를 위해 일하고,",
+      "어떤 사람은 결과를 위해 일하고, 어떤 사람은 관계를 위해 일하고,",
       "어떤 사람은 그냥 — 그게 옳다고 믿기 때문에 일해요.",
       "{name}님이 삶을 살아가거나, 일을 하는데 있어 가장 중시하는 가치는 무엇인가요?",
-      "{name}님에게 가장 중요했던 건 무엇이었을까요?",
-      "그 안에서 {name}님이 가장 소중하게 여긴 것이 있다면요.",
       "여러 단어들을 함께 살펴보면서 찾아볼게요.",
     ],
     next: "2-3-1",
@@ -61,7 +58,7 @@ export const CH2_SCENES: SceneSpec[] = [
     bgImage: "/vision_express/common/Chapter02-1.webp",
     owl: "listening",
     hideSpeakerLabel: true,
-    bgm: "benkirb-shine-10-268906.mp3",
+    // bgm 제거 — ch2 기본값(기차 소리)이 그대로 깔리도록
     narration: "카드들이 펼쳐진다.",
     lines: [
       "마음에 닿는 단어가 있으면 골라주세요.",
@@ -78,7 +75,7 @@ export const CH2_SCENES: SceneSpec[] = [
     timeOfDay: "starsRising",
     owl: "focusedWriting",
     owlPool: INTERVIEW_OWL_POOL,
-    bgm: "freesound_community-writing-with-pen-35109.mp3",
+    // bgm 제거 — ch2 기본값(기차 소리)이 그대로 깔리도록
     narration: "편집장이 선택된 카드들을 나란히 펼쳐놓는다.",
     lines: [
       "{selectedCount}가지의 단어를 선택해주셨네요. 좋습니다.",
@@ -95,7 +92,7 @@ export const CH2_SCENES: SceneSpec[] = [
     timeOfDay: "starsRising",
     owl: "contemplating",
     narration: "편집장이 적힌 의미들을 가만히 들여다본다.",
-    lines: ["{name}님이 적어주신 의미들을 함께 보고 있어요."],
+    lines: ["{name}님이 적어주신 내용을 모아보면"],
     next: "2-6",
   },
   {

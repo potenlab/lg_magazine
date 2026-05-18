@@ -827,7 +827,7 @@ export function IntroScene({
                         {session.job || finalJob || "—"}
                       </p>
                       {/* Passenger value — next to "Passenger :" label */}
-                      <p className="absolute" style={{ ...valueStyle, top: "66%", left: "45%" }}>
+                      <p className="absolute" style={{ ...valueStyle, top: "70%", left: "45%" }}>
                         {session.name || name || "—"}
                       </p>
                       {/* Date value — next to "Date :" label */}

@@ -2,6 +2,7 @@
 
 import { useContext, useEffect, useState } from "react";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
+import { PaginatedNarration } from "@/components/v3/ui/PaginatedNarration";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
 import { DialogStageContext } from "@/components/v3/V3App";
@@ -79,23 +80,11 @@ export function StrengthSynthesisScene({
   const lines = synthesis.split(/\n+/).map((s) => s.trim()).filter(Boolean);
 
   return (
-    <div className="flex flex-1 cursor-pointer flex-col" onClick={advance}>
-      <div
-        className="flex-1 space-y-3"
-        style={{ fontFamily: "var(--font-ridi-batang)" }}
-      >
-        {lines.map((line, i) => (
-          <p
-            key={i}
-            className="text-[15px] leading-[1.75] text-[#3d2414] md:text-[16px]"
-          >
-            {line}
-          </p>
-        ))}
-      </div>
-      <div className="mt-auto flex items-center justify-end text-[14px] text-[#8b7050]">
-        <span className="italic">다음</span>
-      </div>
+    <div
+      className="flex flex-1 flex-col"
+      style={{ fontFamily: "var(--font-ridi-batang)" }}
+    >
+      <PaginatedNarration lines={lines} pageSize={2} onAdvance={advance} />
     </div>
   );
 }

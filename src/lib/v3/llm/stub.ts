@@ -1,0 +1,192 @@
+import type { LLMContract } from "./contract";
+import { judgeBranchHeuristic, ruleForScene } from "@/lib/v3/judging/heuristics";
+import { josa } from "@/lib/v3/scenes/josa";
+import { extractIdentityTitle } from "@/lib/v3/scenes/template";
+
+function firstSentence(s: string): string {
+  const m = s.split(/[.!?。]/)[0]?.trim();
+  return m && m.length > 3 ? m : s.trim();
+}
+
+function extractNoun(s: string): string {
+  const m = s.match(/[가-힣]{2,5}/g);
+  return m?.[m.length - 1] || "그 일";
+}
+
+// 사용자 답변을 안전하게 인용하는 형식. "~이었군요" 같이 어미를 임의로
+// 붙여서 비문(예: "처음이라서이었군요")이 발생하는 것을 막기 위해, 답변
+// 자체를 따옴표로 묶고 별도 문장으로 풀어준다. 어떤 어미로 끝나든 안전.
+function safeQuoteReflection(s: string): string {
+  const first = firstSentence(s);
+  const trimmed = first.replace(/[.。!?]+$/g, "").trim();
+  const quoted = trimmed.length > 40 ? `${trimmed.slice(0, 40)}…` : trimmed;
+  return `'${quoted}' — 그 결을 잠시 머물러 듣고 있어요.\n\n그 안의 마음이 천천히 떠오르는 것 같아요.`;
+}
+
+export const stubLLM: LLMContract = {
+  async judgeBranch({ sceneId, answer }) {
+    return judgeBranchHeuristic(ruleForScene(sceneId), answer);
+  },
+
+  async reflectShort({ answer }) {
+    // Stub fallback. 이전엔 "{answer}이었군요"로 직접 어미를 붙였는데, 답변이
+    // 어떤 어미로 끝나든 비문이 될 수 있어서 안전한 인용 형식으로 변경.
+    return safeQuoteReflection(answer);
+  },
+
+  async rephraseLight({ answer }) {
+    // Stub fallback: just return the original answer untouched. The real LLM
+    // does the actual rephrasing; this preserves meaning when the LLM is offline.
+    return answer.trim();
+  },
+
+  async comfortReassure({ name }) {
+    // LLM 호출 실패 시 stub fallback. extractNoun이 "처음이라서" 같은
+    // 어구를 그대로 가져와 조사가 비문법적으로 붙는 문제(예: "처음이라서이")가
+    // 있어서, 안전한 명사형 표현으로 고정.
+    return `아, ${name}님 마음 한구석에 그런 결이 있으셨군요.\n\n괜찮아요 — 이 열차에 함께하는 동안 그 마음은 천천히 가라앉을 거예요.`;
+  },
+
+  async reflectPoetic({ name, storyA, storyB }) {
+    const a = extractNoun(storyA);
+    const b = extractNoun(storyB);
+    return `${a}와 ${b} 사이에서, 막막한 상황을 직접 움직이며 배워가는 결이 흐르는 것 같아요.`;
+  },
+
+  async reflectValues({ name, values }) {
+    if (values.length === 0) return `${name}님 안에는 단단한 결이 흐르고 있어요.`;
+    const words = values.map((v) => v.word);
+    const joined =
+      words.length === 1
+        ? words[0]
+        : `${words.slice(0, -1).join(", ")}${words.length > 2 ? "," : ""} 그리고 ${words[words.length - 1]}`;
+    return `${joined}을(를) 함께 품고 일할 때 가장 힘이 나는 사람이시군요.`;
+  },
+
+  async reflectStrength({ helpRequests, values }) {
+    const noun = extractNoun(helpRequests);
+    return {
+      commonAsk: `${noun}을 다듬는 일`,
+      linkedValue: values[0]?.word ?? "",
+    };
+  },
+
+  async synthesizeStrength({ name, strengthCommonAsk, othersDescription, selectedValues }) {
+    // Deterministic fallback — used when the LLM call/parse fails. Three short
+    // editor-voice sentences that weave whatever ingredients are present.
+    const ask = strengthCommonAsk?.trim() || "사람들이 들고 오는 막막한 것들";
+    const others = othersDescription?.trim();
+    const valueWord = selectedValues?.[0]?.word?.trim();
+    const lines = [
+      `${name}님의 두 몰입 순간과 주변에서 들고 온 일들 사이에 같은 결이 흐르는 것 같아요.`,
+      `사람들이 ${name}님에게 들고 온 건 공통적으로 — ${ask}이었고, 그 순간들 안에서도 같은 손길이 보여요.`,
+    ];
+    if (others) lines.push(`가까이서 본 사람의 말 — "${others}" — 도 같은 결을 다른 각도에서 비추고 있어요.`);
+    if (valueWord) lines.push(`${valueWord}이라는 단어가 그 결을 조용히 떠받치고 있는 듯해요.`);
+    return { synthesis: lines.join("\n") };
+  },
+
+  async generateVisionDirections() {
+    // Fixed fallback — used when the LLM call / parse fails. Mirrors
+    // FALLBACK_DIRECTIONS in VisionSelectScene so both layers show the same 6.
+    return {
+      directions: [
+        "지금 하는 일의 본질을 더 깊이 파고드는 사람",
+        "나만의 방식으로 같은 일을 다르게 해내는 사람",
+        "이미 가진 강점을 더 선명하게 쓰는 사람",
+        "새로운 영역으로 발을 넓혀가는 사람",
+        "내가 중요하다고 믿는 곳에 실질적인 변화를 만드는 사람",
+        "지금 하는 일을 통해, 언젠가 내가 닿고 싶은 곳에 가는 사람",
+      ],
+    };
+  },
+
+  async generateTimeHorizon() {
+    // Fixed fallback — mirrors FALLBACK_HORIZON in TimeHorizonScene.
+    return {
+      horizon: [
+        "1년 안에, 지금 하고 싶은 것을 한 발짝 더 실행해보는 사람",
+        "3년 후에, 내가 원하는 방향으로 실질적으로 이동해 있는 사람",
+        "언젠가, 내 방식으로 세상에 닿는 일을 하고 있는 사람",
+      ],
+    };
+  },
+
+  async extractKeyword({ answer, rule }) {
+    const noun = extractNoun(answer);
+    if (rule === "flow") return `${noun}에 빠져드는`;
+    if (rule === "common") return `${noun}을 다루는`;
+    return `${noun}을 향하는`;
+  },
+
+  async observePattern({ name, selectedValue }) {
+    return {
+      situationPattern: `${name}님은 새로운 무언가를 만들어야 하는 자리`,
+      behaviorPattern: `${selectedValue}${josa(selectedValue, "을/를")} 향해 스스로 길을 내실 때`,
+    };
+  },
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async writeChapterArticle({ name, gender, chapter, session }) {
+    const pron = gender;
+    if (chapter === 1) {
+      return {
+        headline: `${pron}가 가장 ${pron}다웠던 두 순간`,
+        body:
+          `${pron}가 들려준 두 이야기는 화려하지 않았다.\n\n` +
+          `첫 번째 장면에서 ${pron}는 "${firstSentence(session.flowExperience1)}"고 회상했다.\n` +
+          `두 번째 장면에서 ${pron}는 "${firstSentence(session.flowExperience2)}"고 말했다.\n\n` +
+          `편집장은 두 페이지를 나란히 놓고 한 문장을 적어 내려갔다 — ${session.ch1PoeticMirror || "두 이야기 사이에 같은 결이 흐르고 있었다."}.`,
+        pullQuote: session.ch1PoeticMirror || firstSentence(session.flowExperience1),
+      };
+    }
+    if (chapter === 2) {
+      const identityTitle = extractIdentityTitle(session.identityName);
+      return {
+        headline: `${identityTitle}${josa(identityTitle, "이라는/라는")} 이름`,
+        body:
+          `${pron}가 가장 소중히 여기는 가치는 ${session.topValue}${josa(session.topValue, "이다/다")}.\n` +
+          `그러나 ${pron}가 말하는 ${session.topValue}${josa(session.topValue, "은/는")} 사전적 의미와는 결이 다르다.\n\n` +
+          `"${session.valueDefinitions[session.topValue] || ""}"\n\n` +
+          `${pron}가 그 단어를 발음할 때, 거기에는 ${pron}만의 무게가 있었다. ` +
+          `그리고 ${pron}는 그 가치를 품고 살아가는 자기 자신에게 새로운 이름을 붙였다.`,
+        pullQuote: identityTitle,
+      };
+    }
+    if (chapter === 3) {
+      return {
+        headline: `4년 후, ${pron}가 그린 자신`,
+        body:
+          `${pron}에게 4년 후의 자신을 그려보라 청했을 때, ${pron}는 잠시 눈을 감았다.\n\n` +
+          `${pron}가 그린 미래는 "${firstSentence(session.futureSelf)}"의 모습이었다. ` +
+          `${firstSentence(session.futureDay)}.\n\n` +
+          `그것은 어떤 거창한 성취도, 거대한 직책도 아니었다. ` +
+          `그저 ${pron}가 ${session.topValue}${josa(session.topValue, "을/를")} 더 자유롭게 펼치며 살아가는 모습.\n\n` +
+          `${pron}는 그 모습을 한 줄로 이렇게 적었다.`,
+        pullQuote: session.visionLine,
+      };
+    }
+    return {
+      headline: `내일 아침, ${pron}가 디딜 한 걸음`,
+      body:
+        `인터뷰가 끝나갈 무렵, ${pron}는 내일 아침 출근해서 시작할 일을 적어 내려갔다.\n\n` +
+        `그것은 — ${session.firstStep}.\n\n` +
+        `그리고 그 길을 혼자 가지 않을 것이라 했다. ` +
+        `곁에는 ${session.supportPerson}${josa(session.supportPerson, "이/가")} 있고, 손에는 ${session.neededResource}${josa(session.neededResource, "이/가")} 함께할 것이다.\n\n` +
+        `${pron}가 만들어갈 다음 호를 기대해보자.`,
+      pullQuote: null,
+    };
+  },
+
+  async writeEditorNote({ session, kind }) {
+    if (kind === "intro") {
+      return `${session.name}님을 만났다. ${session.gender}는 LG에서 일하는 ${session.job || "한 사람"}이었다. ${session.gender}가 들려준 이야기는 화려하지 않았지만, 그 속에는 자기만의 결이 흐르고 있었다. 우리는 ${session.gender}의 이야기를 한 호의 매거진으로 담았다.`;
+    }
+    return `우리는 묵묵히 자기 빛을 쌓아온 한 사람을 만났다.\n\n${session.gender}의 이야기를 들으며, 우리는 ${session.gender}가 이미 자기만의 답을 가지고 있음을 깨달았다.\n\n이 한 호가 ${session.gender}의 다음 여정에 작은 등불이 되기를.`;
+  },
+
+  async writeCoverHeadline({ session }) {
+    const identityTitle = extractIdentityTitle(session.identityName);
+    return identityTitle ? `${identityTitle}, ${session.gender}의 4년` : `${session.name}님의 이야기`;
+  },
+};

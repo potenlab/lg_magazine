@@ -1,0 +1,449 @@
+/* @import "@fontsource/old-standard-tt"; */
+/* @import "@fontsource/song-myung"; */
+/* @import "@fontsource/nanum-pen-script"; */
+/* @import "@fontsource/geist-mono"; */
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════
+   Persona · Vision Express Design System
+   ═══════════════════════════════════════════ */
+
+:root {
+  /* Color Palette — Warm Brown & Gold */
+  --color-bg-deep:      #1a0f08;
+  --color-bg-wood:      #3d2414;
+  --color-bg-warm:      #5a3a22;
+  --color-gold:         #d4a54a;
+  --color-gold-dark:    #b8872e;
+  --color-gold-light:   #FFD700;
+  --color-cream:        #e8dcc8;
+  --color-cream-light:  #f5f0e8;
+  --color-paper:        #ebe5d9;
+
+  /* Text */
+  --color-text-primary:   rgba(230, 210, 175, 0.9);
+  --color-text-secondary: rgba(212, 185, 145, 0.7);
+  --color-text-muted:     rgba(180, 155, 120, 0.4);
+  --color-text-dim:       rgba(180, 155, 120, 0.25);
+
+  /* UI */
+  --color-border:       rgba(180, 155, 120, 0.2);
+  --color-border-hover: rgba(212, 180, 130, 0.4);
+  --color-glass:        rgba(255, 255, 255, 0.05);
+  --color-glass-hover:  rgba(212, 180, 130, 0.15);
+  --color-overlay:      rgba(20, 12, 6, 0.4);
+
+  /* Button */
+  --color-btn-bg:       rgba(212, 180, 130, 0.15);
+  --color-btn-bg-hover: rgba(212, 180, 130, 0.25);
+  --color-btn-border:   rgba(212, 180, 130, 0.3);
+  --color-btn-text:     rgba(230, 210, 175, 0.9);
+
+  /* Spacing — 8pt grid, 절대 깨지 말 것 */
+  --space-2xs: 4px;    /* 아이콘-텍스트 사이 */
+  --space-xs:  8px;    /* 같은 그룹 내 최소 간격 */
+  --space-sm:  12px;   /* 라벨-인풋 사이 */
+  --space-md:  16px;   /* 인풋-버튼 사이 */
+  --space-lg:  24px;   /* 섹션 내 블록 간격 */
+  --space-xl:  32px;   /* 질문-입력 영역 사이 */
+  --space-2xl: 48px;   /* 대 섹션 간격 */
+  --space-3xl: 64px;   /* 페이지 상하 여백 */
+
+  /* Typography */
+  --font-old-standard: 'Old Standard TT';
+  --font-song-myung: 'Song Myung';
+  --font-nanum-pen: 'Nanum Pen Script';
+  --font-geist-mono: 'Geist Mono';
+  --font-title: var(--font-old-standard), 'Georgia', 'Times New Roman', serif;
+  --text-title-size: clamp(1.75rem, 4vw, 2.5rem);
+  --text-body-size: clamp(0.875rem, 2vw, 1rem);
+
+  /* Transitions */
+  --transition-fast: 200ms ease;
+  --transition-base: 500ms ease;
+  --transition-slow: 1000ms ease;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+}
+
+@theme inline {
+  --font-sans: var(--font-pretendard);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ═══════ Base ═══════ */
+
+body {
+  font-family: var(--font-pretendard), system-ui, sans-serif;
+  background: #3a2518;
+  color: var(--color-cream);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ═══════ Scrollbar ═══════ */
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-border-hover); }
+
+/* ═══════ Selection ═══════ */
+
+::selection {
+  background: rgba(212, 180, 130, 0.3);
+  color: var(--color-cream-light);
+}
+
+/* ═══════ Dialog Box (편집장 대화창) ═══════ */
+
+.dialog-box {
+  position: absolute;
+  bottom: 40px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  max-width: 800px;
+  width: calc(100% - 80px);
+  padding: var(--space-lg) var(--space-xl);
+  background: linear-gradient(
+    180deg,
+    rgba(245, 240, 232, 0.92) 0%,
+    rgba(235, 229, 217, 0.96) 100%
+  );
+  border: 1px solid rgba(200, 190, 170, 0.3);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(8px);
+  min-height: 120px;
+}
+
+@media (max-width: 768px) {
+  .dialog-box { width: calc(100% - 48px); bottom: 24px; }
+}
+
+.dialog-box .chapter-label {
+  font-size: 10px;
+  font-style: italic;
+  color: var(--color-gold-dark);
+  margin-bottom: var(--space-xs);
+}
+
+.dialog-box .dialog-text {
+  font-size: var(--text-body-size);
+  font-weight: 300;
+  line-height: 1.8;
+  color: #3d2414;
+}
+
+/* ═══════ Gold Button (골드 CTA) ═══════ */
+
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 32px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-gold-dark) 100%);
+  color: #1a0f08;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 2px 8px rgba(180, 130, 50, 0.3);
+}
+
+.btn-gold:hover {
+  box-shadow: 0 4px 16px rgba(212, 165, 74, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-gold:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ═══════ Ghost Button (보더 버튼) ═══════ */
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 32px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 400;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-ghost:hover {
+  background: var(--color-glass-hover);
+  border-color: var(--color-border-hover);
+}
+
+/* ═══════ Input (텍스트 입력) ═══════ */
+
+.input-underline {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  outline: none;
+  padding: var(--space-md) 0;
+  font-size: 1.15rem;
+  font-weight: 300;
+  color: var(--color-text-primary);
+  transition: border-color var(--transition-fast);
+}
+
+.input-underline:focus {
+  border-bottom-color: var(--color-gold);
+}
+
+.input-underline::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* ═══════ Textarea (자유 입력) ═══════ */
+
+.input-area {
+  width: 100%;
+  background: rgba(180, 155, 120, 0.06);
+  border: 1px solid rgba(180, 155, 120, 0.15);
+  border-radius: var(--radius-md);
+  outline: none;
+  padding: var(--space-md);
+  font-size: 0.875rem;
+  font-weight: 300;
+  color: var(--color-text-primary);
+  resize: none;
+  transition: border-color var(--transition-fast);
+}
+
+.input-area:focus {
+  border-color: var(--color-border-hover);
+}
+
+/* ═══════ Chip (직무 선택 등) ═══════ */
+
+.chip {
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.chip:hover {
+  border-color: var(--color-border-hover);
+  color: var(--color-text-secondary);
+}
+
+.chip.active {
+  border-color: var(--color-gold);
+  background: rgba(212, 180, 130, 0.15);
+  color: var(--color-text-primary);
+}
+
+/* ═══════ Chapter Nav (상단 네비) ═══════ */
+
+.chapter-nav {
+  font-family: var(--font-title);
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+
+.chapter-nav .active {
+  color: var(--color-gold);
+  font-weight: 500;
+  text-shadow: 0 0 12px rgba(212, 165, 74, 0.4);
+}
+
+.chapter-nav .done {
+  color: rgba(212, 180, 130, 0.7);
+}
+
+.chapter-nav .locked {
+  color: rgba(180, 155, 120, 0.55);
+}
+
+/* ═══════ Dialog Text (vh 기반 — 노트북/데스크탑 모두 종이 안에) ═══════ */
+
+.dialog-body    { font-size: clamp(15px, 2.3vh, 22px); }
+.dialog-bridge  { font-size: clamp(14px, 2.1vh, 20px); }
+.dialog-sub     { font-size: clamp(12px, 1.7vh, 16px); }
+.dialog-caption { font-size: clamp(10px, 1.4vh, 13px); }
+
+/* 형광펜 강조 — letter와 동일 톤 */
+.hl {
+  background: linear-gradient(transparent 55%, rgba(212,180,130,0.45) 55%, rgba(212,180,130,0.45) 90%, transparent 90%);
+  padding: 0 2px;
+  font-weight: 600;
+}
+
+/* ═══════ Mobile quick wins ═══════ */
+
+/* 모바일: chapter-nav 라벨 압축 — active만 표시 */
+@media (max-width: 640px) {
+  .chapter-nav .locked,
+  .chapter-nav .done {
+    display: none;
+  }
+  .chapter-nav .active {
+    font-size: 12px;
+  }
+}
+
+/* 모바일: dialog 박스 minHeight 축소 */
+@media (max-width: 640px) {
+  .dialog-pane {
+    min-height: clamp(180px, 28vh, 280px) !important;
+  }
+}
+
+/* 모바일: textarea 압축 */
+@media (max-width: 640px) {
+  textarea[rows="14"] {
+    min-height: clamp(140px, 22vh, 220px) !important;
+    rows: 6;
+  }
+}
+
+/* Dialog 박스 안 버튼 row 하단 고정 */
+.dialog-pane {
+  display: flex;
+  flex-direction: column;
+}
+/* motion.div 같은 직속 div wrapper도 flex column으로 전환 (button row는 제외) */
+.dialog-pane > div:not(.dialog-actions) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+/* button row를 dialog-pane 안 어디에 있든 하단으로 — Tailwind space-y override */
+.dialog-pane .dialog-actions {
+  margin-top: auto !important;
+  padding-top: 16px;
+}
+
+/* ═══════ Character Badge (편집장 뱃지) ═══════ */
+
+.character-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(212,180,130,0.2) 0%, rgba(180,140,80,0.15) 100%);
+  border: 1px solid rgba(212,180,130,0.25);
+}
+
+.character-badge span {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-gold);
+  letter-spacing: 0.1em;
+}
+
+/* ═══════ Paper Card (편지/클립보드) ═══════ */
+
+.paper-card {
+  background: linear-gradient(180deg, var(--color-cream-light) 0%, var(--color-paper) 100%);
+  border: 1px solid rgba(200, 190, 170, 0.3);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  color: #3d2414;
+}
+
+/* ═══════ Time Progress (밤→아침 전환) ═══════ */
+
+.time-night    { --time-overlay: rgba(15, 18, 46, 0.3); }
+.time-twilight { --time-overlay: rgba(40, 25, 15, 0.2); }
+.time-dawn     { --time-overlay: rgba(60, 40, 20, 0.1); }
+.time-morning  { --time-overlay: rgba(255, 200, 100, 0.05); }
+
+/* ═══════════════════════════════════════════
+   Layout Rhythm — 간격 규칙
+   이전 프로젝트 문제: 요소 간 간격 불일치
+   규칙: 8pt grid 기반, 모든 컴포넌트에 적용
+   ═══════════════════════════════════════════ */
+
+/* 질문 텍스트 → 입력 필드 */
+.q-to-input { margin-top: var(--space-xl); }   /* 32px */
+
+/* 입력 필드 → 버튼 */
+.input-to-btn { margin-top: var(--space-lg); }  /* 24px */
+
+/* 버튼 그룹 내 간격 */
+.btn-group {
+  display: flex;
+  gap: var(--space-sm);                          /* 12px */
+  margin-top: var(--space-lg);                   /* 24px */
+}
+
+/* 라벨 → 인풋 */
+.label-to-input { margin-bottom: var(--space-sm); } /* 12px */
+
+/* 힌트 텍스트 */
+.hint {
+  margin-top: var(--space-xs);                   /* 8px */
+  font-size: 12px;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+/* 대화창 내부 레이아웃 */
+.dialog-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);                          /* 16px: 라벨-텍스트-버튼 간 */
+}
+
+/* 칩 그리드 (직무 선택 등) */
+.chip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-xs);                          /* 8px */
+  margin-top: var(--space-xl);                   /* 32px from question */
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+/* 풀스크린 씬 (배경 이미지 + 컨텐츠) */
+.scene {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.scene-content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 560px;
+  padding: 0 var(--space-lg);
+}
+
+/* 섹션 간격 */
+.section-gap > * + * { margin-top: var(--space-2xl); }  /* 48px */
+.block-gap  > * + * { margin-top: var(--space-lg); }    /* 24px */
+.tight-gap  > * + * { margin-top: var(--space-sm); }    /* 12px */

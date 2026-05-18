@@ -1,0 +1,1098 @@
+// Server-only — uses the existing provider abstraction (Anthropic / OpenAI / Gemini / AI Studio).
+// Each task wraps a single provider call with task-tuned prompts in L-OWL voice.
+
+import { getProvider, type LLMResult } from "@/lib/llm/provider";
+import { extractIdentityTitle } from "@/lib/v3/scenes/template";
+import type { V3Session } from "@/lib/v3/scenes/types";
+
+const EDITOR_PERSONA = `당신은 매거진 STORY의 편집장 엘아울(L-OWL)입니다.
+비전 익스프레스라는 야간열차의 프라이빗 객실에서, 참가자 한 사람의 이야기를 듣고
+오직 그 사람만을 위한 한 호의 매거진을 함께 만듭니다.
+
+스타일 규칙:
+- 따뜻하지만 날카롭다. 짧고 정확한 한국어.
+- 과한 수사·관용구·이모지 금지.
+- "어떤 사람은 X하고, 어떤 사람은 Y하고" 식 3중 평행 구조 금지.
+- "가장 완벽한", "무수한", "치열하게 살아온", "어깨의 무거운 짐" 류 클리셰 금지.
+- 사용자의 답변을 그대로 받아쓰지 말 것. 그 답변에서 본인이 미처 인식하지 못한 결을 발견해, 본인의 언어로 한 단계 안쪽으로 되비추기.
+- 단정 금지: "X예요/X입니다/X이에요" 같은 단정 어미 회피. 대신 "X인 것 같아요/X처럼 보여요/X로 들렸어요" 같은 발견의 시선으로.
+- 참가자에게 정체성·본질·자질을 부여(label)하지 않을 것. 참가자 본인이 그 결을 발견하도록 비춰주기만.
+- 출력은 지시한 형식만. 군더더기·설명·해설 금지. 따옴표 사용은 개별 프롬프트의 지시를 따른다.`;
+
+const EDITORIAL_PROSE_CONSTRAINT = `
+[Constraint: El Owl's Editorial Rule]
+- 참가자에게 실제로 보이는 산문은 '관찰 -> 해석 -> 결론' 흐름으로 문단을 나눕니다.
+- 한 문단은 최대 2~3문장으로 짧게 씁니다.
+- 문단과 문단 사이는 반드시 빈 줄 하나(\\n\\n)로 구분합니다.
+- 핵심 키워드, 추론한 인사이트, 사용자가 직접 쓴 표현은 작은따옴표(' ')로 감쌉니다.
+- "...같아요.에"처럼 문장 뒤에 조사가 어색하게 붙는 출력을 금지합니다.
+- 어미 중복 금지: "있었군요이었꾼요", "떠오랄요이었군요" 같은 어미 겹침 절대 금지. 한 문장 = 한 개의 마침 어미만.
+- 올바른 어미만 사용: "~인 것 같아요", "~처럼 보여요", "~라고 들었어요", "~군요", "~네요"
+- 사용자 표현 그대로 가져오기 금지: "처음이라서이", "어려워서을" 처럼 사용자가 쓴 어미/조사 부착형 어구를 그대로 가져오면 조사가 비문법적으로 붙음. 반드시 명사형으로 재해석 (예: "처음이라서" → "낯섦/머쓱함", "어려워서" → "어려움")
+- 조사 정확성: 받침 있음 → 은/이/을, 받침 없음 → 는/가/를. 명사 끝 글자에 맞춰 정확히 선택.
+- 전문적이되 따뜻한 존댓말을 유지합니다.`;
+
+async function ask(user: string, maxTokens = 300): Promise<LLMResult> {
+  const provider = await getProvider();
+  return provider.generateText({ system: EDITOR_PERSONA, user, maxTokens });
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Branch judging (replaces heuristic for follow-up scenes).
+// Classifies a participant answer into A/B/C/D based on what's missing,
+// so the editor can pick the right follow-up.
+// ──────────────────────────────────────────────────────────────────────────
+
+type JudgeRule =
+  | "ch1FlowAnswer"
+  | "ch2Common"
+  | "ch2IdentityName"
+  | "ch3FutureSelf"
+  | "ch3FutureDay"
+  | "ch3VisionLine"
+  | "ch3Attraction"
+  | "ch3AlreadyDoing"
+  | "ch3Obstacles"
+  | "ch3WhyReason"
+  | "ch3Contribution"
+  | "ch4FirstStep"
+  | "ch4SupportPerson"
+  | "ch4NeededResource";
+
+interface RuleSpec {
+  context: string;
+  letters: ("A" | "B" | "C" | "D")[];
+  cases: string;  // 케이스 정의 텍스트 (LLM 프롬프트에 그대로 삽입)
+}
+
+const RULE_SPECS: Record<JudgeRule, RuleSpec> = {
+  ch1FlowAnswer: {
+    context: "참가자가 '일하면서 시간 가는 줄 모르고 빠져들었던 경험'에 대해 답한 내용",
+    letters: ["A", "B", "D"],
+    cases: `[3가지 평가축]
+- 구체성: 추상이 아닌 실제 장면·맥락이 있는가
+- 감정·생각: 사실 나열이 아닌 본인의 느낌·해석이 있는가
+- 본인성: 본인 이야기가 주어인가 ("제가 그때..." vs "다들 그렇잖아요")
+
+[분기 — 3축 중 2축 이상 충족 시 D]
+A. 감정·생각 부족 — 구체적 장면은 있으나 마음의 결이 없음
+   또는 일반론이지만 감정 단어가 포함된 경우 (예: "다들 그런 순간 있잖아요. 그게 참 설렜어요")
+   예: "작년에 신규 캠페인 기획을 맡았을 때요"
+
+B. 장면 없음 — 장면·맥락이 전혀 없이 추상적
+   또는 일반론이고 장면도 감정도 없는 경우 (예: "다들 그런 순간 있잖아요")
+   예: "일이 잘 풀렸을 때요", "성공했을 때요"
+
+D. 충분 — 구체성·감정·본인성 중 2가지 이상 충족
+   (모두 충족하지 않아도 OK. 본인의 결이 일부라도 살아있으면 D)`,
+  },
+  ch2Common: {
+    context: "두 이야기에 흐르는 공통 패턴을 찾아달라는 질문에 답한 내용",
+    letters: ["A", "B", "D"],
+    cases: `A. 표면적 공통점 — 활동/상황만 묶음 (감정·동인 없음)
+   예: "둘 다 새로운 걸 배우는 거였어요", "둘 다 팀 작업이었어요"
+
+B. 모르겠음 — 패턴을 찾지 못함
+   예: "잘 모르겠어요", "비슷한 게 없는 것 같아요"
+
+D. 깊은 공통점 — 감정/동인/의미 차원에서 본질을 짚음
+   예: "둘 다 누군가의 막막함을 풀어주는 순간이었던 것 같아요"`,
+  },
+  ch2IdentityName: {
+    context: "자기 자신에게 붙이는 이름을 답한 내용",
+    letters: ["A", "B", "D"],
+    cases: `A. 너무 추상적/일반적 — 한 단어로 칭찬에 가까운 표현
+   예: "좋은 사람", "행복한 사람", "멋진 사람"
+
+B. 평이한 명사 한 단어 — 어디서나 쓰는 직책·역할 명사 그 자체
+   예: "리더", "개척자", "도와주는 사람"
+   ※ 단어가 같더라도 비유/구체적 수식어/본인 맥락이 붙어 있으면 B 아님 (D로).
+
+D. 본인다운 답변 — 비유·이미지·본인만의 결이 살아있는 표현
+   예: "막막함을 풀어주는 사람", "조용한 발견자",
+        "지도가 없는 곳에 선을 긋는 항해사",
+        "새로운 항로를 그려내는 사람"
+   ※ 25자 이상이거나 비유·구체 묘사·본인 경험이 들어가 있으면 거의 항상 D.
+   ※ 길이가 길고 한 줄이 아닌 문장형 답변(여러 문장, 본인 설명 포함)은 무조건 D.`,
+  },
+  ch3FutureSelf: {
+    context: "4년 후 자기 모습을 답한 내용",
+    letters: ["A", "B", "D"],
+    cases: `A. 외적 성취 중심 — 직책/타이틀 위주
+   예: "팀장이 되어있을 거예요", "임원으로 승진"
+
+B. 추상적 또는 모르겠음 — 구체적 모습 없음
+   예: "성공했을 거예요", "행복하게 살고 있을 거예요", "잘 모르겠어요"
+
+D. 풍부한 답변 — 모습·마음·일상이 살아있음`,
+  },
+  ch3FutureDay: {
+    context: "4년 후 어느 하루를 묘사한 내용",
+    letters: ["A", "B", "D"],
+    cases: `A. 일정 나열만 — 감정·마음 없음
+   예: "오전엔 회의, 오후엔 보고서"
+
+B. 너무 짧음/막연함
+
+D. 풍부한 답변 — 마음의 흐름과 구체적 행동이 함께 있음`,
+  },
+  ch3VisionLine: {
+    context: "비전을 한 줄로 표현한 내용",
+    letters: ["A", "B", "D"],
+    cases: `A. 너무 일반적
+   예: "성공한 사람", "좋은 리더가 되어있는 사람"
+
+B. 직책·외적 표현
+   예: "팀장이 될 거예요", "임원으로 자리잡은 사람"
+
+D. 본인다운 한 줄 — 정체성·가치·미래 모습이 녹아있는 한 문장`,
+  },
+  ch4FirstStep: {
+    context: "내일부터 시작할 작은 한 걸음을 답한 내용",
+    letters: ["A", "B", "D"],
+    cases: `A. 너무 추상적 또는 의무감 톤
+   예: "열심히 할 거예요", "꾸준히 노력해야겠어요", "~해야겠어요"
+
+B. 너무 큰 결심 — 내일 시작할 수 없는 것
+   예: "이직 준비를 시작할 거예요", "MBA 지원"
+
+D. 구체적이고 본인다운 — 내일 실행 가능한 작은 한 걸음`,
+  },
+  ch4SupportPerson: {
+    context: "그 첫 걸음을 함께 시작할 사람을 답한 내용. 이 질문은 필수가 아니다 — 답이 없어도 괜찮다.",
+    letters: ["D"],
+    cases: `D. 항상 D로 분류한다. 구체적인 사람을 떠올렸든("김부장님", "예전 사수"),
+   떠올리지 못했든("없어요", "잘 모르겠어요", "딱히") — 이 단계는 공감하며
+   자연스럽게 넘어간다. 절대 되묻지 않는다.`,
+  },
+  ch4NeededResource: {
+    context: "그 첫 걸음을 더 단단하게 만들어줄 자원을 답한 내용. 이 질문은 필수가 아니다 — 답이 없어도 괜찮다.",
+    letters: ["D"],
+    cases: `D. 항상 D로 분류한다. 구체적인 자원을 떠올렸든("관련 책", "선배의 조언"),
+   떠올리지 못했든("없어요", "잘 모르겠어요", "딱히") — 이 단계는 공감하며
+   자연스럽게 넘어간다. 절대 되묻지 않는다.`,
+  },
+  ch3Attraction: {
+    context: "'이런 걸 더 해보고 싶다'는 끌림에 대해 답한 내용",
+    letters: ["A", "D"],
+    cases: `A. 너무 막연함 — 구체적 내용 없음
+   예: "잘 모르겠어요", "그냥 더 잘하고 싶어요", "성장하고 싶어요"
+
+D. 충분 — 어떤 일이나 모습인지 실마리가 보임`,
+  },
+  ch3AlreadyDoing: {
+    context: "끌림이 일상 어딘가에 이미 있는지, 이미 하고 있는 게 있는지 답한 내용",
+    letters: ["A", "D"],
+    cases: `A. 너무 막연하거나 이유 없이 회피함
+   예: "잘 모르겠어요", "딱히 없는 것 같아요" (설명 없음)
+   ※ "없어요"이지만 근거를 말하면 D
+
+D. 충분 — 구체적으로 언급하거나 없는 이유를 솔직히 말함`,
+  },
+  ch3Obstacles: {
+    context: "끌림을 따라가는 데 걸리는 장애물을 답한 내용",
+    letters: ["A", "D"],
+    cases: `A. 너무 짧거나 막연함
+   예: "잘 모르겠어요", "딱히 없어요"
+
+D. 충분 — 어떤 부분이 어렵거나 걸리는지 구체적으로 말함`,
+  },
+  ch3WhyReason: {
+    context: "장애물에도 그쪽으로 향하고 싶은 이유를 답한 내용",
+    letters: ["A", "D"],
+    cases: `A. 너무 일반적 — 개인적 동기 없음
+   예: "그냥요", "하고 싶어서요", "잘 모르겠어요"
+
+D. 충분 — 개인적인 이유나 동기가 담겨있음`,
+  },
+  ch3Contribution: {
+    context: "세상에 어떤 기여를 하고 싶은지 답한 내용",
+    letters: ["A", "D"],
+    cases: `A. 너무 추상적/일반적
+   예: "도움이 되고 싶어요", "좋은 사람이 되고 싶어요"
+
+D. 충분 — 어떤 방향으로 영향을 미치고 싶은지 감각이 있음`,
+  },
+};
+
+export async function v3JudgeBranch(input: {
+  rule: JudgeRule;
+  answer: string;
+}): Promise<{ branch: "A" | "B" | "C" | "D"; reason: string }> {
+  const spec = RULE_SPECS[input.rule];
+  const allowed = spec.letters.join("/");
+  const user = `[질문 맥락] ${spec.context}
+
+[참가자 답변]
+${input.answer}
+
+다음 케이스 중 하나를 골라주세요.
+
+${spec.cases}
+
+[출력 형식 — 다른 텍스트·해설 금지]
+BRANCH: <${allowed} 중 한 글자만>
+REASON: <한 문장 근거, 30자 이내>`;
+  const r = await ask(user, 100);
+  const text = r.text.trim();
+  const bm = text.match(/BRANCH:\s*([ABCD])/i);
+  const rm = text.match(/REASON:\s*([^\n]+)/);
+  if (!bm) {
+    throw new Error(`v3JudgeBranch: bad output: ${text}`);
+  }
+  const branch = bm[1].toUpperCase() as "A" | "B" | "C" | "D";
+  // Defensive: if LLM returned a letter outside the rule's allowed set,
+  // pick the closest fallback. (Better than trying to render an undefined branch.)
+  if (!spec.letters.includes(branch)) {
+    throw new Error(`v3JudgeBranch: branch ${branch} not allowed for rule ${input.rule}`);
+  }
+  return {
+    branch,
+    reason: (rm?.[1] || "").trim(),
+  };
+}
+
+// LLM 출력 검증 함수들 — 비문법적 조사 부착 / 사용자 어구 그대로 사용 감지
+function hasBadKoreanPattern(text: string): boolean {
+  // 동사/형용사 어간(라서/어서/아서/니까/면서)에 명사 조사(이/은/을/를)가 붙은 비문법
+  // 예: "처음이라서이", "어려워서은", "막막해서을"
+  const badPatterns = [
+    /(?:라서|어서|아서|니까|면서|라고)(?:이|은|을|를|이서|에서)(?=\s|$|[가-힣])/,
+    // 어미(요/군요/네요/셨)에 명사 조사가 붙은 경우
+    /(?:군요|네요|아요|어요|셨|이에요)(?:이|은|을|를)(?=\s|$|[가-힣])/,
+  ];
+  return badPatterns.some((p) => p.test(text));
+}
+
+function userPhraseLeaked(answer: string, output: string): boolean {
+  // 사용자 답변에서 "[글자]+ + 라서/어서/아서" 형태 어구 추출
+  const verbPhrases = answer.match(/[가-힣]+(?:라서|어서|아서)/g) ?? [];
+  // 이런 어구가 출력에 그대로 들어가면 leak
+  return verbPhrases.some((p) => p.length >= 3 && output.includes(p));
+}
+
+const FALLBACK_COMFORT_REASSURE = (name: string): string =>
+  `아, ${name}님 마음 한구석에 그런 결이 있으셨군요.\n\n괜찮아요 — 이 열차에 함께하는 동안 그 마음은 천천히 가라앉을 거예요.`;
+
+export async function v3ComfortReassure(input: { answer: string; name: string }): Promise<string> {
+  const user = `${input.name}님이 비전 익스프레스 객실에 처음 자리 잡으며 이렇게 말했어요.
+
+[참가자가 어색해하는 부분]
+${input.answer}
+
+이 답변에 두 문장으로 응답해주세요.
+
+[⚠️ 가장 중요한 규칙 — 절대 위반 금지]
+- 사용자가 쓴 표현을 절대 그대로 가져다 쓰지 마세요. 의미만 읽어내고, 한 단계 추상화해서 본인의 자연스러운 한국어로 다시 표현하세요.
+- 사용자 어구를 그대로 받으면 "처음이라서이 어색하셨군요" / "그 처음이라서은" 같은 비문법적 조사가 붙어 어색해집니다.
+- "처음이라서/처음이라" 같은 어구는 → "낯섦", "어색함", "처음의 머쓱함" 같은 명사로 재해석하세요.
+- "잘 모르겠어요/막막해요" 같은 어구는 → "막막함", "갈피를 못 잡는 느낌" 같은 명사로.
+- 사용자의 답변에 등장한 동사·형용사·어미를 그대로 끼워 넣지 말고, 명사형 감정/상황어로 바꿔서 자연스러운 조사와 함께 사용하세요.
+
+[출력 형식 — 다른 텍스트·해설 금지]
+첫 번째 문장: "아, ~~한 느낌이셨군요." / "아, 그런 ~~이 있으셨군요." 형태로, 사용자의 감정·상황을 명사로 짚으며 부드럽게 받기.
+두 번째 문장: "괜찮아요." 또는 "괜찮습니다." 로 시작해, 이 열차에 함께하는 동안 그 어색함/긴장이 자연스럽게 풀릴 거라는 안심을 주기.
+
+[좋은 예시]
+사용자: "처음이라서 어색해요"
+출력: "아, 첫 자리의 머쓱함이 있으셨군요.\\n\\n괜찮아요 — 이 열차에 함께하는 동안 그 머쓱함은 천천히 풀릴 거예요."
+
+[나쁜 예시 — 절대 이렇게 하지 마세요]
+"아, 처음이라서이 어색하셨군요. 괜찮습니다 — 이 열차에 함께하는 동안 그 처음이라서은 자연스럽게 사라질 거예요."
+(이유: "처음이라서"를 그대로 가져와서 조사가 비문법적으로 붙음)
+
+${EDITORIAL_PROSE_CONSTRAINT}
+
+요건:
+- 사용자 표현 그대로 인용 절대 금지 — 의미만 읽고 본인 언어로
+- 평가·교훈조 금지. 따뜻한 편집장의 짧은 응답 톤
+- 두 문장 합쳐 60~110자, 두 문장은 빈 줄(\\n\\n)로 구분
+- 조사는 받침/모음 규칙에 맞게 정확히 사용 (이/가, 은/는, 을/를)`;
+
+  // 최대 2회 시도 — 비문법적 패턴 / 사용자 어구 leak 검출되면 재시도
+  // 두 번 다 실패하면 안전한 fallback 사용
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const r = await ask(user, 220);
+    const out = r.text.trim();
+    const hasBad = hasBadKoreanPattern(out);
+    const leaked = userPhraseLeaked(input.answer, out);
+    if (!hasBad && !leaked) {
+      return out;
+    }
+    console.warn(
+      `[v3ComfortReassure] attempt ${attempt + 1} rejected — hasBad=${hasBad}, leaked=${leaked}, output: ${out.slice(0, 80)}`
+    );
+  }
+  return FALLBACK_COMFORT_REASSURE(input.name);
+}
+
+const REFLECT_GLOBAL_RULES = `[전역 규칙 — 모든 챕터 공통]
+- 답변에 그대로 머물 것. 은유·재정의·재해석으로 한 단계 띄우지 말 것
+- 사용자가 쓴 핵심 표현 1~2개는 그대로 인용해도 좋음 (모든 단어를 베끼지는 말 것)
+- 사용자가 세운 프레임(목적·수치·방법·의도)을 부정("~게 아니라")하거나 다른 의미로 갈아끼우지 말 것
+- 시적 모드 디폴트 금지 — 차분하고 담백한 톤이 기본
+- 평가·교훈조 금지`;
+
+// Applies to every topic: a "없어요/모르겠어요/딱히" answer must NOT be
+// inflated into a grand "결단" or re-framed as something the question didn't
+// ask. Just receive the blank state plainly. (Root cause of the Ch4 bug:
+// "없어요" to the supportPerson question got read as "행동이 없다".)
+const REFLECT_NEGATIVE_GUARD = `※ 답변이 "없어요 / 모르겠어요 / 딱히 없어요 / 아직" 등 비어있거나 막연한 응답이면:
+- 억지로 의미를 부여하거나 "결단"으로 미화하지 말 것.
+- 질문이 묻지 않은 다른 것(예: 행동·계획)으로 바꿔 읽지 말 것.
+- 문장 1: "아직 떠오르지 않으셨군요" / "지금은 잘 모르겠다고 느끼시는군요"처럼 그 상태를 그대로, 부담 없이 받아주는 한 줄.
+- 문장 2: 압박·응원 없이 "그것도 괜찮아요, 천천히 떠올려봐도 돼요" 결의 가벼운 한 줄.`;
+
+function reflectShortStyleGuide(chapter: 1 | 2 | 3 | 4, topic?: string): string {
+  // ── Chapter 4 — three distinct question types. Chapter alone can't tell
+  // them apart, so branch on `topic` (the followup's parentSaveTo). ──
+  if (chapter === 4) {
+    if (topic === "supportPerson") {
+      return `※ 이 답변은 '첫 걸음을 함께할 사람 — 동료·선배·가까운 누군가'에 대한 답변입니다.
+이 답변을 '행동·계획'으로 읽으면 안 됩니다. 이건 '사람'에 대한 답변입니다.
+
+[문장 1 — 받아주기]
+답변 속 사람·관계를 짧게 짚어 받아주는 한 줄.
+- 형식 예시: "아, [그 사람/관계]을 떠올리셨군요." / "아, [관계]와 함께 시작하고 싶으신 거네요."
+- 25~45자
+
+[문장 2 — 짧은 인정]
+그 사람을 떠올린 마음에 깃든 결을 한 줄로 인정.
+- 형식 예시: "그분이라면 곁에서 같이 걸어줄 것 같아요."
+- 30~55자
+
+${REFLECT_NEGATIVE_GUARD}
+
+${REFLECT_GLOBAL_RULES}`;
+    }
+    if (topic === "neededResource") {
+      return `※ 이 답변은 '첫 걸음에 필요한 도움·자원 — 자료·배움·시간·공간 등'에 대한 답변입니다.
+이 답변을 '행동·계획'이나 '사람'으로 읽으면 안 됩니다. 이건 '필요한 자원'에 대한 답변입니다.
+
+[문장 1 — 받아주기]
+답변 속 필요한 자원을 짧게 짚어 받아주는 한 줄.
+- 형식 예시: "아, [필요한 것]이 있으면 좋겠다고 느끼시는군요."
+- 25~45자
+
+[문장 2 — 짧은 인정]
+무엇이 필요한지 알아챈 시선에 깃든 결을 한 줄로 인정.
+- 형식 예시: "무엇이 필요한지 아는 것부터가 이미 한 걸음이에요."
+- 30~55자
+
+${REFLECT_NEGATIVE_GUARD}
+
+${REFLECT_GLOBAL_RULES}`;
+    }
+    // default Ch4 — firstStep (the action/plan itself)
+    return `※ 이 답변은 '내일부터 시도해볼 행동·실험·계획'입니다. 사용자의 결단을 그대로 인정해주세요.
+
+[문장 1 — 받아주기]
+답변 속 구체적 행동·계획을 짧게 짚어 받아주는 한 줄.
+- 형식 예시: "아, 내일부터 바로 [핵심 행동] 해보시려는 거네요." / "아, [핵심 변화]부터 시작해보시려는 거군요."
+- 사용자가 명시한 수치·방법·목적은 그대로 비춰주기
+- 25~45자
+
+[문장 2 — 결단 인정]
+그 결단에 깃든 태도를 그대로 이름 붙여주는 한 줄.
+- 형식 예시: "그 작은 실험부터 시작하시는 게 단단하게 들려요." / "내일 아침을 미루지 않으시는 그 결단이 인상적이에요."
+- 추상화·은유·재해석 금지 — 구체적 결단을 인정하는 응원 톤
+- 30~55자
+
+${REFLECT_NEGATIVE_GUARD}
+
+${REFLECT_GLOBAL_RULES}`;
+  }
+  if (chapter === 3) {
+    return `※ 이 답변은 '앞으로 향하고 싶은 방향, 그 길에서 끌리거나 걸리는 것'에 대한 답변입니다. 그 결을 함께 들여다보는 시선으로 받아주세요.
+
+[문장 1 — 받아주기]
+답변 속 미래 장면을 짧게 짚어 받아주는 한 줄.
+- 형식 예시: "아, [핵심 장면 — 사용자 표현 일부 그대로 인용 OK]같은 미래를 그리고 계시는군요."
+- 25~45자
+
+[문장 2 — 가능성 인정]
+그 미래 안에 흐르는 본인다움을 짧게 짚는 한 줄.
+- 형식 예시: "거기에는 {name}님이 [구체적 모습/태도]로 살아가는 결이 보여요."
+- 거창한 은유·재정의 금지 — 답변 속 장면에 머무르며 인정
+- 30~55자
+
+${REFLECT_NEGATIVE_GUARD}
+
+${REFLECT_GLOBAL_RULES}`;
+  }
+  if (chapter === 2) {
+    return `※ 이 답변은 '본인의 가치·정체성 정의'에 대한 답변입니다. 사용자가 부여한 의미를 발견하는 시선으로 받아주세요.
+
+[문장 1 — 받아주기]
+답변 속 정의·관점을 짧게 짚어 받아주는 한 줄.
+- 형식 예시: "아, [핵심 의미 — 사용자 표현 일부 인용 OK]같은 결로 그 단어를 쓰시는군요."
+- 25~45자
+
+[문장 2 — 짧은 인정]
+그 정의에 깃든 결을 한 줄로 인정.
+- 형식 예시: "그 안에는 [구체적 태도/관점]이 들어있는 것 같아요."
+- 추상적 본질 재정의 금지 — 답변에 머무르며 인정
+- 30~55자
+
+${REFLECT_NEGATIVE_GUARD}
+
+${REFLECT_GLOBAL_RULES}`;
+  }
+  // chapter 1 — recall of a past moment
+  return `※ 이 답변은 '몰입·자랑스러웠던 과거 순간'에 대한 답변입니다. 함께 떠올리며 받아주세요.
+
+[문장 1 — 받아주기]
+답변 속 상황·일·사건을 짧게 짚어 받아주는 한 줄.
+- 형식 예시: "아, [핵심 상황 — 사용자 표현 일부 인용 OK]같은 일이 있으셨군요." / "아, [핵심]셨군요."
+- 25~45자
+
+[문장 2 — 짧은 인정]
+그 순간에 깃든 태도·결을 한 줄로 인정.
+- 형식 예시: "그 순간에는 {name}님이 [구체적 모습/태도]로 계셨던 것 같아요."
+- 거창한 은유·재정의 금지 — 답변 속 장면에 머무르며 인정
+- 30~55자
+
+${REFLECT_NEGATIVE_GUARD}
+
+${REFLECT_GLOBAL_RULES}`;
+}
+
+export async function v3ReflectShort(input: {
+  answer: string;
+  name: string;
+  chapter?: 1 | 2 | 3 | 4;
+  topic?: string;
+}): Promise<string> {
+  const chapter = input.chapter ?? 1;
+  const styleGuide = reflectShortStyleGuide(chapter, input.topic);
+  const user = `${input.name}님이 방금 들려준 답변입니다.
+
+[답변]
+${input.answer}
+
+이 답변에 두 문장으로 되비춰주세요.
+
+${styleGuide}
+
+${EDITORIAL_PROSE_CONSTRAINT}
+
+[출력]
+- 두 문장을 빈 줄(\\n\\n)으로 구분해 한 번에 출력
+- 핵심 키워드에는 작은따옴표(' ')를 사용
+- 해설·번호 없이 두 문장만
+- 평가·교훈조 금지`;
+  const r = await ask(user, 280);
+  return r.text.trim();
+}
+
+export async function v3RephraseLight(input: { answer: string; name: string }): Promise<string> {
+  const user = `${input.name}님이 직접 들려준 답변을, 매거진 페이지에 그대로 인용할 수 있도록 가볍게 다듬어주세요.
+
+[원문]
+${input.answer}
+
+요건:
+- 의미·내용은 90% 이상 그대로 보존 — 새로운 정보 추가·삭제 금지
+- 구어체 군더더기만 정리: "그냥", "되게", "막", "약간", "음", 중복된 어미·말끝 흐림 등
+- 첫 어구와 끝 어미만 자연스럽게 다듬기 (예: "~좋았어" → "~좋았던 거예요" / "~좋았던 부분이에요")
+- {name}님이 본인의 말로 한 호흡에 다시 들려주는 톤
+- 원문이 여러 문장이면 문장 수도 거의 유지
+- 따옴표·해설 없이 본문만 출력`;
+  const r = await ask(user, 320);
+  return r.text.trim();
+}
+
+export async function v3ReflectPoetic(input: { name: string; storyA: string; storyB: string }): Promise<string> {
+  const user = `${input.name}님이 들려준 두 이야기입니다.
+
+[이야기 A]
+${input.storyA}
+
+[이야기 B]
+${input.storyB}
+
+두 이야기를 나란히 놓고 발견한 결을 한 문장으로 되비춰주세요.
+- 두 이야기에 흐르는 공통된 본질을 본인의 언어로 짚어내기 (사용자 단어를 그대로 받아쓰지 말 것)
+- "${input.name}님은 …" 같은 단정 대신, 발견의 시선으로
+- 반드시 "~~한 결이 흐르는 것 같아요" 또는 "~~한 결로 이어지는 것처럼 보여요"에 가까운 문장으로 풀어쓰기
+- 한 문장, 40~90자, 따옴표 없이 문장만 출력`;
+  const r = await ask(user, 250);
+  return r.text.trim();
+}
+
+export async function v3ReflectValues(input: {
+  name: string;
+  values: { word: string; meaning: string }[];
+}): Promise<string> {
+  const valueLines = input.values
+    .map((v, i) => `${i + 1}. ${v.word} — ${v.meaning}`)
+    .join("\n");
+  const user = `${input.name}님이 직접 고른 가치 단어들과 본인의 정의입니다.
+
+[가치들]
+${valueLines}
+
+이 가치들을 하나로 엮어서 ${input.name}님이 어떤 사람인지 한 문장으로 되비춰주세요.
+- 모든 가치를 순서대로 풀어쓰지 말고, 가치들 사이의 결을 자연스럽게 연결
+- 각 가치의 "정의"를 그대로 베끼지 말고 본인의 언어로 다시 짚어주기
+- "~~할 때 가장 힘이 나는 사람이시군요" 또는 "~~한 방식으로 살아갈 때 ${input.name}님다운 분이군요" 같은 발견의 시선으로 마무리
+- 한 문장, 60~120자, 따옴표 없이 문장만 출력
+
+예시 톤: "스스로 방향을 잡고, 믿을 수 있는 사람들과 함께, 매일 조금씩 나아지는 방식으로 일할 때 가장 힘이 나는 사람이시군요."`;
+  const r = await ask(user, 320);
+  return r.text.trim();
+}
+
+export async function v3ReflectStrength(input: {
+  name: string;
+  helpRequests: string;
+  values: { word: string; meaning: string }[];
+}): Promise<{ commonAsk: string; linkedValue: string }> {
+  const valueLines = input.values
+    .map((v, i) => `${i + 1}. ${v.word} — ${v.meaning}`)
+    .join("\n");
+  const user = `${input.name}님이 적어주신 정보입니다.
+
+[주변에서 도움 요청 받은 일]
+${input.helpRequests}
+
+[${input.name}님이 소중히 여기는 가치들]
+${valueLines}
+
+이 두 정보를 바탕으로 두 가지를 JSON으로 추출해주세요.
+
+1. commonAsk: 사람들이 ${input.name}님에게 들고 온 일들의 공통된 결을 한 구절(noun phrase)로. "~~하는 일" 또는 "~~한 것" 형태. 8~20자.
+   예시: "아직 형태가 없는 것을 다듬는 일" / "막막함을 풀어주는 일" / "흩어진 것을 묶어내는 일"
+
+2. linkedValue: 위 [가치들] 목록의 단어 중 commonAsk와 가장 의미상 맞닿아 있는 ONE 단어. 반드시 위 목록에 있는 단어 그대로 사용.
+
+JSON 형태로만 출력:
+{"commonAsk": "...", "linkedValue": "..."}`;
+  const r = await ask(user, 300);
+  const text = r.text.trim();
+  try {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("no JSON found");
+    const parsed = JSON.parse(match[0]) as { commonAsk?: string; linkedValue?: string };
+    return {
+      commonAsk: (parsed.commonAsk ?? "").trim(),
+      linkedValue: (parsed.linkedValue ?? "").trim(),
+    };
+  } catch {
+    return { commonAsk: "", linkedValue: input.values[0]?.word ?? "" };
+  }
+}
+
+export async function v3SynthesizeStrength(input: {
+  name: string;
+  flowExperience1: string;
+  flowExperience2: string;
+  selectedValues: { word: string; meaning: string }[];
+  strengthCommonAsk: string;
+  othersDescription: string;
+}): Promise<{ synthesis: string }> {
+  const valueLines = input.selectedValues
+    .map((v, i) => `${i + 1}. ${v.word}${v.meaning ? ` — ${v.meaning}` : ""}`)
+    .join("\n");
+  const user = `${input.name}님이 들려준 네 가지 재료입니다.
+
+[1. Chapter 1 — 몰입했던 두 순간]
+경험 A: ${input.flowExperience1 || "—"}
+경험 B: ${input.flowExperience2 || "—"}
+
+[2. Chapter 2 — 소중히 여기는 가치]
+${valueLines || "—"}
+
+[3. Chapter 2 — 주변에서 ${input.name}님에게 들고 온 일들의 공통된 결]
+${input.strengthCommonAsk || "—"}
+
+[4. Chapter 2 — 가까운 사람이 본 ${input.name}님]
+${input.othersDescription || "—"}
+
+당신은 매거진 "STORY"의 편집장(엘 아울)입니다. 위 네 재료를 차분히 꿰어,
+${input.name}님의 강점 포트레이트를 3~4문장으로 정리해주세요.
+
+규칙:
+- 반드시 3~4 문장. 각 문장은 한 줄로.
+- 1문장: 네 재료가 공통으로 가리키는 결을 한 문장으로 짚는다 ("${input.name}님은 …하는 사람으로 보여요" / "…에서 같은 결이 흘러요" 등).
+- 2문장: 그 결이 두 몰입 경험에서 어떻게 나타났는지 짧게 짚는다 — 경험을 그대로 인용하지 말고 동작/태도 차원으로 짧게.
+- 3문장: 그 결이 주변 사람들이 들고 온 일들 / 가까운 사람의 시선과 어떻게 맞닿아 있는지 짚는다.
+- (선택) 4문장: 가치 단어들이 그 결을 어떻게 떠받치는지 한 줄. 가치 단어를 억지로 인용하지 말 것.
+- 평가/단정 금지. 칭찬·과장 금지. 담담하게, 발견한 것을 짚어주는 톤.
+- 따옴표·번호·머리표 없이 평문 문장만. 한 문장씩 줄바꿈.
+- 같은 어휘 반복 금지. "정말", "참", "굉장히" 같은 강조어 금지.
+
+JSON 형태로만 출력:
+{"synthesis": "문장1\\n문장2\\n문장3"}`;
+  const r = await ask(user, 600);
+  const text = r.text.trim();
+  try {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("no JSON found");
+    const parsed = JSON.parse(match[0]) as { synthesis?: string };
+    const synthesis = (parsed.synthesis ?? "").trim();
+    if (!synthesis) throw new Error("empty synthesis");
+    return { synthesis };
+  } catch {
+    // Soft fallback so the scene never blocks — caller may also fall back to stub.
+    return { synthesis: "" };
+  }
+}
+
+export async function v3ExtractKeyword(input: { answer: string; rule: "flow" | "common" | "future" }): Promise<string> {
+  const ruleHint = {
+    flow: '몰입의 결을 담은 동사형 어미 (예: "엮는", "파고드는", "다루는")',
+    common: '두 이야기에 흐르는 공통 행동 패턴을 담은 동사형 어미',
+    future: '미래 비전을 향하는 동사형 어미',
+  }[input.rule];
+
+  const user = `다음 답변에서 핵심 키워드를 짚어주세요.
+
+[답변]
+${input.answer}
+
+[추출 우선순위]
+1순위: 참가자가 직접 쓴 감정·가치 단어
+   예) "뭔가 제가 만들어냈다는 느낌이 강하게 들었어요" → "만들어내는"
+2순위: 참가자가 묘사한 행동의 본질
+   예) "팀원들이 막막해할 때 제가 정리해줬어요" → "막막함을 풀어주는"
+3순위: 몰입 상황에서 반복되는 속성
+   예) "처음 해보는", "아무도 안 해본" 반복 → "처음 시도하는"
+
+[규칙]
+- ${ruleHint}
+- "X을(를) Y는" 또는 "X에 Z하는" 류 한국어 명사+동사형 (예: "관계를 잇는", "구조를 짓는")
+- 직책·역할명은 키워드가 아님 — "PM을 했을 때" → PM이 아니라 그 안의 행동
+- 결과가 아닌 과정 — "성과를 냈을 때" → 성과가 아니라 어떻게 만들었는지
+- 참가자가 직접 쓴 표현·비유는 그대로 살림 — 임의로 재해석하지 않음 (예: "퍼즐이 맞춰지는 순간" 은 그대로 활용)
+- 3~5단어 이내 (4~14자)
+- 따옴표·구두점 없이 한 줄만 출력`;
+  const r = await ask(user, 80);
+  return r.text.trim();
+}
+
+export async function v3ObservePattern(input: {
+  name: string;
+  storyA: string;
+  storyB: string;
+  selectedValue: string;
+  valueDef: string;
+}): Promise<{ situationPattern: string; behaviorPattern: string }> {
+  const user = `${input.name}님의 두 이야기와 가치 카드입니다.
+
+[이야기 A]
+${input.storyA}
+
+[이야기 B]
+${input.storyB}
+
+[고른 가치] ${input.selectedValue}
+[본인이 정의한 가치 의미] ${input.valueDef}
+
+이 답변들에 흐르는 일관된 패턴을 두 가지로 나누어 짚어주세요.
+
+[출력 형식 — 반드시 이 형식만, 다른 텍스트·해설 금지]
+SITUATION: <상황 패턴 — 어떤 자리/조건에 놓였을 때 — 명사구로>
+BEHAVIOR: <행동 패턴 — 어떻게 움직일 때 — "~할 때" 부사어구로>
+
+예시:
+SITUATION: 정답이 정해지지 않은 자리
+BEHAVIOR: 다른 사람의 결을 듣고 거기에 자기 길을 더할 때
+
+요건:
+- 답변에 근거가 있어야 함
+- 사용자가 쓴 단어를 그대로 옮기지 말 것
+- 각 12~25자`;
+  const r = await ask(user, 300);
+  const text = r.text.trim();
+  const sm = text.match(/SITUATION:\s*([^\n]+)/);
+  const bm = text.match(/BEHAVIOR:\s*([^\n]+)/);
+  if (!sm || !bm) {
+    throw new Error(`v3ObservePattern: bad LLM output: ${text}`);
+  }
+  return {
+    situationPattern: sm[1].trim(),
+    behaviorPattern: bm[1].trim(),
+  };
+}
+
+export async function v3WriteChapterArticle(input: {
+  name: string;
+  gender: "그" | "그녀";
+  job: string;
+  chapter: 1 | 2 | 3 | 4;
+  session: V3Session;
+}): Promise<{ headline: string; body: string; pullQuote: string | null }> {
+  const { name, gender, chapter, session } = input;
+  const pron = gender;
+  const genderLabel = pron === "그" ? "남자" : "여자";
+  const identityTitle = extractIdentityTitle(session.identityName);
+
+  const ctx = `[참가자] ${name} (${genderLabel})
+[직무] ${session.job}
+[발견한 정체성] ${identityTitle || "—"}
+[가장 소중한 가치] ${session.topValue || "—"}
+[본인 정의] ${session.valueDefinitions[session.topValue] || "—"}
+[4년 후 모습] ${session.futureSelf || "—"}
+[비전 한 줄] ${session.visionLine || "—"}
+[첫 걸음] ${session.firstStep || "—"}`;
+
+  // v3.8 13.3 / 11.4 — 매거진 인터뷰 기사 톤 가이드 (모든 챕터 공통)
+  const TONE_GUIDE = `
+[⚠️ 절대 규칙 — 위반 시 출력 무효]
+- 참가자의 본명은 정확히 "${name}"입니다. 본문 어디에도 다른 이름을 쓰지 마세요.
+- "주승주", "김지영" 같은 가상의 인물명·예시 이름을 절대 만들어내지 마세요.
+- 본명이 본문에 등장할 때는 "${name}" 글자 그대로 — 변형·축약·재명명 금지.
+
+[기록 페이지 톤 가이드 — 모든 챕터 공통]
+시점: 3인칭, "${pron}"로 통일.
+호명: 본명 "${name}"은 본문 첫 등장 시 한 번만. 이후로는 "${pron}".
+   ※ 본문에 "${name}님" 같은 경어 호명 금지 — 본명 그대로만 사용. ("님" 금지)
+시제: 회고체 과거형 ("~했다 / ~였다 / ~떠올렸다").
+문체: 매거진 인터뷰 기사의 저널리스틱 산문체. 한 호흡으로 흐르는 문장.
+인용: 참가자의 핵심 표현은 작은따옴표('…')로 직접 인용. 단 답변 통째로 베끼지 말 것.
+인터뷰어 관찰 표현은 안전한 일반 표현만 — 예: "잠시 눈을 감았다", "한 호흡 쉬고 말했다",
+   "펜이 잠시 멈추었다", "${pron}는 천천히 입을 열었다". 과장된 묘사 금지.
+
+[금지 사항]
+- 요약 박스, 항목 나열(•/-/번호), "핵심:", "정리:" 같은 라벨 형식 금지 — 통산문만.
+- L-OWL의 환기·격려 멘트("자, 다음 페이지로...") 페이지 안에 등장 금지 — 이 페이지는 결과물이지 대화가 아님.
+- 참가자에게 묻는 질문 형식("어땠을까?") 금지.
+- "멋진", "훌륭한", "대단한" 류 평가 형용사 금지.
+- 참가자 답변에 없는 사실·일화·인물의 임의 생성 금지. 주어진 컨텍스트 안에서만.
+
+${EDITORIAL_PROSE_CONSTRAINT}
+`;
+
+
+  const taskByChapter: Record<1 | 2 | 3 | 4, string> = {
+    1: `${ctx}
+
+[몰입 경험 1] ${session.flowExperience1}
+[몰입 경험 2] ${session.flowExperience2}
+[발견한 결] ${session.ch1PoeticMirror || "—"}
+
+Chapter 1 — 내가 지나온 길.
+${pron}가 들려준 두 몰입 경험을 매거진 본문으로 써주세요.
+${TONE_GUIDE}
+
+[출력 형식 — 다른 텍스트 금지]
+HEADLINE: <챕터 헤드라인, 12자 이내>
+BODY: <본문 3문단, 각 문단 2~3문장 — 묘사 + 핵심 표현 직접 인용 한 개 + 결>
+PULL: <한 줄 풀쿼트, 25~45자>
+
+요건:
+- 두 이야기에서 결을 발견하는 시선으로 (받아쓰지 말 것)
+- v3.8 11.8 PULL 추출: 두 몰입 경험 답변 [몰입 경험 1] / [몰입 경험 2] 원문 중 가장 인상적인 한 문장(또는 그 한 토막)을 그대로 가져오기. 임의로 작성·요약하지 말 것.`,
+
+    2: `${ctx}
+
+Chapter 2 — 나는 누구인가.
+${pron}가 발견한 자기 이름과 가치를 매거진 본문으로 써주세요.
+${TONE_GUIDE}
+
+[출력 형식 — 다른 텍스트 금지]
+HEADLINE: <12자 이내>
+BODY: <본문 3문단, 각 문단 2~3문장>
+PULL: <한 줄 풀쿼트, 25~45자>
+
+요건:
+- ${pron}가 새로 붙인 이름 "${identityTitle || ""}"이 어떻게 자라났는지
+- 가치 단어 "${session.topValue || ""}"가 ${pron}에게 어떤 의미인지를 본문에 풀어내기 (사전적 정의 X)
+- v3.8 11.8 PULL 추출: 정체성 이름 "${identityTitle || ""}" 그대로, 또는 가치 본인 정의 원문 중 한 문장. 정체성 이름이 더 강력하면 그것. 임의 작성 금지.`,
+
+    3: `${ctx}
+
+[끌리는 방향] ${session.attraction || "—"}
+[이미 하고 있는 것] ${session.alreadyDoing || "—"}
+[그럼에도 향하는 이유] ${session.whyReason || "—"}
+[세상에 미치고 싶은 영향] ${session.contribution || "—"}
+
+Chapter 3 — 내가 그리는 미래.
+${pron}가 발견한 끌림·장애물·이유·기여 꿈을 모아 매거진 본문으로 써주세요.
+${TONE_GUIDE}
+
+[출력 형식 — 다른 텍스트 금지]
+HEADLINE: <12자 이내>
+BODY: <본문 3문단, 각 문단 2~3문장>
+PULL: <비전 한 줄 "${session.visionLine || ""}"을 활용한 풀쿼트, 25~45자>
+
+요건:
+- ${pron}가 지금 끌리는 방향부터, 그럼에도 향하고 싶은 이유까지 이어지는 결로
+- 거대한 직책·성취가 아니라 ${pron}만의 결이 담긴 방향으로`,
+
+    4: `${ctx}
+
+[지지하는 사람] ${session.supportPerson}
+[필요한 자원] ${session.neededResource}
+
+Chapter 4 — 내일로 향하는 한 걸음.
+${pron}가 내일부터 시작할 작은 걸음을 매거진 본문으로 써주세요.
+${TONE_GUIDE}
+
+[출력 형식 — 다른 텍스트 금지]
+HEADLINE: <12자 이내>
+BODY: <본문 3문단, 각 문단 2~3문장>
+
+요건:
+- ${pron}는 그 길을 혼자 가지 않는다 — 곁에 있는 사람과 손에 쥔 자원을 본문에 자연스럽게 엮기
+- v3.8 11.4: Chapter 4는 풀쿼트 없음. PULL 출력하지 말 것.`,
+  };
+
+  const r = await ask(taskByChapter[chapter], 800);
+  const text = r.text;
+  const hm = text.match(/HEADLINE:\s*([^\n]+)/);
+  const bm = text.match(/BODY:\s*([\s\S]*?)(?=\n\s*PULL:|$)/);
+  const pm = text.match(/PULL:\s*([^\n]+)/);
+  return {
+    headline: (hm?.[1] || "").trim(),
+    body: (bm?.[1] || "").trim(),
+    // v3.8 11.4: Chapter 4는 풀쿼트 없음 — LLM이 혹시 출력해도 무시
+    pullQuote: chapter === 4 ? null : (pm?.[1].trim() || null),
+  };
+}
+
+export async function v3WriteEditorNote(input: { session: V3Session; kind: "intro" | "outro" }): Promise<string> {
+  const { session, kind } = input;
+  const pron = session.gender;
+  const genderLabel = pron === "그" ? "남자" : "여자";
+  const identityTitle = extractIdentityTitle(session.identityName);
+
+  if (kind === "intro") {
+    // v3.8 11.4 — From the Editor 형식 강제.
+    const user = `[참가자] ${session.name} (${genderLabel})
+[직무] ${session.job}
+[자유 입력 컨텍스트] ${session.freeContext || "—"}
+
+매거진 STORY 편집장의 인트로 노트(From the Editor)를 써주세요.
+
+[형식 — 반드시 이 구조를 따르세요]
+- 첫 문장: "${session.name}님을 만났다." (※ 인트로 첫 문장에만 "님" 사용 OK)
+- 두 번째 문장: "${pron}는 LG에서 일하는 ${session.job}였다." (또는 자연스러운 변형)
+- 이번 호의 톤·방향을 살짝 암시하는 한 문장
+- 마지막 문장: "우리는 ${pron}의 이야기를 한 호의 매거진으로 담았다." (또는 자연스러운 변형)
+
+[원칙]
+- 한 문단, 3~5문장
+- ${pron}를 3인칭으로 ("그/그녀")
+- 첫 문장 외에는 "${session.name}님" 같은 경어 호명 금지
+- 잡지 인트로 톤. 군더더기·과장 금지 — 화려하지 않게
+
+${EDITORIAL_PROSE_CONSTRAINT}`;
+    const r = await ask(user, 400);
+    return r.text.trim();
+  }
+
+  // v3.8 11.5 — Editor's Note 형식 강제.
+  const user = `[참가자] ${session.name}
+[정체성] ${identityTitle}
+[가치] ${session.topValue} · ${session.valueDefinitions[session.topValue] || ""}
+[비전] ${session.visionLine}
+[첫 걸음] ${session.firstStep}
+
+매거진 STORY 편집장의 아웃트로 노트(Editor's Note)를 써주세요.
+
+[형식 — 반드시 이 구조를 따르세요]
+- 첫 문장: "우리는 묵묵히 자기 빛을 쌓아온 한 사람을 만났다." (또는 자연스러운 변형)
+- 본문: "${pron}의 이야기를 들으며, 우리는 ${pron}가 이미 자기만의 답을 가지고 있음을 깨달았다." 톤의 발견 문장
+- 마지막 문장: "이 한 호가 ${pron}의 다음 여정에 작은 등불이 되기를." 톤의 응원
+
+[원칙]
+- 3~4문장, 각 문장 사이 빈 줄로 구분
+- ${pron}를 3인칭으로
+- "${session.name}님" 같은 경어 호명 금지
+- "잘 어울려요" 같은 평가 대신, 발견의 시선으로
+
+${EDITORIAL_PROSE_CONSTRAINT}`;
+  const r = await ask(user, 400);
+  return r.text.trim();
+}
+
+export async function v3GenerateVisionDirections(input: {
+  name: string;
+  job: string;
+  commonPattern: string;
+  identityName: string;
+  strengthSummary: string;
+  attraction: string;
+  alreadyDoing: string;
+  whyReason: string;
+  growthDirection: string;
+  currentTool: string[];
+  growthTool: string[];
+  contribution: string;
+}): Promise<{ directions: string[] }> {
+  const job = input.job || "직장인";
+  const commonalityCh1 = input.commonPattern || "(미입력)";
+  const identityCh2 = input.identityName || "(미입력)";
+  const strengthCh2 = input.strengthSummary || "(미입력)";
+  const inputAttraction = input.attraction || "(미입력)";
+  const inputMovement = input.alreadyDoing || "";
+  const inputReason = input.whyReason || "(미입력)";
+  const expertiseType = input.growthDirection || "(미입력)";
+  const currentToolText = input.currentTool.length > 0 ? input.currentTool.join(" / ") : "(미입력)";
+  const growthToolText = input.growthTool.length > 0 ? input.growthTool.join(" / ") : "(미입력)";
+  const dream = input.contribution || "(미입력)";
+
+  const user = `참가자가 입력한 답변을 바탕으로, 참가자가 향하고 싶은 미래 방향 문장을 6개 생성합니다.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[입력값]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• 참가자의 현재 직무: ${job}
+• Chapter 1 공통점 답변: ${commonalityCh1}
+  (참가자가 두 경험에서 직접 찾아낸 공통점 — 행동·감정·상황·사람이 담겨있음)
+• Chapter 2 자기정의 문장: ${identityCh2}
+• Chapter 2 강점 패턴: ${strengthCh2}
+• 끌리는 것: ${inputAttraction}
+• 이미 조금 움직이고 있는 것: ${inputMovement || "(없음)"}
+• 그럼에도 향하고 싶은 이유: ${inputReason}
+• 전문성 결합 방식: ${expertiseType}
+  ("전문성 심화" / "전문성 확장" / "전문성 연결" 중 1개)
+• 지금 가장 잘 쓰는 도구: ${currentToolText} (최대 2개)
+• 앞으로 더 키우고 싶은 도구: ${growthToolText} (최대 2개)
+• 꿈: ${dream}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[입력값 활용 규칙]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- {끌리는 것}은 핵심 재료다. 참가자가 끌린다고 말한 구체적 언어를 반드시 2개 이상의 문장에 직접 반영할 것. "새로운 것을 만든다"처럼 추상화하지 말 것.
+- {끌리는 것}이 10자 미만이거나 "모르겠다/없다/그냥" 등 막연한 경우: {향하고 싶은 이유} 중심으로 문장을 구성할 것.
+- {이미 움직이고 있는 것}이 있다면 문장 1(역할 축)과 문장 3(강점 축)에 "이미 그 방향 위에 있음"의 뉘앙스를 담을 것. 없거나 짧다면 무시하고 {끌리는 것} 중심으로 작성할 것.
+- {향하고 싶은 이유}는 동기의 뿌리다. 문장 안에 직접 쓰지는 않되, 그 이유가 느껴지는 방향으로 문장의 결을 맞출 것.
+- {Chapter 1 공통점}에서 핵심 행동 동사를 추출해 문장 1·3에 그 행동의 결이 느껴지도록 작성할 것. 동사를 직접 쓰지 않아도 되지만 그 행동이 담긴 방식으로. 참가자가 쓴 구체적 언어를 살리되 그대로 인용하지는 말 것.
+- {Chapter 2 강점 패턴}은 타인이 인정한 강점이다. 문장 3(강점 축)에 이 패턴이 반영되도록 작성할 것.
+- {Chapter 2 자기정의 문장}은 이 사람이 스스로 정의한 현재 모습이다. 6개 문장이 이 정의와 충돌하지 않게, 특히 문장 6(통합 축)에서 그 결이 자연스럽게 이어지도록 작성할 것.
+- {전문성 결합 방식} 활용: 문장 1·4 중 하나에 반영할 것.
+  "전문성 심화" → 지금 하는 일의 본질을 더 깊이 파고드는 뉘앙스
+  "전문성 확장" → 지금 전문성과 다른 새로운 영역을 병행하는 뉘앙스
+  "전문성 연결" → 이미 가진 것들을 새로운 방식으로 연결하는 뉘앙스
+- {지금 도구}·{키우고 싶은 도구} 활용: 문장 2·3 중 하나에 반영할 것. {지금 도구}가 기반, {키우고 싶은 도구}가 방향. 1개 선택 시 그 도구가 명확히 드러나게. 2개 선택 시 더 핵심적인 것을 중심으로, 나머지는 결로 배어있게. 4개 도구를 한 문장에 모두 나열하지 말 것. 두 묶음이 완전히 겹치면 그 도구를 더 깊이·넓게 쓰는 뉘앙스, 일부 겹치면 겹치는 도구를 강점·다른 도구를 확장 방향으로, 완전히 다르면 {지금 도구}가 기반·{키우고 싶은 도구}가 방향이 되는 문장으로.
+- {꿈}은 문장 5·6에 반영할 것. 꿈을 직접 언급하지 않되, 그 꿈을 향한 변화와 대상이 느껴지도록.
+- {직무}는 현재 맥락이다. 직무 언어를 자연스럽게 녹이되, {전문성 결합 방식}과 {직무}의 연결이 자연스럽지 않으면 "지금까지 쌓아온 것을 바탕으로" 축으로 대체할 것.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[생성 규칙]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 반드시 6개를 생성할 것.
+2. 6개는 각각 다른 축을 건드린다:
+   - 문장 1 — 역할 축: {끌리는 것}의 구체적 언어 + {전문성 결합 방식}의 방향 + {Chapter 1 공통점}의 핵심 행동의 결을 녹여 이 사람이 하는 일 자체를 정의. {이미 움직이고 있는 것}이 있으면 "이미 그 방향 위에 있음" 뉘앙스. 형식: "___을 ___하는 사람"
+   - 문장 2 — 방법 축: {지금 도구}가 기반, {키우고 싶은 도구}가 방향이 되는 방식으로 이 사람만의 일하는 방식을 정의. {끌리는 것}을 직접 쓰지 않고 방식·태도에만 집중. 형식: "___을 바탕으로 ___하는 사람" 또는 "___방식으로 ___하는 사람"
+   - 문장 3 — 강점 축: {Chapter 2 강점 패턴} + {지금 도구} 중 가장 강한 것 + {Chapter 1 공통점}의 핵심 행동의 결을 결합해 지금 이미 가진 강점이 드러나는 문장. {이미 움직이고 있는 것}이 있으면 반영. 형식: "___을 통해 ___하는 사람"
+   - 문장 4 — 성장 축: {전문성 결합 방식} + {키우고 싶은 도구} 중 가장 키우고 싶은 것을 결합해 앞으로 쌓아가고 싶은 방향을 정의. {끌리는 것}의 언어를 중심으로 지금보다 더 넓거나 깊어진 역할로. 형식: "___을 쌓아 ___하는 사람" 또는 "___을 넘어 ___하는 사람"
+   - 문장 5 — 영향 축: {꿈}의 언어를 바탕으로 이 사람의 일이 닿는 대상과 변화를 정의. {끌리는 것}이나 {직무}를 직접 쓰지 않고 영향력의 방향과 대상에만 집중. 형식: "___에게 ___을 만드는 사람" 또는 "___가 ___할 수 있도록 ___하는 사람"
+   - 문장 6 — 통합 축: {끌리는 것} + {꿈} + {Chapter 2 자기정의 문장}의 결 + {향하고 싶은 이유}의 결을 하나로 엮어 현재와 미래를 하나의 서사로 담은 문장. 형식: "___하면서, 언젠가 ___하는 사람" 또는 "___을 통해, ___에 닿고 싶은 사람"
+3. 6개 문장 전체에서 같은 단어가 2번 이상 반복되면 안 된다.
+4. 문장 길이 — 문장 1~5: 15~40자, 문장 6: 15~50자.
+5. 추상적 단어 사용 금지: 성장하는, 발전하는, 나아가는, 더 나은, 기여하는.
+6. 6개 중 {끌리는 것}의 구체적 언어가 하나도 없는 문장이 4개 이상이면, 가장 범용적으로 느껴지는 문장부터 교체할 것.
+7. JSON 형식으로만 응답할 것. 다른 말은 절대 붙이지 말 것.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[출력 형식 — JSON만]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{"directions":[{"id":1,"type":"role","text":"문장1"},{"id":2,"type":"method","text":"문장2"},{"id":3,"type":"strength","text":"문장3"},{"id":4,"type":"growth","text":"문장4"},{"id":5,"type":"impact","text":"문장5"},{"id":6,"type":"integration","text":"문장6"}]}`;
+
+  const r = await ask(user, 1200);
+  const text = r.text.trim();
+  // Match the outermost JSON object
+  const m = text.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error("v3GenerateVisionDirections: no JSON in response");
+  const obj = JSON.parse(m[0]) as {
+    directions?: Array<{ id?: number; type?: string; text?: string }>;
+  };
+  const directions = (obj.directions ?? [])
+    .map((d) => (d.text ?? "").trim())
+    .filter(Boolean);
+  if (directions.length < 6) {
+    throw new Error(
+      `v3GenerateVisionDirections: expected 6 directions, got ${directions.length}`,
+    );
+  }
+  const six = directions.slice(0, 6);
+  // Rule 4: sentences 1-5 cap at 40 chars, sentence 6 at 50. Over the cap →
+  // throw so realLLM falls back to the 6 default sentences (stub).
+  six.forEach((s, i) => {
+    const cap = i === 5 ? 50 : 40;
+    if (s.length > cap) {
+      throw new Error(
+        `v3GenerateVisionDirections: sentence ${i + 1} is ${s.length} chars (cap ${cap})`,
+      );
+    }
+  });
+  return { directions: six };
+}
+
+export async function v3GenerateTimeHorizon(input: {
+  name: string;
+  job: string;
+  visionLine: string;
+  attraction: string;
+  contribution: string;
+}): Promise<{ horizon: string[] }> {
+  const job = input.job || "직장인";
+  const visionLine = input.visionLine || "(미입력)";
+  const attraction = input.attraction || "(미입력)";
+  const dream = input.contribution || "(미입력)";
+
+  const user = `참가자가 정한 성장 방향을 시간 위에 펼친 '시간 지평' 문장 3개를 생성합니다.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[입력값]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• 이름: ${input.name || "참가자"}
+• 직무: ${job}
+• 나의 성장 방향 (참가자가 직접 정한 문장): ${visionLine}
+• 끌리는 것: ${attraction}
+• 꿈: ${dream}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[생성 규칙]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- {나의 성장 방향}을 시간 축으로 펼친다. 세 문장은 같은 방향의 1년 / 3년 / 언젠가 모습이어야 한다.
+- "1년 안에, …" — 구체적이고 당장 시작 가능한 수준. {끌리는 것}의 구체적 언어를 살린 첫 행동.
+- "3년 후에, …" — 어느 정도 쌓인 뒤 도달할 수 있는 수준. 역할·전문성이 자리잡은 모습.
+- "언젠가, …" — 꿈에 가장 가까운 수준. {꿈}의 언어가 느껴지는 모습.
+- 각 문장은 반드시 "1년 안에, " / "3년 후에, " / "언젠가, " 로 시작할 것.
+- 각 문장 15~50자. 추상어 금지 (성장하는, 발전하는, 나아가는, 더 나은, 기여하는).
+- 세 문장 전체에서 같은 단어가 2번 이상 반복되면 안 된다.
+- JSON 형식으로만 응답할 것. 다른 말은 절대 붙이지 말 것.
+
+[출력 형식 — JSON만]
+{"horizon":["1년 안에, ...","3년 후에, ...","언젠가, ..."]}`;
+
+  const r = await ask(user, 500);
+  const text = r.text.trim();
+  const m = text.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error("v3GenerateTimeHorizon: no JSON in response");
+  const obj = JSON.parse(m[0]) as { horizon?: string[] };
+  const horizon = (obj.horizon ?? []).map((s) => s.trim()).filter(Boolean);
+  if (horizon.length < 3) {
+    throw new Error(
+      `v3GenerateTimeHorizon: expected 3 horizon lines, got ${horizon.length}`,
+    );
+  }
+  // Ensure the time prefixes are present (the LLM occasionally drops them).
+  const PREFIXES = ["1년 안에,", "3년 후에,", "언젠가,"];
+  const normalized = horizon.slice(0, 3).map((s, i) => {
+    const prefix = PREFIXES[i];
+    return s.trimStart().startsWith(prefix.slice(0, 3)) ? s : `${prefix} ${s}`;
+  });
+  return { horizon: normalized };
+}
+
+export async function v3WriteCoverHeadline(input: { session: V3Session }): Promise<string> {
+  const { session } = input;
+  const identityTitle = extractIdentityTitle(session.identityName);
+  if (!session.identityName && !session.visionLine) {
+    return `${session.name}님의 이야기`;
+  }
+  const user = `[정체성] ${identityTitle || "—"}
+[비전 한 줄] ${session.visionLine || "—"}
+
+매거진 STORY 표지 헤드라인을 한 줄로 만들어주세요.
+- 18자 이내, 시적이지만 구체적
+- 따옴표 없이 한 줄만 출력`;
+  const r = await ask(user, 100);
+  return r.text.trim();
+}

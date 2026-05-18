@@ -262,7 +262,7 @@ export const CH1_SCENES: SceneSpec[] = [
     kind: "ambience",
     owl: "closingBook",
     timeOfDay: "starsRising",
-    bgImage: "/vision_express/common/Chapter_01-2.webp",
+    bgImage: "/vision_express/common/Chapter02-3.webp",
     bgm: "dragon-studio-light-switch-on-382714.mp3",
     narration: "창밖이 어둑해진다.",
     lines: [

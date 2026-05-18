@@ -56,7 +56,7 @@ export const personaConcept: Concept = {
     bgStation: `${CMN}/bg_station.webp`,
     bgTrain: `${CMN}/bg_train.webp`,
     nameTicket: `${CMN}/name_ticket.webp`,
-    visionTicket: `${CMN}/vision_ticket2.webp`,
+    visionTicket: `${CMN}/vision_ticket_new.webp`,
     brandingBookEffect: "/vision_express/brandingbook_effect.png",
   },
 };

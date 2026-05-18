@@ -167,6 +167,7 @@ export const CH1_SCENES: SceneSpec[] = [
     owl: "focusedWriting",
     owlPool: INTERVIEW_OWL_POOL,
     timeOfDay: "sunset",
+    narration: "편집장이 두 이야기를 나란히 놓고 잠시 들여다본다. 그리고 천천히 입을 연다.",
     lines: ["두 이야기를 가만히 들어보니, 이렇게 읽혀요."],
     next: "1-5",
   },
@@ -176,7 +177,6 @@ export const CH1_SCENES: SceneSpec[] = [
     kind: "ch1Keyword",
     owl: "scrutinizing",
     timeOfDay: "sunset",
-    narration: "편집장이 두 이야기를 나란히 놓고 잠시 들여다본다. 그리고 천천히 입을 연다.",
     next: "1-5b",
   },
   {
@@ -257,14 +257,25 @@ export const CH1_SCENES: SceneSpec[] = [
     next: "1-6",
   },
   {
+    // 조명 꺼진 객실 — "창밖이 어둑해진다" 멘트
     id: "1-6",
+    chapter: 1,
+    kind: "ambience",
+    owl: "closingBook",
+    timeOfDay: "starsRising",
+    bgImage: "/vision_express/common/Chapter02-1.webp",
+    narration: "창밖이 어둑해진다.",
+    next: "1-6b",
+  },
+  {
+    // 스위치 효과음과 함께 조명이 켜진 객실로 전환
+    id: "1-6b",
     chapter: 1,
     kind: "ambience",
     owl: "closingBook",
     timeOfDay: "starsRising",
     bgImage: "/vision_express/common/Chapter02-3.webp",
     bgm: "dragon-studio-light-switch-on-382714.mp3",
-    narration: "창밖이 어둑해진다.",
     lines: [
       "객실 램프를 켜둘게요.",
     ],

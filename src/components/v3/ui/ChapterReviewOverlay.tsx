@@ -15,9 +15,21 @@ export function ChapterReviewOverlay({
   thread: ChapterThread;
   onClose: () => void;
 }) {
-  // Only entries that actually have content — empty answer fields are skipped
-  // (mirrors the admin page's `entry.text?.trim()` filter).
-  const entries = thread.entries.filter((e) => e.text && e.text.trim().length > 0);
+  // Filter strategy:
+  // 1) Drop any entry with no text.
+  // 2) Drop "question" entries whose following answer hasn't been answered yet,
+  //    so questions don't appear before the participant has actually reached
+  //    them.
+  const rawEntries = thread.entries;
+  const entries = rawEntries.filter((e, i) => {
+    if (!e.text || e.text.trim().length === 0) return false;
+    if (e.tone === "question") {
+      const next = rawEntries[i + 1];
+      const answered = next && next.text && next.text.trim().length > 0;
+      if (!answered) return false;
+    }
+    return true;
+  });
 
   return (
     <motion.div
@@ -29,7 +41,7 @@ export function ChapterReviewOverlay({
       onClick={onClose}
     >
       <motion.div
-        className="relative flex max-h-[80vh] w-full max-w-[560px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf] p-7 shadow-2xl"
+        className="relative flex max-h-[80vh] w-full max-w-[560px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf] px-7 pb-7 pt-[76px] shadow-2xl"
         style={{ fontFamily: "var(--font-ridi-batang)" }}
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -37,7 +49,7 @@ export function ChapterReviewOverlay({
         transition={{ duration: 0.28 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <p className="text-[12px] font-semibold uppercase tracking-[0.22em] text-[#9b8768]">
               {thread.chapter}
@@ -58,17 +70,28 @@ export function ChapterReviewOverlay({
           <p className="text-[14px] italic text-[#8b7050]">아직 이 챕터의 답변이 없어요.</p>
         ) : (
           <div className="space-y-3">
-            {entries.map((entry, i) => (
-              <div
-                key={i}
-                className="rounded-md border border-[#b99b6b]/30 bg-white/45 px-4 py-3"
-              >
-                <p className="text-[12px] tracking-wide text-[#8b7050]">{entry.label}</p>
-                <p className="mt-1.5 whitespace-pre-wrap text-[14px] leading-[1.7] text-[#3d2414]">
-                  {entry.text}
-                </p>
-              </div>
-            ))}
+            {entries.map((entry, i) => {
+              // tone-based styling — 질문/답변/AI 결과를 시각적으로 구별
+              const isQuestion = entry.tone === "question";
+              const isResult = entry.tone === "result";
+              const boxClass = isQuestion
+                ? "rounded-md border-l-[3px] border-[#b99b6b] bg-transparent px-4 py-2"
+                : isResult
+                ? "rounded-md border border-[#d7bd83]/40 bg-[#ede1c6]/40 px-4 py-3"
+                : "rounded-md border border-[#b99b6b]/30 bg-white/55 px-4 py-3";
+              const labelClass = isQuestion
+                ? "text-[11px] uppercase tracking-[0.18em] text-[#9b8768]"
+                : "text-[12px] tracking-wide text-[#8b7050]";
+              const textClass = isQuestion
+                ? "mt-1 whitespace-pre-wrap text-[14px] italic leading-[1.6] text-[#6b5337]"
+                : "mt-1.5 whitespace-pre-wrap text-[14px] leading-[1.7] text-[#3d2414]";
+              return (
+                <div key={i} className={boxClass}>
+                  <p className={labelClass}>{entry.label}</p>
+                  <p className={textClass}>{entry.text}</p>
+                </div>
+              );
+            })}
           </div>
         )}
       </motion.div>

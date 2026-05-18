@@ -50,8 +50,8 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
 
   return [
     {
-      chapter: "Chapter 00",
-      title: "탑승 전",
+      chapter: "Chapter 0",
+      title: "VISION EXPRESS 탑승을 환영합니다",
       entries: [
         { label: "질문", tone: "question", text: "이 열차에 오르기 전, 마음에 남아 있는 것이 있나요?" },
         { label: "참가자 답변", tone: "answer", text: s.freeContext },
@@ -59,8 +59,8 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
       ],
     },
     {
-      chapter: "Chapter 01",
-      title: "몰입의 순간",
+      chapter: "Chapter 1",
+      title: "내가 지나온 길",
       entries: [
         { label: "질문", tone: "question", text: "시간 가는 줄 모르고 빠져들었던 순간은?" },
         { label: "첫 번째 경험", tone: "answer", text: s.flowExperience1 },
@@ -71,7 +71,7 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
       ],
     },
     {
-      chapter: "Chapter 02",
+      chapter: "Chapter 2",
       title: "나는 누구인가",
       entries: [
         { label: "선택한 가치 카드", tone: "answer", text: s.selectedValues?.join(", ") },
@@ -95,8 +95,8 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
       ],
     },
     {
-      chapter: "Chapter 03",
-      title: "향하고 싶은 곳",
+      chapter: "Chapter 3",
+      title: "내가 그리는 미래",
       entries: [
         { label: "끌리는 것", tone: "answer", text: s.attraction },
         { label: "이미 하고 있는 것", tone: "answer", text: s.alreadyDoing },
@@ -112,8 +112,8 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
       ],
     },
     {
-      chapter: "Chapter 04",
-      title: "첫 걸음",
+      chapter: "Chapter 4",
+      title: "내일로 향하는 한 걸음",
       entries: [
         { label: "질문", tone: "question", text: "내일부터 시작할 수 있는 가장 작은 한 걸음은?" },
         { label: "내일부터의 첫 걸음", tone: "answer", text: s.firstStep },

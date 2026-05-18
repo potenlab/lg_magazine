@@ -274,6 +274,32 @@ function V3Inner() {
     setBGM(spec?.bgm, spec?.chapter as number);
   }, [spec?.bgm, spec?.chapter, setBGM]);
 
+  // Train loop ambience — runs softly from 0-2 (boarding done) through ch4,
+  // stops when we reach the closing scenes (열차 도착 후 내림).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const audio = await import("@/lib/v3/audio");
+      const idx = SCENE_ORDER.indexOf(activeId);
+      const trainStartIdx = SCENE_ORDER.indexOf("0-2");
+      const closingStartIdx = SCENE_ORDER.indexOf("C-1");
+      const inTrain =
+        idx >= 0 &&
+        trainStartIdx >= 0 &&
+        idx >= trainStartIdx &&
+        (closingStartIdx < 0 || idx < closingStartIdx);
+      if (cancelled) return;
+      if (inTrain) {
+        audio.startLoop("trainLoop", 0.25);
+      } else {
+        audio.stopLoop("trainLoop");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeId]);
+
   if (!hydrated) {
     return <main className="min-h-screen bg-[#160d08]" />;
   }
@@ -438,7 +464,7 @@ function V3Inner() {
                     // dialog on-screen; content beyond it scrolls inside.
                     ? "relative mx-auto flex max-h-[calc(100vh_-_220px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[14px]"
                     : INPUT_KINDS.has(spec.kind) && stage === "content"
-                      ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[360px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-[84px] shadow-2xl text-[14px]"
+                      ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[360px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-[108px] shadow-2xl text-[14px]"
                       : "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-7 shadow-2xl"
               }
               style={{ fontFamily: "var(--font-ridi-batang)" }}

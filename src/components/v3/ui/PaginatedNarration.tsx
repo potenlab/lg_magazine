@@ -87,8 +87,12 @@ export function PaginatedNarration({
       queueMicrotask(() => setCanAdvance(false));
       return;
     }
-    onSettled?.(isLastPage);
-    const t = setTimeout(() => setCanAdvance(true), POST_SETTLE_DWELL_MS);
+    // Wait for fade-in + dwell before firing onSettled so the parent's
+    // input/button doesn't appear while the last line is still animating.
+    const t = setTimeout(() => {
+      onSettled?.(isLastPage);
+      setCanAdvance(true);
+    }, POST_SETTLE_DWELL_MS);
     return () => clearTimeout(t);
   }, [shown, pageLines.length, isLastPage, onSettled, POST_SETTLE_DWELL_MS]);
 

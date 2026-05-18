@@ -32,6 +32,12 @@ export type AudioName = keyof typeof AUDIO_FILES;
 
 const elements: Partial<Record<AudioName, HTMLAudioElement>> = {};
 
+// Per-clip last-played timestamp. Used to enforce "play only once" within a
+// short window — guards against React strict-mode double-fire and rapid
+// re-renders that would otherwise replay the same horn/chime/switch SFX.
+const lastPlayedAt: Partial<Record<AudioName, number>> = {};
+const PLAY_COOLDOWN_MS = 1500;
+
 function get(name: AudioName): HTMLAudioElement | null {
   if (typeof window === "undefined") return null;
   if (!elements[name]) {
@@ -65,9 +71,14 @@ export function playOnce(name: AudioName, volume = DEFAULT_SFX_VOL): void {
   if (!el) return;
   // 글로벌 볼륨이 0이면 (음소거) 재생 자체를 스킵
   if (_volumeMultiplier === 0) return;
-  // 이미 재생 중이면 무시 - React의 이중 useEffect 호출이나
-  // 리렌더에 의해 효과음이 중복 재생되는 것을 방지
+  // 이미 재생 중이면 무시
   if (!el.paused && !el.ended) return;
+  // Cooldown: 같은 클립을 짧은 시간 안에 다시 호출하면 무시.
+  // (StrictMode 이중 mount / fast refresh / 빠른 리렌더로 인한 중복 재생 방지)
+  const now = Date.now();
+  const last = lastPlayedAt[name] ?? 0;
+  if (now - last < PLAY_COOLDOWN_MS) return;
+  lastPlayedAt[name] = now;
   el.loop = false;
   el.volume = volume * _volumeMultiplier;
   try {

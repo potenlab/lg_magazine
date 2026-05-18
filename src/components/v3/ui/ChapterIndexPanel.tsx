@@ -62,7 +62,7 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
             />
             {/* Slide-in panel from the left */}
             <motion.aside
-              className="fixed left-0 top-0 z-[55] flex h-full w-[280px] flex-col gap-1 overflow-y-auto border-r border-[#d7bd83]/25 bg-[#1c120a]/95 px-4 py-6 backdrop-blur"
+              className="fixed left-0 top-0 z-[55] flex h-full w-[280px] flex-col gap-1 overflow-y-auto border-r border-[#d7bd83]/25 bg-[#1c120a]/95 px-4 pb-6 pt-[72px] backdrop-blur"
               style={{ fontFamily: "var(--font-ridi-batang)" }}
               initial={{ x: -300 }}
               animate={{ x: 0 }}
@@ -86,7 +86,7 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
                     }`}
                   >
                     <span className="text-[12px] uppercase tracking-[0.16em] text-[#9b8768]">
-                      {thread.chapter.replace("Chapter ", "CH ")}
+                      {thread.chapter}
                       {isCurrent ? " · 진행 중" : ""}
                     </span>
                     <span className="text-[14px] text-[#e9d5a8]">{thread.title}</span>

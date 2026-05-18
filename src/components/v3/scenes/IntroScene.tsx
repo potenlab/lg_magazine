@@ -67,10 +67,10 @@ const LETTER_PAGES: LetterLine[][] = [
   [
     { text: "이 열차가 밤의 장막을 품고 달려 아침을 맞이하는 동안,", delay: 0.2 },
     { text: "당신을 위한 프라이빗 객실에서", delay: 0.8 },
-    { text: "우리는 함께 단 한 호의 매거진을 만들 것입니다.", delay: 1.4 },
+    { text: "우리는 함께 단 한 호의 매거진을 만들 것입니다.", delay: 1.4, h: [[7, 17]] },
     { text: "", delay: 0 },
-    { text: "이곳의 모든 기록은 외부에 열리지 않습니다.", delay: 2.2, h: [[11, 23]] },
-    { text: "안심하고, 지나온 여정과 앞으로의 시도를 함께 펼쳐보세요.", delay: 2.8, h: [[6, 31]] },
+    { text: "이곳의 모든 기록은 외부에 열리지 않습니다.", delay: 2.2, h: [[4, 23]] },
+    { text: "안심하고, 지나온 여정과 앞으로의 시도를 함께 펼쳐보세요.", delay: 2.8 },
     { text: "", delay: 0 },
     { text: "오늘 밤, 그 주인공은 바로 당신입니다.", delay: 3.8, h: [[6, 21]] },
   ],
@@ -551,7 +551,7 @@ export function IntroScene({
             <div className="relative z-10 flex min-h-full flex-col items-center px-4 pb-8 pt-24">
               <motion.div
                 className="relative w-full"
-                style={{ maxWidth: 480, filter: "drop-shadow(0 10px 32px rgba(0,0,0,0.22))" }}
+                style={{ maxWidth: 480, marginTop: 40, filter: "drop-shadow(0 10px 32px rgba(0,0,0,0.22))" }}
                 initial={{ y: 40, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.7 }}
@@ -795,89 +795,61 @@ export function IntroScene({
               {/* Ticket — v1 image + overlay on the right card area */}
               <motion.div
                 className="relative"
-                style={{ width: "min(420px, 88vw)", filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.4))" }}
+                style={{ width: "min(672px, 95vw)", filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.4))" }}
                 initial={{ y: 40, opacity: 0, rotateX: 15 }}
                 animate={{ y: 0, opacity: 1, rotateX: 0 }}
                 transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
               >
-                <Image src={VISION_TICKET} alt="" width={420} height={560} className="h-auto w-full" />
+                <Image src={VISION_TICKET} alt="" width={672} height={896} className="h-auto w-full" />
 
-                {/* Destination — TO as small grey label (matches Date/Type label style),
-                    MAGAZINE STORY as bold wine-red value below. */}
-                <div
-                  className="absolute"
-                  style={{
-                    top: "37%",
-                    right: "15%",
-                    width: "34%",
-                  }}
-                >
-                  <p
-                    className="text-[12px] uppercase tracking-[0.1em]"
-                    style={{ color: "#8a7a68", fontFamily: "var(--font-song-myung)" }}
-                  >
-                    To
-                  </p>
-                  <p
-                    style={{
-                      fontFamily: "var(--font-pretendard), 'Pretendard', sans-serif",
-                      fontSize: "clamp(14px, 2.5vw, 16px)",
-                      fontWeight: 800,
-                      letterSpacing: "-0.01em",
-                      color: "#582930",
-                      lineHeight: 1.1,
-                      marginTop: 2,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    MAGAZINE STORY
-                  </p>
-                </div>
-
-                {/* Content overlay — right card area only */}
-                <div
-                  className="absolute flex flex-col"
-                  style={{
-                    top: "49%",
-                    right: "6%",
-                    bottom: "8%",
-                    left: "52%",
-                    fontFamily: "var(--font-song-myung)",
-                  }}
-                >
-                  <div className="flex flex-col" style={{ gap: 8 }}>
-                    {/* Passenger */}
-                    <div>
-                      <p className="text-[12px] uppercase tracking-[0.1em]" style={{ color: "#8a7a68" }}>Passenger</p>
-                      <p className="text-[14px] md:text-[15px]" style={{ color: "#3d2414", marginTop: 1 }}>{session.name || name || "—"}</p>
-                    </div>
-                    {/* Type / Journey — TYPE narrower so JOURNEY sits closer to left edge */}
-                    <div className="flex" style={{ gap: 6 }}>
-                      <div style={{ flex: "0 0 38%" }}>
-                        <p className="text-[12px] uppercase tracking-[0.1em]" style={{ color: "#8a7a68" }}>Type</p>
-                        <p className="text-[12px] md:text-[14px]" style={{ color: "#3d2414", marginTop: 1 }}>편도</p>
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <p className="text-[12px] uppercase tracking-[0.1em]" style={{ color: "#8a7a68" }}>Journey</p>
-                        <p className="text-[12px] md:text-[14px]" style={{ color: "#3d2414", marginTop: 1 }}>{session.job || finalJob || "—"}</p>
-                      </div>
-                    </div>
-                    {/* Date */}
-                    <div>
-                      <p className="text-[12px] uppercase tracking-[0.1em]" style={{ color: "#8a7a68" }}>Date</p>
-                      <p className="text-[12px] md:text-[14px]" style={{ color: "#3d2414", marginTop: 1 }}>
-                        {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" })}
+                {/* Vision ticket overlays — new ticket image already has all labels
+                    (Destination, Type 편도, Journey, Passenger, Date, Booking) baked in.
+                    We only overlay user values at the empty spots shown in
+                    vision_ticket_new_sample.png. */}
+                {(() => {
+                  // Match the "편도" baked into the ticket image: wine/dark-red tone + similar size.
+                  const valueStyle = {
+                    color: "#582930",
+                    fontFamily: "var(--font-ridi-batang)",
+                    fontSize: "clamp(12px, 1.7vw, 14px)",
+                    whiteSpace: "nowrap" as const,
+                    margin: 0,
+                    lineHeight: 1,
+                    transform: "translateY(-50%)",
+                  };
+                  const today = new Date();
+                  const dateStr = today.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
+                  const bookingNo = `NO. ${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+                  return (
+                    <>
+                      {/* Journey value — next to "Journey :" label (right column of main ticket) */}
+                      <p className="absolute" style={{ ...valueStyle, top: "57%", left: "62%" }}>
+                        {session.job || finalJob || "—"}
                       </p>
-                    </div>
-                    {/* Booking Ref — also serves as 티켓번호 (TIME field removed) */}
-                    <div style={{ marginTop: 6 }}>
-                      <p className="text-[12px] uppercase tracking-[0.1em]" style={{ color: "#8a7a68" }}>Booking Ref</p>
-                      <p className="text-[12px] md:text-[14px]" style={{ color: "#3d2414", marginTop: 1 }}>
-                        {`NO. ${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}${String(new Date().getDate()).padStart(2, "0")}`}
+                      {/* Passenger value — next to "Passenger :" label */}
+                      <p className="absolute" style={{ ...valueStyle, top: "66%", left: "45%" }}>
+                        {session.name || name || "—"}
                       </p>
-                    </div>
-                  </div>
-                </div>
+                      {/* Date value — next to "Date :" label */}
+                      <p className="absolute" style={{ ...valueStyle, top: "78%", left: "40%" }}>
+                        {dateStr}
+                      </p>
+                      {/* Booking Ref — right stub, rotated 90° to match the printed label */}
+                      <p
+                        className="absolute"
+                        style={{
+                          ...valueStyle,
+                          top: "50%",
+                          right: "9%",
+                          transform: "translateY(-50%) rotate(90deg)",
+                          transformOrigin: "center",
+                        }}
+                      >
+                        {bookingNo}
+                      </p>
+                    </>
+                  );
+                })()}
               </motion.div>
 
               <motion.p

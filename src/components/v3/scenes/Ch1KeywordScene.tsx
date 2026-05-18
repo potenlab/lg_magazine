@@ -22,10 +22,12 @@ const BEAT_ORDER: Beat[] = ["narration1", "mirror"];
 export function Ch1KeywordScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance: (n: SceneId) => void }) {
   const { session, patch } = useV3Session();
   const [mirror, setMirror] = useState(session.ch1PoeticMirror);
-  const [beat, setBeat] = useState<Beat>("narration1");
-  const { setStage } = useContext(DialogStageContext);
-
   const narration = spec.narration ? renderTemplate(spec.narration, session) : undefined;
+  // Skip the narration1 beat entirely if no narration is provided — the
+  // stage-direction line was moved into the preceding 1-4z owlNarration
+  // scene, so this scene now only renders the LLM mirror.
+  const [beat, setBeat] = useState<Beat>(narration ? "narration1" : "mirror");
+  const { setStage } = useContext(DialogStageContext);
 
   // Fire LLM mirror on mount (if not already cached on session).
   useEffect(() => {

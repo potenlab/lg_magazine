@@ -28,9 +28,15 @@ export function AutoFlowText({
     return () => clearTimeout(t);
   }, [shown, displayLines.length]);
 
-  // Notify parent once all lines have appeared (used to gate the manual "다음" hint).
+  // Notify parent once all lines have appeared. Wait for the final line's
+  // fade-in to complete (+ small dwell) so the input/button doesn't appear
+  // while the last sentence is still animating in. Prevents the "인풋만
+  // 먼저 나와있는" feel where the input field beat the question text.
   useEffect(() => {
-    if (shown >= displayLines.length && onSettled) onSettled();
+    if (shown < displayLines.length || !onSettled) return;
+    const SETTLE_DELAY_MS = FADE_DURATION_MS + 250;
+    const t = setTimeout(() => onSettled(), SETTLE_DELAY_MS);
+    return () => clearTimeout(t);
   }, [shown, displayLines.length, onSettled]);
 
   return (

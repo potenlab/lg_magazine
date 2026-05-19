@@ -143,7 +143,7 @@ export function TimeHorizonScene({
       </div>
 
       {/* 버튼 — sticky 하단 고정 (FULL_HEIGHT dialog의 p-7에 맞춰 -mx-7/-mb-7) */}
-      <div className="sticky bottom-0 z-10 -mx-7 -mb-7 mt-1 flex justify-end border-t border-[#d7bd83]/20 bg-[#f6efdf]/90 px-7 py-3 backdrop-blur">
+      <div className="sticky bottom-0 z-10 -mx-7 -mb-7 mt-1 flex justify-end px-7 py-3">
         <StoryButtonV3
           label={spec.buttonLabel ?? "이걸로 할게요"}
           onClick={submit}

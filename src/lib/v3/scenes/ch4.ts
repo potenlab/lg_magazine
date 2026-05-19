@@ -7,7 +7,7 @@ export const CH4_SCENES: SceneSpec[] = [
     chapter: 4,
     kind: "chapterCard",
     timeOfDay: "dawnPink",
-    bgImage: "/vision_express/common/chapter04-1.webp",
+    bgImage: "/vision_express/common/chapter04.webp",
     bgm: "benkirb-shine-10-268906.mp3",
     next: "4-1",
   },

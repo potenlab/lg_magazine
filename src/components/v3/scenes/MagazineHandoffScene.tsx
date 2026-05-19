@@ -158,7 +158,7 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
           -mx-7/-mb-7 + matching px-7 + opaque bg extend this footer to the
           dialog edges (dialog padding is p-7 for FULL_HEIGHT_KINDS). */}
       <div
-        className={`sticky bottom-0 z-10 -mx-7 -mb-7 mt-1 flex justify-end border-t border-[#d7bd83]/20 bg-[#f6efdf]/90 px-7 py-3 backdrop-blur transition-opacity duration-500 ${
+        className={`sticky bottom-0 z-10 -mx-7 -mb-7 mt-1 flex justify-end px-7 py-3 transition-opacity duration-500 ${
           settled ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >

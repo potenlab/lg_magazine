@@ -370,10 +370,34 @@ export const CH3_SCENES: SceneSpec[] = [
     owl: "focusedWriting",
     timeOfDay: "starsFull",
     bgImage: BG_ROOM,
-    next: "3-10b",
+    next: "3-10c",
+  },
+  {
+    // [신규] 매거진 카드 반향을 본 뒤 본인 언어로 성장 방향을 적는 단계.
+    // 기존 visionSelect의 textarea 역할을 분리해서 가져왔다.
+    id: "3-10c",
+    chapter: 3,
+    kind: "question",
+    owl: "focusedWriting",
+    owlPool: INTERVIEW_OWL_POOL,
+    timeOfDay: "starsFull",
+    bgImage: BG_ROOM,
+    lines: [
+      "방금 함께 본 매거진을 참고해서 — {name}님은 어떤 방향으로 나아가고 싶은 사람인가요?",
+      "한 문장으로 {name}님만의 언어로 적어주세요.",
+    ],
+    editorNote: "매거진 카드의 표현을 가져와도 좋고, 합치거나 다시 써도 좋아요.",
+    inputHint: "{name}님은 ___한 사람",
+    saveTo: "visionLine",
+    buttonLabel: "이걸로 할게요",
+    next: "3-11",
   },
 
-  // ── [18p] 시간 지평 ───────────────────────────────────────
+  /*
+  // ── [숨김] 3-10b 시간 지평 — visionLine 입력 단계가 함께 사라져서
+  // (3-10이 매거진 카드로 바뀌며 textarea가 없어졌음) timeHorizon이 빈
+  // visionLine 위에서 동작하던 문제를 피하기 위해 제거.
+  // 복원하려면 위 3-10.next를 "3-10b"로 되돌리고 아래 객체 주석 풀기.
   {
     id: "3-10b",
     chapter: 3,
@@ -384,6 +408,7 @@ export const CH3_SCENES: SceneSpec[] = [
     buttonLabel: "이걸로 할게요",
     next: "3-11",
   },
+  */
 
   // ── 비전 확인 내레이션 ─────────────────────────────────────
   {

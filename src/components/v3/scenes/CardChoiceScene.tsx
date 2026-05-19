@@ -90,11 +90,11 @@ export function CardChoiceScene({
                 </span>
 
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[15px] font-semibold leading-snug">
+                  <span className="text-[16px] font-semibold leading-snug">
                     {c.label}
                   </span>
                   {c.description && (
-                    <span className="text-[14px] leading-snug text-[#6b5337]">
+                    <span className="text-[16px] leading-snug text-[#6b5337]">
                       {c.description}
                     </span>
                   )}
@@ -113,7 +113,7 @@ export function CardChoiceScene({
           <button
             type="button"
             onClick={onPrev}
-            className="flex h-[44px] items-center italic text-[14px] text-[#8b7050] transition hover:text-[#3d2414]"
+            className="flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
           >
             이전
           </button>
@@ -124,7 +124,7 @@ export function CardChoiceScene({
           type="button"
           onClick={confirm}
           disabled={selected === null}
-          className={`rounded-md bg-[#3d2414] px-6 py-3 text-[14px] text-[#f5ead6] transition hover:bg-[#5a3520] active:scale-95 ${
+          className={`rounded-md bg-[#3d2414] px-6 py-3 text-[16px] text-[#f5ead6] transition hover:bg-[#5a3520] active:scale-95 ${
             selected === null ? "pointer-events-none opacity-0" : "opacity-100"
           }`}
         >

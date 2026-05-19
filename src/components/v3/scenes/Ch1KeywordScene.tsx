@@ -86,7 +86,7 @@ export function Ch1KeywordScene({ spec, onAdvance }: { spec: SceneSpec; onAdvanc
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
-              className="text-[14px] font-bold leading-[1.6] text-[#3d2414] md:text-[15px]"
+              className="text-[16px] font-bold leading-[1.6] text-[#3d2414] md:text-[16px]"
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             >
               <EditorialInline text={mirror} />
@@ -97,7 +97,7 @@ export function Ch1KeywordScene({ spec, onAdvance }: { spec: SceneSpec; onAdvanc
         )}
       </div>
 
-      <div className="mt-auto flex justify-end text-[14px] text-[#8b7050]">
+      <div className="mt-auto flex justify-end text-[16px] text-[#8b7050]">
         <span className={`italic transition-opacity ${canAdvance ? "opacity-100" : "opacity-0"}`}>
           다음
         </span>

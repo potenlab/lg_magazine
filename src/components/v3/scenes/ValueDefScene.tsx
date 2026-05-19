@@ -54,7 +54,7 @@ export function ValueDefScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
         {settled && (
           <>
             {isMulti && !hasDragged && (
-              <div className="flex items-center justify-center gap-2 text-[12px] text-[#8b7050]">
+              <div className="flex items-center justify-center gap-2 text-[16px] text-[#8b7050]">
                 <motion.span
                   animate={{ x: [-3, 3, -3, 0] }}
                   transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
@@ -66,7 +66,7 @@ export function ValueDefScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
               </div>
             )}
             {!isMulti && (
-              <p className="text-center text-[12px] italic text-[#8b7050]">
+              <p className="text-center text-[16px] italic text-[#8b7050]">
                 선택하신 단어가 {session.name}님의 1순위 가치예요.
               </p>
             )}
@@ -124,7 +124,7 @@ export function ValueDefScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
                       {/* drag handle row */}
                       {isMulti && (
                         <span
-                          className={`text-[14px] leading-none ${
+                          className={`text-[16px] leading-none ${
                             isTop ? "text-[#d4a54a]" : "text-[#b99b6b]"
                           }`}
                           aria-hidden
@@ -134,7 +134,7 @@ export function ValueDefScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
                       )}
                       {cat && (
                         <span
-                          className={`text-[12px] tracking-wide ${
+                          className={`text-[16px] tracking-wide ${
                             isTop ? "text-[#f5ead6]/75" : "text-[#8b7050]"
                           }`}
                         >
@@ -142,12 +142,12 @@ export function ValueDefScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
                           {cat.label}
                         </span>
                       )}
-                      <span className="text-[16px] font-medium md:text-[17px]">{v}</span>
+                      <span className="text-[18px] font-medium md:text-[18px]">{v}</span>
                     </div>
 
                     {/* rank badge */}
                     <span
-                      className={`absolute -top-2 left-1/2 -translate-x-1/2 rounded-full px-2.5 py-0.5 text-[12px] font-medium tracking-wide shadow-sm ${
+                      className={`absolute -top-2 left-1/2 -translate-x-1/2 rounded-full px-2.5 py-0.5 text-[16px] font-medium tracking-wide shadow-sm ${
                         isTop
                           ? "bg-[#d4a54a] text-[#3d2414]"
                           : "bg-white text-[#5a4a38] ring-1 ring-[#b99b6b]/40"

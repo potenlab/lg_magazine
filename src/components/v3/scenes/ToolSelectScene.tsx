@@ -84,7 +84,7 @@ export function ToolSelectScene({
 
           {spec.editorNote && (
             <p
-              className="border-l-2 border-[#b99b6b]/50 pl-3 text-[14px] italic leading-[1.6] text-[#8b7050]"
+              className="border-l-2 border-[#b99b6b]/50 pl-3 text-[16px] italic leading-[1.6] text-[#8b7050]"
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             >
               편집장의 한마디 — {renderTemplate(spec.editorNote, session)}
@@ -104,7 +104,7 @@ export function ToolSelectScene({
           <button
             type="button"
             onClick={onPrev}
-            className="flex h-[44px] items-center italic text-[14px] text-[#8b7050] transition hover:text-[#3d2414]"
+            className="flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
           >
             이전
           </button>
@@ -134,16 +134,16 @@ function ToolBox({
   const full = picked.length >= MAX_PER_BOX;
   return (
     <div className="rounded-md border border-[#b99b6b]/40 bg-white/40 p-4">
-      <p className="text-[14px] font-semibold text-[#3d2414]">
+      <p className="text-[16px] font-semibold text-[#3d2414]">
         {title}
-        <span className="ml-1.5 text-[12px] font-normal text-[#8b7050]">
+        <span className="ml-1.5 text-[16px] font-normal text-[#8b7050]">
           최대 2개 · {picked.length}/2
         </span>
       </p>
       <div className="mt-3 space-y-3">
         {TOOL_CATEGORIES.map((cat) => (
           <div key={cat.id}>
-            <p className="mb-1 text-[12px] font-semibold tracking-wide text-[#8b7050]">
+            <p className="mb-1 text-[16px] font-semibold tracking-wide text-[#8b7050]">
               {cat.label}
             </p>
             <div className="space-y-1.5">
@@ -180,10 +180,10 @@ function ToolBox({
                       )}
                     </span>
                     <span className="flex flex-col gap-0.5">
-                      <span className="text-[14px] font-medium leading-snug text-[#3d2414]">
+                      <span className="text-[16px] font-medium leading-snug text-[#3d2414]">
                         {opt.label}
                       </span>
-                      <span className="text-[13px] leading-snug text-[#6b5337]">
+                      <span className="text-[16px] leading-snug text-[#6b5337]">
                         {opt.description}
                       </span>
                     </span>

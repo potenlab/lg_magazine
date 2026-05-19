@@ -204,7 +204,7 @@ function FollowupExitBody({
           onSettled={() => setSettled(true)}
         />
       </div>
-      <div className="mt-auto flex justify-end text-[14px] text-[#8b7050]">
+      <div className="mt-auto flex justify-end text-[16px] text-[#8b7050]">
         <span
           className={`italic transition-opacity ${settled ? "opacity-100" : "opacity-0"}`}
         >
@@ -262,7 +262,7 @@ function FollowupBody({
         <div className="flex-1">
           <NarrationBlock text={narration} />
         </div>
-        <div className="mt-auto flex items-center justify-end text-[14px] text-[#8b7050]">
+        <div className="mt-auto flex items-center justify-end text-[16px] text-[#8b7050]">
           <span className="italic">다음</span>
         </div>
       </div>

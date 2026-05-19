@@ -105,7 +105,7 @@ export function ValueDefSingleScene({
                 className="flex flex-col gap-3 rounded-md border border-[#b99b6b]/40 bg-white/75 p-4 shadow-sm"
               >
                 <div className="flex flex-col items-center gap-1">
-                  <span className="text-[12px] tracking-wide text-[#8b7050]">
+                  <span className="text-[16px] tracking-wide text-[#8b7050]">
                     {cat ? (
                       <>
                         <span className="mr-1">{cat.emoji}</span>
@@ -122,7 +122,7 @@ export function ValueDefSingleScene({
                   value={defs[v] ?? ""}
                   onChange={(e) => setDefs((prev) => ({ ...prev, [v]: e.target.value }))}
                   placeholder={`이 단어가 ${session.name}님에게\n어떤 의미인지 적어주세요.`}
-                  className="min-h-[150px] w-full resize-none rounded-md border border-[#b99b6b]/30 bg-white/80 p-3 text-[14px] leading-[1.6] text-[#3d2414] placeholder:text-[#a18965] focus:border-[#3d2414]/60 focus:outline-none"
+                  className="min-h-[150px] w-full resize-none rounded-md border border-[#b99b6b]/30 bg-white/80 p-3 text-[16px] leading-[1.6] text-[#3d2414] placeholder:text-[#a18965] focus:border-[#3d2414]/60 focus:outline-none"
                 />
               </div>
             );

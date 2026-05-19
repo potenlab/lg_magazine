@@ -63,7 +63,7 @@ export function AmbienceScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
           onClick={() => setPhase(1)}
           aria-label="장면 진행"
         />
-        <div className="pointer-events-none fixed bottom-12 right-12 z-40 text-[14px] italic text-[#f5ead6]/70">
+        <div className="pointer-events-none fixed bottom-12 right-12 z-40 text-[16px] italic text-[#f5ead6]/70">
           다음
         </div>
       </>,
@@ -93,7 +93,7 @@ export function AmbienceScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
           <div className="flex-1">
             <NarrationBlock text={narration} />
           </div>
-          <div className="absolute bottom-7 right-7 z-10 flex h-[44px] items-center text-[14px] text-[#8b7050]">
+          <div className="absolute bottom-7 right-7 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
             <span className="italic">다음</span>
           </div>
         </div>
@@ -112,7 +112,7 @@ export function AmbienceScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
         <div className="flex-1">
           <NarrationBlock text={narration} />
         </div>
-        <div className="absolute bottom-7 right-7 z-10 flex h-[44px] items-center text-[14px] text-[#8b7050]">
+        <div className="absolute bottom-7 right-7 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
           <span className="italic">다음</span>
         </div>
       </div>

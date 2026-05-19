@@ -350,7 +350,7 @@ export function IntroScene({
               </motion.p>
               {!envelopeOpen && (
                 <motion.p
-                  className="mt-6 font-mono text-[12px] tracking-[0.2em]"
+                  className="mt-6 font-mono text-[16px] tracking-[0.2em]"
                   style={{ color: "#ffffff" }}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: [0, 0.6, 0] }}
@@ -565,7 +565,7 @@ export function IntroScene({
 
                   <div className="min-h-0 flex-1 overflow-y-auto pr-1 pb-20">
                     <div>
-                      <label className="text-[14px] font-semibold leading-[1.7] text-[#5a4a38]">탑승객의 성함을 알려주세요.</label>
+                      <label className="text-[16px] font-semibold leading-[1.7] text-[#5a4a38]">탑승객의 성함을 알려주세요.</label>
                       <input
                         type="text"
                         value={name}
@@ -574,18 +574,18 @@ export function IntroScene({
                           if (e.key === "Enter" && registerReady) handleRegisterSubmit();
                         }}
                         placeholder="이름을 입력하세요"
-                        className="mt-3 h-9 w-full rounded-sm border border-[#8c785a]/25 bg-[#fbf6ea]/55 px-3 text-[14px] text-[#3d2414] outline-none transition placeholder:text-[#a18965] focus:border-[#d4a54a]"
+                        className="mt-3 h-9 w-full rounded-sm border border-[#8c785a]/25 bg-[#fbf6ea]/55 px-3 text-[16px] text-[#3d2414] outline-none transition placeholder:text-[#a18965] focus:border-[#d4a54a]"
                         autoFocus
                       />
                     </div>
 
                     <div className="mt-[20px]">
-                      <label className="text-[14px] font-semibold leading-[1.7] text-[#5a4a38]">탑승객의 성별을 알려주세요.</label>
+                      <label className="text-[16px] font-semibold leading-[1.7] text-[#5a4a38]">탑승객의 성별을 알려주세요.</label>
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         <button
                           type="button"
                           onClick={() => setGender("그")}
-                          className={`h-9 rounded-sm border px-2 text-[14px] transition ${
+                          className={`h-9 rounded-sm border px-2 text-[16px] transition ${
                             gender === "그"
                               ? "border-[#d4a54a] bg-[#efe2c4] text-[#3d2414]"
                               : "border-[#8c785a]/25 bg-[#f2ebdd]/35 text-[#8a6f5f]"
@@ -596,7 +596,7 @@ export function IntroScene({
                         <button
                           type="button"
                           onClick={() => setGender("그녀")}
-                          className={`h-9 rounded-sm border px-2 text-[14px] transition ${
+                          className={`h-9 rounded-sm border px-2 text-[16px] transition ${
                             gender === "그녀"
                               ? "border-[#d4a54a] bg-[#efe2c4] text-[#3d2414]"
                               : "border-[#8c785a]/25 bg-[#f2ebdd]/35 text-[#8a6f5f]"
@@ -608,14 +608,14 @@ export function IntroScene({
                     </div>
 
                     <div className="mt-[20px]">
-                      <label className="text-[14px] font-semibold leading-[1.7] text-[#5a4a38]">탑승객의 직무를 알려주세요.</label>
+                      <label className="text-[16px] font-semibold leading-[1.7] text-[#5a4a38]">탑승객의 직무를 알려주세요.</label>
                       <div className="mt-3 grid grid-cols-3 gap-2">
                         {[...JOB_OPTIONS, "기타"].map((j) => (
                           <button
                             key={j}
                             type="button"
                             onClick={() => setJob(j)}
-                            className={`h-9 rounded-sm border px-2 text-[14px] transition ${
+                            className={`h-9 rounded-sm border px-2 text-[16px] transition ${
                               job === j
                                 ? "border-[#d4a54a] bg-[#efe2c4] text-[#3d2414]"
                                 : "border-[#8c785a]/25 bg-[#f2ebdd]/35 text-[#8a6f5f]"
@@ -631,7 +631,7 @@ export function IntroScene({
                           value={customJob}
                           onChange={(e) => setCustomJob(e.target.value)}
                           placeholder="직무를 입력해주세요"
-                          className="mt-3 h-9 w-full rounded-sm border border-[#8c785a]/25 bg-[#fbf6ea]/55 px-3 text-[14px] text-[#3d2414] outline-none transition placeholder:text-[#a18965] focus:border-[#d4a54a]"
+                          className="mt-3 h-9 w-full rounded-sm border border-[#8c785a]/25 bg-[#fbf6ea]/55 px-3 text-[16px] text-[#3d2414] outline-none transition placeholder:text-[#a18965] focus:border-[#d4a54a]"
                           autoFocus
                         />
                       )}
@@ -678,7 +678,7 @@ export function IntroScene({
                     승객 명부
                   </h2>
                   <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-                    <p className="text-[14px] font-semibold leading-[1.7] text-[#5a4a38]">
+                    <p className="text-[16px] font-semibold leading-[1.7] text-[#5a4a38]">
                       이 열차에 오르기 전, 마음에 남아 있는 것이 있을까요?
                     </p>
                     <textarea
@@ -686,13 +686,13 @@ export function IntroScene({
                       onChange={(e) => setFreeText(e.target.value)}
                       aria-label="열차에 오르기 전 남기고 싶은 기록"
                       placeholder={"이 여정에 남기는 기록은 바깥에 공개되지 않아요.\n지금 안고 있는 작은 고민, 기대, 망설임 중\n함께 싣고 갈 것을 편하게 남겨주세요."}
-                      className="mt-3 min-h-[230px] w-full resize-none rounded-sm border border-[#8c785a]/25 bg-[#fbf6ea]/55 px-4 py-3 text-[14px] leading-[1.7] text-[#3d2414] outline-none transition placeholder:text-[#8a7a68]/70 focus:border-[#b99b6b] focus:bg-[#fffaf0]/75 md:text-[15px]"
+                      className="mt-3 min-h-[230px] w-full resize-none rounded-sm border border-[#8c785a]/25 bg-[#fbf6ea]/55 px-4 py-3 text-[16px] leading-[1.7] text-[#3d2414] outline-none transition placeholder:text-[#8a7a68]/70 focus:border-[#b99b6b] focus:bg-[#fffaf0]/75 md:text-[16px]"
                     />
                     <div className="mt-[8px]">
                       <button
                         type="button"
                         onClick={() => setExamplesOpen(true)}
-                        className="text-[12px] text-[#8a7a68] underline decoration-[#8a7a68]/40 underline-offset-[3px] transition hover:text-[#3d2414] hover:decoration-[#3d2414] md:text-[13px]"
+                        className="text-[16px] text-[#8a7a68] underline decoration-[#8a7a68]/40 underline-offset-[3px] transition hover:text-[#3d2414] hover:decoration-[#3d2414] md:text-[16px]"
                       >
                         다른 승객들은 주로 어떤 생각을 가졌을까요?
                       </button>
@@ -741,10 +741,10 @@ export function IntroScene({
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-[12px] uppercase tracking-[0.32em] text-[#7a5a3a]">
+                        <p className="text-[16px] uppercase tracking-[0.32em] text-[#7a5a3a]">
                           From other passengers
                         </p>
-                        <h2 className="mt-1 text-[14px] font-semibold text-[#3d2414] md:text-[15px]">
+                        <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414] md:text-[16px]">
                           다른 승객들은 주로 어떤 생각을 가졌을까요?
                         </h2>
                       </div>
@@ -763,16 +763,16 @@ export function IntroScene({
                           key={i}
                           className="block w-full rounded-md border border-[#8c785a]/25 bg-white/40 p-3 text-left"
                         >
-                          <p className="text-[14px] font-medium text-[#5a4a38] md:text-[15px]">
+                          <p className="text-[16px] font-medium text-[#5a4a38] md:text-[16px]">
                             {i + 1}. {ex.label}
                           </p>
-                          <p className="mt-1 text-[12px] leading-[1.55] text-[#8a7a68] md:text-[13px]">
+                          <p className="mt-1 text-[16px] leading-[1.55] text-[#8a7a68] md:text-[16px]">
                             &ldquo;{ex.quote}&rdquo;
                           </p>
                         </div>
                       ))}
                     </div>
-                    <p className="mt-4 text-center text-[12px] italic text-[#8a7a68]">
+                    <p className="mt-4 text-center text-[16px] italic text-[#8a7a68]">
                       참고용 예시입니다. 내 기록은 직접 입력해주세요.
                     </p>
                   </motion.div>
@@ -827,22 +827,32 @@ export function IntroScene({
                       <p className="absolute" style={{ ...valueStyle, top: "57%", left: "62%" }}>
                         {session.job || finalJob || "—"}
                       </p>
-                      {/* Passenger value — next to "Passenger :" label */}
-                      <p className="absolute" style={{ ...valueStyle, top: "70%", left: "45%" }}>
+                      {/* Passenger value — 라벨 옆. -50% baseline + 4px 위로 보정 */}
+                      <p
+                        className="absolute"
+                        style={{
+                          ...valueStyle,
+                          top: "70%",
+                          left: "45%",
+                          transform: "translateY(calc(-50% - 4px))",
+                        }}
+                      >
                         {session.name || name || "—"}
                       </p>
                       {/* Date value — next to "Date :" label */}
                       <p className="absolute" style={{ ...valueStyle, top: "78%", left: "40%" }}>
                         {dateStr}
                       </p>
-                      {/* Booking Ref — right stub, rotated 90° to match the printed label */}
+                      {/* Booking Ref — 디자이너 스펙: 99.81° 기운 앵글, 18px, #D9C1A7 */}
                       <p
                         className="absolute"
                         style={{
                           ...valueStyle,
+                          color: "#D9C1A7",
+                          fontSize: "18px",
                           top: "50%",
                           right: "9%",
-                          transform: "translateY(-50%) rotate(90deg)",
+                          transform: "translateY(-50%) rotate(99.81deg)",
                           transformOrigin: "center",
                         }}
                       >

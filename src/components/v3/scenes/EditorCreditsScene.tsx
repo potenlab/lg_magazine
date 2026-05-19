@@ -88,19 +88,19 @@ export function EditorCreditsScene({
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2, ease: "easeOut" }}
-            className="text-[14px] italic tracking-[0.04em] text-[#8b7050] md:text-[15px]"
+            className="text-[16px] italic tracking-[0.04em] text-[#8b7050] md:text-[16px]"
             style={{ fontFamily: "var(--font-ridi-batang), serif" }}
           >
             {spec.narration}
           </motion.p>
         )}
-        <p className="text-[12px] uppercase tracking-[0.42em] text-[#7a5a3a]">
+        <p className="text-[16px] uppercase tracking-[0.42em] text-[#7a5a3a]">
           From the Editor
         </p>
         <div className="flex items-center gap-3">
           <div className="h-px w-8 bg-[#b99b6b]/55" />
           <span
-            className="text-[12px] tracking-[0.28em] text-[#7a5a3a]"
+            className="text-[16px] tracking-[0.28em] text-[#7a5a3a]"
             style={{ fontFamily: "var(--font-ridi-batang), serif" }}
           >
             Editor&rsquo;s Note
@@ -115,7 +115,7 @@ export function EditorCreditsScene({
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1.6, ease: "easeOut" }}
-              className="text-[15px] italic leading-[1.95] text-[#3d2414] md:text-[16px]"
+              className="text-[16px] italic leading-[1.95] text-[#3d2414] md:text-[18px]"
               style={{ fontFamily: "var(--font-ridi-batang), serif" }}
             >
               {line}
@@ -131,11 +131,11 @@ export function EditorCreditsScene({
             className="flex flex-col items-center gap-3"
           >
             <div className="h-px w-12 bg-[#b99b6b]/55" />
-            <p className="text-[12px] uppercase tracking-[0.4em] text-[#7a5a3a]">
+            <p className="text-[16px] uppercase tracking-[0.4em] text-[#7a5a3a]">
               Magazine STORY · Vol. {session.name}
             </p>
             <p
-              className="text-[12px] italic text-[#8b7050]"
+              className="text-[16px] italic text-[#8b7050]"
               style={{ fontFamily: "var(--font-ridi-batang), serif" }}
             >
               오직 한 사람을 위한 단 한 호의 매거진

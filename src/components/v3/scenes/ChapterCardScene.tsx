@@ -71,7 +71,7 @@ export function ChapterCardScene({
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.55 }}
         transition={{ delay: 2.4, duration: 1.2 }}
-        className="absolute bottom-[18%] text-[14px] italic text-[#bba175]"
+        className="absolute bottom-[18%] text-[16px] italic text-[#bba175]"
       >
         화면을 누르면 다음으로
       </motion.p>

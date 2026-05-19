@@ -62,7 +62,7 @@ export function RecordPageScene({ spec, onAdvance }: { spec: SceneSpec; onAdvanc
           on the article + drop-cap float combo. Pinning the scroll here
           keeps overflow inside the cream paper no matter what. */}
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pr-1">
-        <p className="text-[12px] uppercase tracking-[0.28em] text-[#9a7b4c]">Chapter {chapter}</p>
+        <p className="text-[16px] uppercase tracking-[0.28em] text-[#9a7b4c]">Chapter {chapter}</p>
         <h2 className="font-serif text-2xl italic text-[#3d2414]">{art.headline}</h2>
         <div className="my-2 h-px w-12 bg-[#b99b6b]" />
         <div className="text-[#3d2414] leading-[1.95]">

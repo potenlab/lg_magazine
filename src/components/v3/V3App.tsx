@@ -361,7 +361,7 @@ function V3Inner() {
                 <button
                   type="button"
                   onClick={handlePrev}
-                  className="absolute bottom-7 left-7 z-20 flex h-[44px] items-center italic text-[14px] text-[#8b7050] transition hover:text-[#3d2414]"
+                  className="absolute bottom-7 left-7 z-20 flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
                 >
                   이전
                 </button>
@@ -462,9 +462,9 @@ function V3Inner() {
                     // viewport and <main>'s overflow-hidden clipped the top,
                     // hiding the lower choice cards. 220px keeps the whole
                     // dialog on-screen; content beyond it scrolls inside.
-                    ? "relative mx-auto flex max-h-[calc(100vh_-_220px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[14px]"
+                    ? "relative mx-auto flex max-h-[calc(100vh_-_220px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
                     : INPUT_KINDS.has(spec.kind) && stage === "content"
-                      ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[360px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-[108px] shadow-2xl text-[14px]"
+                      ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[360px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-[108px] shadow-2xl text-[16px]"
                       : "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-7 shadow-2xl"
               }
               style={{ fontFamily: "var(--font-ridi-batang)" }}
@@ -483,7 +483,7 @@ function V3Inner() {
                 <button
                   type="button"
                   onClick={handlePrev}
-                  className="absolute bottom-7 left-7 z-20 flex h-[44px] items-center italic text-[14px] text-[#8b7050] transition hover:text-[#3d2414]"
+                  className="absolute bottom-7 left-7 z-20 flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
                 >
                   이전
                 </button>

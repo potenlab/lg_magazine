@@ -106,7 +106,7 @@ export function VisionSelectScene({
   if (!directions) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-[14px] italic text-[#8b7050]">
+        <p className="text-[16px] italic text-[#8b7050]">
           편집장이 방향들을 정리하고 있어요…
         </p>
       </div>
@@ -117,7 +117,7 @@ export function VisionSelectScene({
     <div className="flex flex-col gap-5">
       {/* [상단] 엘아울 멘트 */}
       <p
-        className="text-[14px] leading-[1.7] text-[#3d2414]"
+        className="text-[16px] leading-[1.7] text-[#3d2414]"
         style={{ fontFamily: "var(--font-ridi-batang)" }}
       >
         {session.name}님이 말해주신 것들을 바탕으로 몇 가지 문장을 만들어봤어요. 마음에 닿는
@@ -127,7 +127,7 @@ export function VisionSelectScene({
       {/* [중단] 추천 문장 6개 — 체크박스 (참고용, textarea 자동완성 안 함) */}
       <div className="flex flex-col gap-2">
         {isFallback && (
-          <p className="text-[12px] italic text-[#a18965]">
+          <p className="text-[16px] italic text-[#a18965]">
             아래 문장을 참고해 직접 적어주세요.
           </p>
         )}
@@ -162,11 +162,11 @@ export function VisionSelectScene({
                 </svg>
               )}
             </span>
-            <span className="text-[14px] leading-[1.65] text-[#3d2414]">{text}</span>
+            <span className="text-[16px] leading-[1.65] text-[#3d2414]">{text}</span>
           </motion.button>
         ))}
         <p
-          className="mt-1 border-l-2 border-[#b99b6b]/50 pl-3 text-[14px] italic leading-[1.6] text-[#8b7050]"
+          className="mt-1 border-l-2 border-[#b99b6b]/50 pl-3 text-[16px] italic leading-[1.6] text-[#8b7050]"
           style={{ fontFamily: "var(--font-ridi-batang)" }}
         >
           편집장의 한마디 — 체크한 표현을 참고해서 아래에 {session.name}님의 언어로 써주세요.
@@ -175,10 +175,10 @@ export function VisionSelectScene({
 
       {/* [하단] 나의 성장 방향 */}
       <div className="flex flex-col gap-2">
-        <p className="text-[12px] font-semibold uppercase tracking-widest text-[#8b7050]">
+        <p className="text-[16px] font-semibold uppercase tracking-widest text-[#8b7050]">
           나의 성장 방향
         </p>
-        <p className="text-[14px] text-[#a18965]">
+        <p className="text-[16px] text-[#a18965]">
           위에서 고른 문장들을 바탕으로, {session.name}님만의 언어로 정리해주세요. 고른 문장
           그대로여도 좋고, 합치거나 고쳐도 좋아요. {session.name}님은 어떤 방향으로 나아가고
           싶은 사람인가요?
@@ -188,7 +188,7 @@ export function VisionSelectScene({
           onChange={(e) => setValue(e.target.value)}
           placeholder="위에서 체크한 표현을 참고해, 직접 적어주세요."
           rows={4}
-          className="w-full resize-none rounded-md border border-[#b99b6b]/40 bg-white/60 p-3 text-[14px] leading-[1.7] text-[#3d2414] outline-none placeholder:text-[#c4a97a] focus:border-[#3d2414]"
+          className="w-full resize-none rounded-md border border-[#b99b6b]/40 bg-white/60 p-3 text-[16px] leading-[1.7] text-[#3d2414] outline-none placeholder:text-[#c4a97a] focus:border-[#3d2414]"
         />
       </div>
 

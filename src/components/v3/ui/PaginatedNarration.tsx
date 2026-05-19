@@ -160,7 +160,7 @@ export function PaginatedNarration({
         // height. Previously this used `mt-auto`, which got pushed UP
         // whenever a sibling (e.g. RitualScene's primary action button)
         // reserved space at the dialog bottom.
-        <div className="absolute bottom-7 right-7 z-10 flex h-[44px] items-center text-[14px] text-[#8b7050]">
+        <div className="absolute bottom-7 right-7 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
           <span
             className={`italic transition-opacity ${settled ? "opacity-100" : "opacity-0"}`}
           >

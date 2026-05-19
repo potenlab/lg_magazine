@@ -134,13 +134,13 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
           transition={{ duration: 0.6, delay: 0.3 }}
           className="rounded-md border border-[#b99b6b]/30 bg-white/40 p-5"
         >
-          <p className="mb-3 text-center text-[12px] uppercase tracking-[0.3em] text-[#8b7050]">
+          <p className="mb-3 text-center text-[16px] uppercase tracking-[0.3em] text-[#8b7050]">
             한 호의 요약
           </p>
-          <dl className="space-y-2.5 text-[14px] leading-[1.6]">
+          <dl className="space-y-2.5 text-[16px] leading-[1.6]">
             {summary.map(([k, v]) => (
               <div key={k} className="grid grid-cols-[110px_1fr] gap-3">
-                <dt className="text-[12px] tracking-wide text-[#8b7050]">{k}</dt>
+                <dt className="text-[16px] tracking-wide text-[#8b7050]">{k}</dt>
                 <dd className="text-[#3d2414]">{v}</dd>
               </div>
             ))}

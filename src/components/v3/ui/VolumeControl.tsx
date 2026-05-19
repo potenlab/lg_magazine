@@ -42,7 +42,7 @@ export function VolumeControl() {
         title={isPlaying ? `음악: ${volumePercent}%` : "음악: 끔"}
       >
         <svg
-          className="h-5 w-5 text-[#f5ead6]"
+          className="h-6 w-6 text-[#f5ead6]"
           fill="currentColor"
           viewBox="0 0 24 24"
         >

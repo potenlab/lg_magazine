@@ -21,7 +21,7 @@ export function NavText({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="italic text-[14px] text-[#8b7050] transition hover:text-[#3d2414] disabled:opacity-40 disabled:hover:text-[#8b7050]"
+      className="italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414] disabled:opacity-40 disabled:hover:text-[#8b7050]"
       style={{ fontFamily: "var(--font-ridi-batang)" }}
     >
       {label}

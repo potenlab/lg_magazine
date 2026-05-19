@@ -98,7 +98,7 @@ export function TimeHorizonScene({
   if (!horizon) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-[14px] italic text-[#8b7050]">
+        <p className="text-[16px] italic text-[#8b7050]">
           편집장이 시간 위에 펼쳐보고 있어요…
         </p>
       </div>
@@ -109,7 +109,7 @@ export function TimeHorizonScene({
     <div className="flex flex-col gap-5">
       {/* 엘아울 멘트 */}
       <p
-        className="text-[14px] leading-[1.7] text-[#3d2414]"
+        className="text-[16px] leading-[1.7] text-[#3d2414]"
         style={{ fontFamily: "var(--font-ridi-batang)" }}
       >
         {session.name}님이 정한 방향을 시간 위에 펼쳐봤어요.
@@ -118,23 +118,23 @@ export function TimeHorizonScene({
       {/* 시간 지평 3개 — 수정 가능한 입력창 (LLM이 미리 채움) */}
       <div className="flex flex-col gap-3">
         {isFallback && (
-          <p className="text-[12px] italic text-[#a18965]">
+          <p className="text-[16px] italic text-[#a18965]">
             아래 문장을 참고해 직접 고쳐주세요.
           </p>
         )}
         {horizon.map((line, i) => (
           <div key={i} className="flex items-start gap-2">
-            <span className="mt-2 text-[14px] text-[#a18965]">{HORIZON_LABELS[i]}</span>
+            <span className="mt-2 text-[16px] text-[#a18965]">{HORIZON_LABELS[i]}</span>
             <textarea
               value={line}
               onChange={(e) => updateLine(i, e.target.value)}
               rows={2}
-              className="flex-1 resize-none rounded-md border border-[#b99b6b]/40 bg-white/60 p-3 text-[14px] leading-[1.6] text-[#3d2414] outline-none focus:border-[#3d2414]"
+              className="flex-1 resize-none rounded-md border border-[#b99b6b]/40 bg-white/60 p-3 text-[16px] leading-[1.6] text-[#3d2414] outline-none focus:border-[#3d2414]"
             />
           </div>
         ))}
         <p
-          className="border-l-2 border-[#b99b6b]/50 pl-3 text-[14px] italic leading-[1.6] text-[#8b7050]"
+          className="border-l-2 border-[#b99b6b]/50 pl-3 text-[16px] italic leading-[1.6] text-[#8b7050]"
           style={{ fontFamily: "var(--font-ridi-batang)" }}
         >
           편집장의 한마디 — 이대로여도 좋고, 고쳐도 좋아요. {session.name}님만의 언어로 성장

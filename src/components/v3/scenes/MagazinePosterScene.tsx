@@ -61,7 +61,7 @@ export function MagazinePosterScene({
 
         {/* — Cover header — */}
         <header className="relative flex flex-col items-center text-center">
-          <p className="text-[12px] uppercase tracking-[0.42em] text-[#7a5a3a]">
+          <p className="text-[16px] uppercase tracking-[0.42em] text-[#7a5a3a]">
             Vision Express
           </p>
           <div className="mt-2 flex items-center gap-3">
@@ -74,7 +74,7 @@ export function MagazinePosterScene({
             </h1>
             <div className="h-px w-8 bg-[#b99b6b]/55" />
           </div>
-          <div className="mt-2 flex items-center gap-4 text-[12px] tracking-[0.28em] text-[#7a5a3a]">
+          <div className="mt-2 flex items-center gap-4 text-[16px] tracking-[0.28em] text-[#7a5a3a]">
             <span>VOL. {session.name.toUpperCase()}</span>
             <span className="opacity-50">·</span>
             <span>{dateStr}</span>
@@ -83,7 +83,7 @@ export function MagazinePosterScene({
 
         {/* — Article hero — */}
         <section className="relative mt-5 flex flex-col items-center border-y border-[#b99b6b]/35 px-2 py-4 text-center">
-          <p className="text-[12px] uppercase tracking-[0.4em] text-[#7a5a3a]">
+          <p className="text-[16px] uppercase tracking-[0.4em] text-[#7a5a3a]">
             The Story of
           </p>
           {identityTitle && (
@@ -95,7 +95,7 @@ export function MagazinePosterScene({
             </h2>
           )}
           {session.topValue && (
-            <p className="mt-2 text-[14px] tracking-[0.16em] text-[#7a5a3a]">
+            <p className="mt-2 text-[16px] tracking-[0.16em] text-[#7a5a3a]">
               {session.topValue}{josa(session.topValue, "을/를")} 가장 소중히 여기는 {session.gender || "그"}
             </p>
           )}
@@ -106,7 +106,7 @@ export function MagazinePosterScene({
           {session.topValue && (
             <PosterCard label="The Most Precious Value" tone="gold">
               <p
-                className="text-[14px] font-medium leading-tight"
+                className="text-[16px] font-medium leading-tight"
                 style={{ fontFamily: "var(--font-ridi-batang), serif" }}
               >
                 &ldquo;{session.topValue}&rdquo;
@@ -114,7 +114,7 @@ export function MagazinePosterScene({
               {valueDef && (
                 <ClampText
                   lines={4}
-                  className="mt-2 text-[14px] italic leading-relaxed text-[#5a3d22]"
+                  className="mt-2 text-[16px] italic leading-relaxed text-[#5a3d22]"
                 >
                   {trimQuotes(valueDef)}
                 </ClampText>
@@ -126,7 +126,7 @@ export function MagazinePosterScene({
             <PosterCard label="The 4-Year Vision">
               <ClampText
                 lines={4}
-                className="text-[14px] leading-relaxed text-[#3d2414]"
+                className="text-[16px] leading-relaxed text-[#3d2414]"
                 style={{ fontFamily: "var(--font-ridi-batang), serif" }}
               >
                 {trimQuotes(visionSummary)}
@@ -136,7 +136,7 @@ export function MagazinePosterScene({
 
           {session.firstStep && (
             <PosterCard label="My Next Step" tone="gold">
-              <ClampText lines={4} className="text-[14px] leading-relaxed">
+              <ClampText lines={4} className="text-[16px] leading-relaxed">
                 {trimQuotes(firstStepSummary)}
               </ClampText>
             </PosterCard>
@@ -144,7 +144,7 @@ export function MagazinePosterScene({
 
           {session.supportPerson && (
             <PosterCard label="My Allies">
-              <ClampText lines={4} className="text-[14px] leading-relaxed">
+              <ClampText lines={4} className="text-[16px] leading-relaxed">
                 {trimQuotes(supportSummary)}
               </ClampText>
             </PosterCard>
@@ -153,7 +153,7 @@ export function MagazinePosterScene({
           {session.neededResource && (
             <div className="col-span-2">
               <PosterCard label="Required Resources">
-                <ClampText lines={3} className="text-[14px] leading-relaxed">
+                <ClampText lines={3} className="text-[16px] leading-relaxed">
                   {trimQuotes(resourceSummary)}
                 </ClampText>
               </PosterCard>
@@ -163,11 +163,11 @@ export function MagazinePosterScene({
 
         {/* — Editor's note — */}
         <section className="relative mt-4 shrink-0 border-t border-[#b99b6b]/35 pt-3 text-center">
-          <p className="text-[12px] uppercase tracking-[0.4em] text-[#7a5a3a]">
+          <p className="text-[16px] uppercase tracking-[0.4em] text-[#7a5a3a]">
             Editor&rsquo;s Note
           </p>
           <p
-            className="mt-2 text-[14px] italic leading-relaxed text-[#5a3d22]"
+            className="mt-2 text-[16px] italic leading-relaxed text-[#5a3d22]"
             style={{ fontFamily: "var(--font-ridi-batang), serif" }}
           >
             본 호는 {session.name}님 한 분만을 위해 발행된 단 한 호의 매거진입니다.
@@ -177,14 +177,14 @@ export function MagazinePosterScene({
         </section>
 
         {/* — Footer — */}
-        <footer className="relative mt-3 flex shrink-0 items-center justify-center gap-3 text-[12px] tracking-[0.25em] text-[#7a5a3a]">
+        <footer className="relative mt-3 flex shrink-0 items-center justify-center gap-3 text-[16px] tracking-[0.25em] text-[#7a5a3a]">
           <div className="h-px w-6 bg-[#b99b6b]/45" />
           <span>오직 한 사람을 위한 단 한 호의 매거진</span>
           <div className="h-px w-6 bg-[#b99b6b]/45" />
         </footer>
       </motion.article>
 
-      <div className="mt-3 flex items-center justify-end text-[14px] text-[#8b7050]">
+      <div className="mt-3 flex items-center justify-end text-[16px] text-[#8b7050]">
         <span className="italic">다음</span>
       </div>
     </div>

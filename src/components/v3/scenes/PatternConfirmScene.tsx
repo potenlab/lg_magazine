@@ -82,7 +82,7 @@ export function PatternConfirmScene({ spec, onAdvance }: { spec: SceneSpec; onAd
         <div className="flex-1">
           <NarrationBlock text={narration} />
         </div>
-        <div className="mt-auto flex items-center justify-end text-[14px] text-[#8b7050]">
+        <div className="mt-auto flex items-center justify-end text-[16px] text-[#8b7050]">
           <span className="italic">다음</span>
         </div>
       </div>

@@ -21,14 +21,14 @@ export function HintInput({ value, onChange, placeholder, hint, multiline = true
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={effectivePlaceholder}
-          className="h-[180px] w-full resize-none rounded-md border border-[#b99b6b]/40 bg-white/60 p-4 text-[15px] leading-[1.7] text-[#3d2414] outline-none placeholder:whitespace-pre-line placeholder:text-[#a18965] focus:border-[#3d2414] break-words"
+          className="h-[180px] w-full resize-none rounded-md border border-[#b99b6b]/40 bg-white/60 p-4 text-[16px] leading-[1.7] text-[#3d2414] outline-none placeholder:whitespace-pre-line placeholder:text-[#a18965] focus:border-[#3d2414] break-words"
         />
       ) : (
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={effectivePlaceholder}
-          className="w-full rounded-md border border-[#b99b6b]/40 bg-white/60 px-4 py-3 text-[15px] text-[#3d2414] outline-none placeholder:text-[#a18965] focus:border-[#3d2414]"
+          className="w-full rounded-md border border-[#b99b6b]/40 bg-white/60 px-4 py-3 text-[16px] text-[#3d2414] outline-none placeholder:text-[#a18965] focus:border-[#3d2414]"
         />
       )}
     </div>

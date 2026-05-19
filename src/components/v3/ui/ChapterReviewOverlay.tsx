@@ -51,7 +51,7 @@ export function ChapterReviewOverlay({
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.22em] text-[#9b8768]">
+            <p className="text-[16px] font-semibold uppercase tracking-[0.22em] text-[#9b8768]">
               {thread.chapter}
             </p>
             <h3 className="mt-1 text-[18px] font-semibold text-[#3d2414]">{thread.title}</h3>
@@ -67,7 +67,7 @@ export function ChapterReviewOverlay({
         </div>
 
         {entries.length === 0 ? (
-          <p className="text-[14px] italic text-[#8b7050]">아직 이 챕터의 답변이 없어요.</p>
+          <p className="text-[16px] italic text-[#8b7050]">아직 이 챕터의 답변이 없어요.</p>
         ) : (
           <div className="space-y-3">
             {entries.map((entry, i) => {
@@ -81,10 +81,10 @@ export function ChapterReviewOverlay({
                 : "rounded-md border border-[#b99b6b]/30 bg-white/55 px-4 py-3";
               const labelClass = isQuestion
                 ? "text-[11px] uppercase tracking-[0.18em] text-[#9b8768]"
-                : "text-[12px] tracking-wide text-[#8b7050]";
+                : "text-[16px] tracking-wide text-[#8b7050]";
               const textClass = isQuestion
-                ? "mt-1 whitespace-pre-wrap text-[14px] italic leading-[1.6] text-[#6b5337]"
-                : "mt-1.5 whitespace-pre-wrap text-[14px] leading-[1.7] text-[#3d2414]";
+                ? "mt-1 whitespace-pre-wrap text-[16px] italic leading-[1.6] text-[#6b5337]"
+                : "mt-1.5 whitespace-pre-wrap text-[16px] leading-[1.7] text-[#3d2414]";
               return (
                 <div key={i} className={boxClass}>
                   <p className={labelClass}>{entry.label}</p>

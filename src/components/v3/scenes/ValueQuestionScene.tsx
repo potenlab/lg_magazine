@@ -132,7 +132,7 @@ export function ValueQuestionScene({
               <button
                 type="button"
                 onClick={openCards}
-                className="mt-1 text-left text-[12px] italic text-[#8b7050] transition-colors hover:text-[#3d2414] hover:underline"
+                className="mt-1 text-left text-[16px] italic text-[#8b7050] transition-colors hover:text-[#3d2414] hover:underline"
                 style={{ fontFamily: "var(--font-ridi-batang)" }}
               >
                 마음에 닿는 단어가 잘 떠오르지 않으세요? 가치 카드를 함께 보실래요?

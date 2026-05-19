@@ -54,7 +54,7 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
         <div className="flex-1">
           <NarrationBlock text={narration} />
         </div>
-        <div className="mt-auto flex items-center justify-end text-[14px] text-[#8b7050]">
+        <div className="mt-auto flex items-center justify-end text-[16px] text-[#8b7050]">
           <span className="italic">다음</span>
         </div>
       </div>
@@ -98,7 +98,7 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
                       taxonomy. EN label retained in data only (was used in
                       a one-off mock; participants prefer the Korean copy). */}
                   <div
-                    className="flex items-center justify-center gap-1 rounded-sm py-1 text-center text-[12px] font-semibold tracking-[0.05em] text-white shadow-sm"
+                    className="flex items-center justify-center gap-1 rounded-sm py-1 text-center text-[16px] font-semibold tracking-[0.05em] text-white shadow-sm"
                     style={{ background: cat.accent }}
                   >
                     <span>{cat.emoji}</span>
@@ -124,7 +124,7 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
                       >
                         {/* Tiny suit-mark in the category accent — top-right corner */}
                         <span
-                          className="absolute right-1 top-1 text-[12px]"
+                          className="absolute right-1 top-1 text-[16px]"
                           style={{ color: cat.accent }}
                         >
                           ♥
@@ -132,10 +132,10 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
                         {/* English label as the small sub-tag, Korean word
                             as the main face — Korean is what participants
                             actually read, so it gets the size + weight. */}
-                        <span className="text-[12px] tracking-wide leading-tight text-[#8b7050]">
+                        <span className="text-[16px] tracking-wide leading-tight text-[#8b7050]">
                           {en}
                         </span>
-                        <span className="mt-0.5 text-[14px] font-semibold leading-tight text-[#3d2414]">
+                        <span className="mt-0.5 text-[16px] font-semibold leading-tight text-[#3d2414]">
                           {card}
                         </span>
                       </button>
@@ -155,7 +155,7 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
         {settled && (
           <div className="relative mx-auto mt-3 flex max-w-[640px] gap-2">
             <div className="relative flex flex-1 items-center gap-2 rounded-md border-2 border-dashed border-[#a78550]/40 bg-[#f6efdf]/15 px-3 py-1.5">
-              <span className="shrink-0 text-[12px] tracking-wider text-[#d4b88a]">
+              <span className="shrink-0 text-[16px] tracking-wider text-[#d4b88a]">
                 여기 없어요? 직접 적기 [+]
               </span>
               <input
@@ -169,14 +169,14 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
                 }}
                 placeholder=""
                 disabled={picked.length >= 3}
-                className="flex-1 bg-transparent text-[12px] text-[#f0e3c0] placeholder:text-[#8b7050] focus:outline-none disabled:opacity-40"
+                className="flex-1 bg-transparent text-[16px] text-[#f0e3c0] placeholder:text-[#8b7050] focus:outline-none disabled:opacity-40"
               />
             </div>
             <button
               type="button"
               onClick={addCustom}
               disabled={picked.length >= 3 || custom.trim().length === 0}
-              className="rounded-md border border-[#a78550]/50 bg-[#f6efdf]/10 px-3 text-[12px] text-[#f0e3c0] transition hover:bg-[#f6efdf]/20 disabled:opacity-30"
+              className="rounded-md border border-[#a78550]/50 bg-[#f6efdf]/10 px-3 text-[16px] text-[#f0e3c0] transition hover:bg-[#f6efdf]/20 disabled:opacity-30"
             >
               추가
             </button>
@@ -185,7 +185,7 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
 
         {/* Bottom strip: counter + L-OWL mark */}
         {settled && (
-          <div className="relative mt-4 flex items-center justify-between px-2 text-[12px] tracking-[0.2em] text-[#d4b88a]/80">
+          <div className="relative mt-4 flex items-center justify-between px-2 text-[16px] tracking-[0.2em] text-[#d4b88a]/80">
             <span className="invisible">L-OWL</span>
             <span className="font-medium">선택한 카드: {picked.length}/3</span>
             <span className="font-semibold tracking-[0.3em]">L-OWL</span>
@@ -228,7 +228,7 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="pointer-events-auto rounded-lg border border-[#d4b88a]/40 bg-[#1c120a]/95 px-8 py-6 shadow-2xl backdrop-blur"
           >
-            <p className="mb-3 text-center text-[13px] tracking-[0.18em] text-[#d4b88a]">
+            <p className="mb-3 text-center text-[16px] tracking-[0.18em] text-[#d4b88a]">
               세 단어를 모두 골랐어요
             </p>
             <div className="flex justify-center">
@@ -267,7 +267,7 @@ function AutoFlowTextLight({
   }, [shown, lines.length, onSettled]);
 
   return (
-    <div className="space-y-2 text-[14px] leading-[1.58] text-[#f0e3c0]">
+    <div className="space-y-2 text-[16px] leading-[1.58] text-[#f0e3c0]">
       {lines.slice(0, shown).map((l, i) => (
         <p key={i} className="whitespace-pre-line break-words">{l}</p>
       ))}

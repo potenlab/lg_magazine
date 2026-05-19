@@ -28,7 +28,7 @@ export function ProgressRail({ progress, chapter }: { progress: number; chapter:
         }}
       />
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[15] px-4 pb-2 pt-5 md:px-6">
-        <div className="flex items-baseline justify-between text-[12px] tracking-[0.04em]">
+        <div className="flex items-baseline justify-between text-[16px] tracking-[0.04em]">
           <span
             style={{
               fontFamily: "var(--font-ridi-batang)",

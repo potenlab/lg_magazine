@@ -34,7 +34,7 @@ export function StoryButtonV3({ label, onClick, disabled, ritual, variant = "pri
 
   const sizing = ritual
     ? size === "lg"
-      ? "px-8 py-3 text-[15px] font-serif italic tracking-[0.04em]"
+      ? "px-8 py-3 text-[16px] font-serif italic tracking-[0.04em]"
       : "px-6 py-3 font-serif italic tracking-[0.04em]"
     : "px-5 py-2.5 text-sm tracking-[0.02em]";
   const palette =

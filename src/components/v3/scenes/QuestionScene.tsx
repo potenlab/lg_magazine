@@ -89,7 +89,7 @@ export function QuestionScene({
         <div className="flex-1">
           <NarrationBlock text={narration} />
         </div>
-        <div className="mt-auto flex items-center justify-end text-[14px] text-[#8b7050]">
+        <div className="mt-auto flex items-center justify-end text-[16px] text-[#8b7050]">
           <span className="italic">다음</span>
         </div>
       </div>
@@ -106,7 +106,7 @@ export function QuestionScene({
         )}
         {editorNoteReady && spec.editorNote && (
           <p
-            className="border-l-2 border-[#b99b6b]/50 pl-3 text-[14px] italic leading-[1.6] text-[#8b7050]"
+            className="border-l-2 border-[#b99b6b]/50 pl-3 text-[16px] italic leading-[1.6] text-[#8b7050]"
             style={{ fontFamily: "var(--font-ridi-batang)" }}
           >
             편집장의 한마디 — {renderTemplate(spec.editorNote, session)}
@@ -142,7 +142,7 @@ export function QuestionScene({
           <button
             type="button"
             onClick={() => setShowReview(true)}
-            className="absolute right-7 top-7 text-[12px] italic text-[#8b7050] underline decoration-dotted underline-offset-[3px] transition hover:text-[#3d2414]"
+            className="absolute right-7 top-7 text-[16px] italic text-[#8b7050] underline decoration-dotted underline-offset-[3px] transition hover:text-[#3d2414]"
           >
             내 답변 다시 보기
           </button>
@@ -179,8 +179,8 @@ export function QuestionScene({
                       : String(raw ?? "").trim();
                     return (
                       <div key={field} className="rounded-md border border-[#b99b6b]/30 bg-white/45 px-4 py-3">
-                        <p className="text-[12px] tracking-wide text-[#8b7050]">{label}</p>
-                        <p className="mt-2 whitespace-pre-wrap text-[14px] leading-[1.7] text-[#3d2414]">
+                        <p className="text-[16px] tracking-wide text-[#8b7050]">{label}</p>
+                        <p className="mt-2 whitespace-pre-wrap text-[16px] leading-[1.7] text-[#3d2414]">
                           {text || <span className="italic text-[#a18965]">아직 답변이 없어요</span>}
                         </p>
                       </div>

@@ -41,7 +41,7 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="pointer-events-auto absolute left-4 top-4 z-[57] rounded-md border border-[#d7bd83]/40 bg-[#160d08]/70 px-3 py-1.5 text-[12px] tracking-wide text-[#e9d5a8] backdrop-blur transition hover:bg-[#160d08]/90"
+        className="pointer-events-auto absolute left-4 top-4 z-[57] rounded-md border border-[#d7bd83]/40 bg-[#160d08]/70 px-3 py-1.5 text-[16px] tracking-wide text-[#e9d5a8] backdrop-blur transition hover:bg-[#160d08]/90"
         style={{ fontFamily: "var(--font-ridi-batang)" }}
         aria-label="챕터 기록"
       >
@@ -69,7 +69,7 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
               exit={{ x: -300 }}
               transition={{ duration: 0.28, ease: "easeOut" }}
             >
-              <p className="mb-3 px-2 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#9b8768]">
+              <p className="mb-3 px-2 text-[16px] font-semibold uppercase tracking-[0.22em] text-[#9b8768]">
                 챕터 기록
               </p>
               {threads.map((thread, i) => {
@@ -85,11 +85,11 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
                       isFuture ? "cursor-default opacity-35" : "hover:bg-[#f6efdf]/10"
                     }`}
                   >
-                    <span className="text-[12px] uppercase tracking-[0.16em] text-[#9b8768]">
+                    <span className="text-[16px] uppercase tracking-[0.16em] text-[#9b8768]">
                       {thread.chapter}
                       {isCurrent ? " · 진행 중" : ""}
                     </span>
-                    <span className="text-[14px] text-[#e9d5a8]">{thread.title}</span>
+                    <span className="text-[16px] text-[#e9d5a8]">{thread.title}</span>
                   </button>
                 );
               })}

@@ -85,7 +85,7 @@ export function StrengthConfirmScene({
         <div className="flex-1">
           <NarrationBlock text={narration} />
         </div>
-        <div className="mt-auto flex items-center justify-end text-[14px] text-[#8b7050]">
+        <div className="mt-auto flex items-center justify-end text-[16px] text-[#8b7050]">
           <span className="italic">다음</span>
         </div>
       </div>
@@ -97,12 +97,12 @@ export function StrengthConfirmScene({
   return (
     <div className="flex flex-1 cursor-pointer flex-col" onClick={advance}>
       <div className="flex-1 space-y-4" style={{ fontFamily: "var(--font-ridi-batang)" }}>
-        <p className="text-[15px] leading-[1.75] text-[#3d2414] md:text-[16px]">
+        <p className="text-[16px] leading-[1.75] text-[#3d2414] md:text-[18px]">
           흥미롭네요. <strong>{session.name}</strong>님을 찾아온 사람들은 공통적으로 — &lsquo;
           <strong>{commonAsk}</strong>&rsquo;을 들고 왔군요.
         </p>
       </div>
-      <div className="mt-auto flex items-center justify-end text-[14px] text-[#8b7050]">
+      <div className="mt-auto flex items-center justify-end text-[16px] text-[#8b7050]">
         <span className="italic">다음</span>
       </div>
     </div>

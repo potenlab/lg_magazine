@@ -6,8 +6,10 @@ export const CLOSING_SCENES: SceneSpec[] = [
     chapter: "C",
     kind: "ritual",
     owl: "noteHanding",
-    timeOfDay: "dawnPink",
-    bgImage: "/vision_express/common/arriving-train.webp",
+    timeOfDay: "dawnFirstLight",
+    bgImage: "/vision_express/common/morning-room.webp",
+    // 도착 알림 딩동 효과음 (subway-station-chime)
+    bgm: "freesound_community-subway-station-chime-100558.mp3",
     pageSize: 2,
     lines: [
       "열차가 곧 다음 역에 도착해요.",
@@ -26,13 +28,19 @@ export const CLOSING_SCENES: SceneSpec[] = [
     kind: "magazineHandoff",
     owl: "handing",
     timeOfDay: "dawnFirstLight",
+    bgImage: "/vision_express/common/morning-room.webp",
     lines: [
       "Magazine STORY · Vol. {name}",
       "한 호가 다 적혔어요. 곧 전해드릴게요.",
     ],
     buttonLabel: "고맙습니다",
-    next: "C-2b",
+    next: "C-3",
   },
+  /*
+  // ── [숨김] C-2b 매거진 포스터 — 사용자가 나중에 다시 살릴 수 있도록 보존.
+  // 활성화하려면 다음 작업을 같이 되돌릴 것:
+  //   1) 위 C-2의 next를 "C-2b"로 변경
+  //   2) 아래 객체의 주석을 풀어 CLOSING_SCENES 배열에 다시 포함
   {
     id: "C-2b",
     chapter: "C",
@@ -40,15 +48,18 @@ export const CLOSING_SCENES: SceneSpec[] = [
     owl: "handing",
     hideOwl: true,
     timeOfDay: "dawnFirstLight",
+    bgImage: "/vision_express/common/morning-room.webp",
     hideSpeakerLabel: true,
     next: "C-3",
   },
+  */
   {
     id: "C-3",
     chapter: "C",
     kind: "owlNarration",
     owl: "laughing",
     timeOfDay: "dawnFirstLight",
+    bgImage: "/vision_express/common/morning-room.webp",
     lines: [
       "그동안 {name}님의 이야기를 들려주셔서, 정말 고맙습니다.",
       "부디 빛나시기를.",
@@ -58,12 +69,14 @@ export const CLOSING_SCENES: SceneSpec[] = [
   {
     id: "C-4",
     chapter: "C",
-    kind: "editorCredits",
+    kind: "ritual",
     owl: "closingBook",
     hideOwl: true,
     hideSpeakerLabel: true,
     timeOfDay: "dawnFirstLight",
-    bgm: "kauasilbershlachparodes-train-493986.mp3",
+    bgImage: "/vision_express/common/arriving-train.webp",
+    // 역 플랫폼 ambience (사람/새 소리). loop 가능 — ONE_SHOT_BGMS 아님.
+    bgm: "freesound_community-train_station_outdoor_platform_birds_people-30576.mp3",
     narration: "비전 익스프레스가 종착역에 도착했습니다.",
     buttonLabel: "이제 내릴게요",
     // Self-loop sentinel — handled in V3App.handleAdvance as terminal reset

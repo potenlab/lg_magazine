@@ -362,13 +362,14 @@ export const CH3_SCENES: SceneSpec[] = [
 
   // ── [17p] 성장 방향 선택 ──────────────────────────────────
   {
+    // [ch3 wow] 매거진 5 카드 통합 반향. 기존 visionSelect(6옵션+textarea)를
+    // 대체. 사용자 visionLine 입력 단계는 별도 scene으로 이후 추가 예정.
     id: "3-10",
     chapter: 3,
-    kind: "visionSelect",
+    kind: "growthVisionSynthesis",
     owl: "focusedWriting",
     timeOfDay: "starsFull",
     bgImage: BG_ROOM,
-    buttonLabel: "이걸로 할게요",
     next: "3-10b",
   },
 

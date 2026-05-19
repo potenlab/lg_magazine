@@ -10,17 +10,16 @@ import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 /**
- * [22p] Editor synthesis WOW.
- * Weaves four ingredients (Ch1 두 몰입 경험 / Ch2 가치 / Ch2 강점 공통 결 /
- * Ch2 타인이 보는 나) into 3~4 editor-voice sentences and shows them as a
- * standalone narration beat. Click-to-advance — the alignment question
- * (이미 알고 있었어요 / 새롭게 보였어요 / 반반이에요) lives on the next scene
- * (2-7-align binaryChoice) so the synthesis read isn't crowded by buttons.
+ * [ch3 wow] Editor growth-vision synthesis — pulls all ch1/ch2/ch3 material
+ * together and renders the LLM output as 5 magazine cards. Same visual
+ * pattern as StrengthSynthesisScene, just sourced from the longer
+ * synthesizeGrowthVision task and laid out so each beat reads as its own
+ * paragraph card.
  *
- * Resume support: the result is cached on session.strengthSynthesis so the
- * scene re-renders the same lines without re-calling the LLM.
+ * Result is cached on session.growthVisionSynthesis so resume / re-entry
+ * doesn't re-call the LLM.
  */
-export function StrengthSynthesisScene({
+export function GrowthVisionSynthesisScene({
   spec,
   onAdvance,
 }: {
@@ -28,8 +27,8 @@ export function StrengthSynthesisScene({
   onAdvance: (n: SceneId) => void;
 }) {
   const { session, patch } = useV3Session();
-  const [synthesis, setSynthesis] = useState<string>(session.strengthSynthesis);
-  const [loaded, setLoaded] = useState<boolean>(Boolean(session.strengthSynthesis));
+  const [synthesis, setSynthesis] = useState<string>(session.growthVisionSynthesis);
+  const [loaded, setLoaded] = useState<boolean>(Boolean(session.growthVisionSynthesis));
   const { setStage } = useContext(DialogStageContext);
 
   useEffect(() => {
@@ -41,23 +40,35 @@ export function StrengthSynthesisScene({
     let cancelled = false;
     (async () => {
       try {
-        const r = await llm.synthesizeStrength({
+        const r = await llm.synthesizeGrowthVision({
           name: session.name,
+          gender: session.gender,
+          job: session.job,
           flowExperience1: session.flowExperience1,
           flowExperience2: session.flowExperience2,
           selectedValues: session.selectedValues
             .map((word) => ({ word, meaning: session.valueDefinitions[word] ?? "" }))
             .filter((v) => v.word.trim().length > 0),
-          strengthCommonAsk: session.strengthCommonAsk,
+          topValue: session.topValue,
+          identityName: session.identityName,
+          strengthSynthesis: session.strengthSynthesis,
           othersDescription: session.othersDescription,
+          attraction: session.attraction,
+          alreadyDoing: session.alreadyDoing,
+          obstacles: session.obstacles,
+          whyReason: session.whyReason,
+          growthDirection: session.growthDirection,
+          currentTool: session.currentTool,
+          growthTool: session.growthTool,
+          contribution: session.contribution,
         });
         if (cancelled) return;
         const text = (r.synthesis ?? "").trim();
         setSynthesis(text);
-        if (text) patch({ strengthSynthesis: text });
+        if (text) patch({ growthVisionSynthesis: text });
         setLoaded(true);
       } catch (err) {
-        console.error("[v3] synthesizeStrength failed:", err);
+        console.error("[v3] synthesizeGrowthVision failed:", err);
         if (!cancelled) setLoaded(true);
       }
     })();
@@ -73,18 +84,19 @@ export function StrengthSynthesisScene({
   };
 
   if (!loaded || !synthesis) {
-    return <NarrationBlock text="편집장이 네 가지 재료를 한자리에 모아 천천히 꿰어보고 있어요…" />;
+    return (
+      <NarrationBlock text="편집장이 그동안의 이야기를 한자리에 모아 매거진으로 엮고 있어요…" />
+    );
   }
 
-  // Split LLM output into separate "beats" — each beat will land in its
-  // own card so the editor's WOW reads as a poster summary instead of a
-  // 4-line paragraph.
-  const lines = synthesis.split(/\n+/).map((s) => s.trim()).filter(Boolean);
+  // Split into beats — one paragraph per card.
+  const beats = synthesis.split(/\n+/).map((s) => s.trim()).filter(Boolean);
   const CARD_LABELS = [
-    "1.두 몰입 순간",
-    "2.공통 결",
-    "3.타인의 시선",
-    "4.가치의 뿌리",
+    "1. 두 몰입 순간",
+    "2. 가치와 정체성",
+    "3. 안과 밖의 시선",
+    "4. 향하고 있는 길",
+    "5. 닿고 싶은 끝",
   ];
 
   return (
@@ -94,22 +106,22 @@ export function StrengthSynthesisScene({
       style={{ fontFamily: "var(--font-ridi-batang)" }}
     >
       <p className="mb-4 text-[16px] leading-[1.7] text-[#3d2414]">
-        그럼 그 얘기를 제가 매거진으로 요약해봤어요.
+        그동안의 이야기를 제가 매거진 한 호로 정리해봤어요.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
-        {lines.map((line, i) => (
+        {beats.map((beat, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 * i, duration: 0.5, ease: "easeOut" }}
+            transition={{ delay: 0.18 * i, duration: 0.55, ease: "easeOut" }}
             className="rounded-md border border-[#b99b6b]/40 bg-white/55 px-4 py-3"
           >
             <p className="text-[11px] uppercase tracking-[0.22em] text-[#9b8768]">
               {CARD_LABELS[i] ?? `BEAT ${i + 1}`}
             </p>
             <p className="mt-1.5 text-[14px] leading-[1.6] text-[#3d2414]">
-              <EditorialInline text={line} />
+              <EditorialInline text={beat} />
             </p>
           </motion.div>
         ))}

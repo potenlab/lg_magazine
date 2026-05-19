@@ -76,7 +76,6 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
       entries: [
         { label: "선택한 가치 카드", tone: "answer", text: s.selectedValues?.join(", ") },
         { label: "각 가치의 의미", tone: "answer", text: fmtValueDefs(s.valueDefinitions) },
-        { label: "가장 소중한 가치", tone: "answer", text: s.topValue },
         { label: "AI: 가치 reflection", tone: "result", text: s.valueReflection },
         { label: "도움 요청받았던 경험", tone: "answer", text: s.helpRequests },
         { label: "AI: 강점 공통 결", tone: "result", text: s.strengthCommonAsk },

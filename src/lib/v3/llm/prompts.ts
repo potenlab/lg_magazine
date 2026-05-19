@@ -393,6 +393,26 @@ ${REFLECT_NEGATIVE_GUARD}
 
 ${REFLECT_GLOBAL_RULES}`;
     }
+    if (topic === "supportPersonAndResource") {
+      return `※ 이 답변은 직전 두 질문 — '첫 걸음을 함께할 사람'(인물)과 '첫 걸음에 필요한 도움·자원'(자원) — 두 답변이 한 묶음으로 전달된 것입니다. 두 답변 모두에 기반해 통합된 반향을 짧게 만들어주세요.
+참가자가 '[함께할 사람]'과 '[필요한 자원]' 두 섹션으로 적어 보냈다는 점을 인지하되, 출력에는 그 라벨을 그대로 노출하지 말고 자연스러운 한국어로 녹여내세요.
+
+[문장 1 — 받아주기]
+'인물'과 '자원'을 한 호흡에 함께 짚는 한 줄.
+- 형식 예시: "아, [그분/관계]을 곁에 두고 [필요한 자원]을 손에 쥐고 가시려는 거네요."
+- 두 요소를 모두 자연스럽게 포함. 한 쪽이 비어 있으면 채워진 쪽만 부드럽게 짚기.
+- 30~55자
+
+[문장 2 — 짧은 인정]
+사람과 자원을 함께 떠올린 그 시선에 깃든 결을 한 줄로 인정.
+- 형식 예시: "곁의 사람과 손에 쥔 것 — 그 두 가지가 첫 걸음을 단단하게 만들어 줄 것 같아요."
+- 한 답변에만 머무르지 말고 '둘이 어떻게 같이 받쳐주는지'를 짧게 비추기.
+- 35~60자
+
+${REFLECT_NEGATIVE_GUARD}
+
+${REFLECT_GLOBAL_RULES}`;
+    }
     // default Ch4 — firstStep (the action/plan itself)
     return `※ 이 답변은 '내일부터 시도해볼 행동·실험·계획'입니다. 사용자의 결단을 그대로 인정해주세요.
 
@@ -645,6 +665,91 @@ JSON 형태로만 출력:
     return { synthesis };
   } catch {
     // Soft fallback so the scene never blocks — caller may also fall back to stub.
+    return { synthesis: "" };
+  }
+}
+
+export async function v3SynthesizeGrowthVision(input: {
+  name: string;
+  gender: "그" | "그녀";
+  job: string;
+  flowExperience1: string;
+  flowExperience2: string;
+  selectedValues: { word: string; meaning: string }[];
+  topValue: string;
+  identityName: string;
+  strengthSynthesis: string;
+  othersDescription: string;
+  attraction: string;
+  alreadyDoing: string;
+  obstacles: string;
+  whyReason: string;
+  growthDirection: string;
+  currentTool: string[];
+  growthTool: string[];
+  contribution: string;
+}): Promise<{ synthesis: string }> {
+  const valueLines = input.selectedValues
+    .map((v, i) => `${i + 1}. ${v.word}${v.meaning ? ` — ${v.meaning}` : ""}`)
+    .join("\n");
+  const user = `${input.name}님이 ch1~ch3에서 들려준 모든 재료입니다. 편집장(엘 아울) 시선으로 ${input.name}님이 어떤 방향으로 성장하고 싶은 사람인지를 매거진 한 호처럼 통합 정리해주세요.
+
+[Chapter 1 — 몰입의 두 순간]
+경험 A: ${input.flowExperience1 || "—"}
+경험 B: ${input.flowExperience2 || "—"}
+
+[Chapter 2 — 가치 / 정체성 / 강점]
+선택한 가치들:
+${valueLines || "—"}
+가장 소중한 가치: ${input.topValue || "—"}
+정체성("나는 ___한 사람"): ${input.identityName || "—"}
+가까운 사람이 본 ${input.name}: ${input.othersDescription || "—"}
+강점 종합 (이전 비트):
+${input.strengthSynthesis || "—"}
+
+[Chapter 3 — 향하고 싶은 방향]
+끌리는 것: ${input.attraction || "—"}
+이미 하고 있는 것: ${input.alreadyDoing || "—"}
+걸리는 것/장애물: ${input.obstacles || "—"}
+향하고 싶은 이유: ${input.whyReason || "—"}
+성장 방향(축): ${input.growthDirection || "—"}
+지금 잘 쓰는 도구: ${(input.currentTool ?? []).join(", ") || "—"}
+키우고 싶은 도구: ${(input.growthTool ?? []).join(", ") || "—"}
+기여하고 싶은 것: ${input.contribution || "—"}
+
+직무: ${input.job || "—"}
+
+[출력 형식 — JSON 한 객체만]
+{
+  "synthesis": "BEAT1\\nBEAT2\\nBEAT3\\nBEAT4\\nBEAT5"
+}
+
+[규칙]
+- 정확히 5개의 BEAT 문단을 \\n 으로 구분해서 합쳐 출력. (4개여도 OK, 6개는 금지)
+- 각 BEAT는 한 줄짜리 문장이 아닌 **한 문단 (2~3문장, 약 150~220자)**.
+- 다 합쳐서 800~1100자. (너무 짧으면 매거진 느낌이 안 살고 너무 길면 카드에 안 들어감)
+- BEAT 순서/주제 가이드 — 순서대로 적기:
+  1) 두 몰입 순간을 관통하는 공통 결 → ${input.name}님이 어떤 행위·태도에 끌리는지.
+  2) 그 결을 떠받치는 가치 + 정체성 — "${input.identityName || "?"}"라는 이름이 어디서 비롯됐는지.
+  3) 주변 사람의 시선과 ${input.name}님의 답변이 만나는 지점 — "남이 본 나"와 "내가 본 나"의 교차점.
+  4) ch3에서 드러난 끌림·이미 하고 있는 것·장애물을 하나의 길로 묶기 — 이 사람이 어디로 향하고 있는지.
+  5) 그 길의 끝에 어떤 기여/영향력이 놓여 있는지 — 도구·키우고 싶은 것까지 자연스럽게 녹여서.
+- 사용자가 쓴 표현(가치 단어, "${input.identityName || ""}", growthDirection 등)을 **반드시 1~2번씩 인용**해서 ${input.name}님의 어휘로 들리게.
+- 칭찬·평가·단정 금지. 발견의 시선("…처럼 보여요", "…로 읽혀요", "…에 가깝게 흐르네요").
+- 클리셰/과장/이모지 금지.
+- 따옴표 인용은 작은따옴표(')만 사용. 줄바꿈은 \\n 한 번씩만.
+
+${EDITORIAL_PROSE_CONSTRAINT}`;
+  const r = await ask(user, 1800);
+  const text = r.text.trim();
+  try {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("no JSON found");
+    const parsed = JSON.parse(match[0]) as { synthesis?: string };
+    const synthesis = (parsed.synthesis ?? "").trim();
+    if (!synthesis) throw new Error("empty synthesis");
+    return { synthesis };
+  } catch {
     return { synthesis: "" };
   }
 }

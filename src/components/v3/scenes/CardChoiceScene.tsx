@@ -124,9 +124,7 @@ export function CardChoiceScene({
           type="button"
           onClick={confirm}
           disabled={selected === null}
-          className={`rounded-md bg-[#3d2414] px-6 py-3 text-[16px] text-[#f5ead6] transition hover:bg-[#5a3520] active:scale-95 ${
-            selected === null ? "pointer-events-none opacity-0" : "opacity-100"
-          }`}
+          className="rounded-md bg-[#3d2414] px-6 py-3 text-[16px] text-[#f5ead6] transition hover:bg-[#5a3520] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#3d2414]"
         >
           {spec.buttonLabel ?? "선택하기"}
         </button>

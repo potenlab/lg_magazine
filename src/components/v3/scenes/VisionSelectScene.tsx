@@ -178,10 +178,11 @@ export function VisionSelectScene({
         <p className="text-[16px] font-semibold uppercase tracking-widest text-[#8b7050]">
           나의 성장 방향
         </p>
-        <p className="text-[16px] text-[#a18965]">
-          위에서 고른 문장들을 바탕으로, {session.name}님만의 언어로 정리해주세요. 고른 문장
-          그대로여도 좋고, 합치거나 고쳐도 좋아요. {session.name}님은 어떤 방향으로 나아가고
-          싶은 사람인가요?
+        <p
+          className="text-[16px] leading-[1.7] text-[#3d2414]"
+          style={{ fontFamily: "var(--font-ridi-batang)" }}
+        >
+          {session.name}님은 어떤 방향으로 나아가고 싶은 사람인가요?
         </p>
         <textarea
           value={value}

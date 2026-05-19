@@ -274,20 +274,21 @@ function V3Inner() {
     setBGM(spec?.bgm, spec?.chapter as number);
   }, [spec?.bgm, spec?.chapter, setBGM]);
 
-  // Train loop ambience — runs softly from 0-2 (boarding done) through ch4,
-  // stops when we reach the closing scenes (열차 도착 후 내림).
+  // Train loop ambience — 0-2(탑승)부터 C-3(작별 인사)까지. C-4(종착역)에서
+  // 정지. 사용자 요청: 도착 후에도 객실 안 분위기를 유지하기 위해 train loop
+  // 종료를 closing의 마지막 직전 scene까지 늦췄다.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const audio = await import("@/lib/v3/audio");
       const idx = SCENE_ORDER.indexOf(activeId);
       const trainStartIdx = SCENE_ORDER.indexOf("0-2");
-      const closingStartIdx = SCENE_ORDER.indexOf("C-1");
+      const trainStopIdx = SCENE_ORDER.indexOf("C-4");
       const inTrain =
         idx >= 0 &&
         trainStartIdx >= 0 &&
         idx >= trainStartIdx &&
-        (closingStartIdx < 0 || idx < closingStartIdx);
+        (trainStopIdx < 0 || idx < trainStopIdx);
       if (cancelled) return;
       if (inTrain) {
         audio.startLoop("trainLoop", 0.25);
@@ -437,7 +438,12 @@ function V3Inner() {
                     // + backdrop blur so background image stays visible behind narration.
                     ? "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md bg-[#f6efdf]/55 p-7 backdrop-blur-[2px]"
                     : FULL_HEIGHT_KINDS.has(spec.kind) && stage === "content"
-                  ? spec.kind === "valueCards"
+                  ? spec.kind === "timeHorizon"
+                    // timeHorizon은 LLM이 3줄만 채워주는 짧은 콘텐츠라 viewport
+                    // 가득 채우면 빈 공간이 너무 많이 보인다. max-h로 잘리는 케이스만
+                    // 보호하고 평소엔 콘텐츠에 맞춰 높이를 자동으로 줄인다.
+                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
+                    : spec.kind === "valueCards"
                     // valueCards renders its own dark "menu board" container,
                     // so the dialog wrapper goes transparent — no parchment
                     // background, no border, no padding fighting the menu.
@@ -465,11 +471,16 @@ function V3Inner() {
                     ? "relative mx-auto flex max-h-[calc(100vh_-_220px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
                     : INPUT_KINDS.has(spec.kind) && stage === "content"
                       ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[360px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-[108px] shadow-2xl text-[16px]"
-                      : "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-7 shadow-2xl"
+                      : (spec.kind === "strengthSynthesis" || spec.kind === "growthVisionSynthesis") && stage === "content"
+                        // Magazine-card synthesis scenes — need enough vertical room
+                        // for the card grid but should hug the content (no forced
+                        // viewport height).
+                        ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
+                        : "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-7 shadow-2xl"
               }
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             >
-              {spec.kind === "toolSelect" || spec.kind === "cardChoice" ? (
+              {spec.kind === "toolSelect" || spec.kind === "cardChoice" || spec.kind === "timeHorizon" ? (
                 <SceneComponent
                   spec={spec}
                   onAdvance={handleAdvance}

@@ -18,6 +18,7 @@ import { Ch1KeywordScene } from "./Ch1KeywordScene";
 import { ValueReflectionScene } from "./ValueReflectionScene";
 import { StrengthConfirmScene } from "./StrengthConfirmScene";
 import { StrengthSynthesisScene } from "./StrengthSynthesisScene";
+import { GrowthVisionSynthesisScene } from "./GrowthVisionSynthesisScene";
 import { CardChoiceScene } from "./CardChoiceScene";
 import { ToolSelectScene } from "./ToolSelectScene";
 import { VisionSelectScene } from "./VisionSelectScene";
@@ -57,6 +58,7 @@ export const SCENE_COMPONENTS: Record<SceneKind, ComponentType<SceneComponentPro
   valueReflection: ValueReflectionScene,
   strengthConfirm: StrengthConfirmScene,
   strengthSynthesis: StrengthSynthesisScene,
+  growthVisionSynthesis: GrowthVisionSynthesisScene,
   cardChoice: CardChoiceScene,
   toolSelect: ToolSelectScene,
   visionSelect: VisionSelectScene,

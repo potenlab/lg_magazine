@@ -9,6 +9,7 @@ import {
   v3ReflectValues,
   v3ReflectStrength,
   v3SynthesizeStrength,
+  v3SynthesizeGrowthVision,
   v3GenerateVisionDirections,
   v3GenerateTimeHorizon,
   v3ExtractKeyword,
@@ -29,6 +30,7 @@ type Task =
   | "reflectValues"
   | "reflectStrength"
   | "synthesizeStrength"
+  | "synthesizeGrowthVision"
   | "generateVisionDirections"
   | "generateTimeHorizon"
   | "extractKeyword"
@@ -77,6 +79,9 @@ export async function POST(req: Request) {
         break;
       case "synthesizeStrength":
         result = await v3SynthesizeStrength(body.payload as Parameters<typeof v3SynthesizeStrength>[0]);
+        break;
+      case "synthesizeGrowthVision":
+        result = await v3SynthesizeGrowthVision(body.payload as Parameters<typeof v3SynthesizeGrowthVision>[0]);
         break;
       case "generateVisionDirections":
         result = await v3GenerateVisionDirections(body.payload as Parameters<typeof v3GenerateVisionDirections>[0]);

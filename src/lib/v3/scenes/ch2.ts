@@ -111,8 +111,12 @@ export const CH2_SCENES: SceneSpec[] = [
     editorNote: "작은 부탁일수록 좋아요. 작은 부탁일수록 그 사람이 진짜 믿는 것을 보여주거든요.",
     saveTo: "helpRequests",
     buttonLabel: "건네기",
-    next: "2-7",
+    next: "2-7-narr",
   },
+  /*
+  // ── [숨김] 2-7 강점 공통 결 LLM 반향(strengthConfirm).
+  // 피드백: 4재료 wow 흐름에서 이 단독 반향 단계를 제거.
+  // 복원하려면 위 2-6.next를 "2-7"로 되돌리고 아래 객체 주석 풀기.
   {
     // [21p] 강점 공통 결 LLM 반향. 2026-05-15: 확인 버튼 제거 — 클릭-진행으로 전환.
     id: "2-7",
@@ -122,6 +126,7 @@ export const CH2_SCENES: SceneSpec[] = [
     owl: "scrutinizing",
     next: "2-7-narr",
   },
+  */
   {
     // [23p] 편집장이 펜을 내려놓는 비트.
     id: "2-7-narr",
@@ -161,15 +166,19 @@ export const CH2_SCENES: SceneSpec[] = [
   },
   {
     // [22p] 4재료(Ch1 몰입 / Ch2 가치 / Ch2 강점 결 / Ch2 타인이 보는 나) 종합.
+    // 매거진 카드 형식으로 표시되어 2-8 identity 질문으로 자연스럽게 이어진다.
     id: "2-7-synth",
     chapter: 2,
     kind: "strengthSynthesis",
     timeOfDay: "starsRising",
     owl: "focusedWriting",
-    next: "2-7-align",
+    next: "2-8",
   },
+  /*
+  // ── [숨김] 평소 모습과 겹치는지 binaryChoice + 각 분기 반응.
+  // 피드백: 4재료 wow 카드 요약 후 2-8 identity로 바로 이어지도록 제거.
+  // 복원하려면 위 2-7-synth.next를 "2-7-align"로 되돌리고 아래 객체들 주석 풀기.
   {
-    // [22p] 자기 강점 정렬 질문.
     id: "2-7-align",
     chapter: 2,
     kind: "binaryChoice",
@@ -209,6 +218,7 @@ export const CH2_SCENES: SceneSpec[] = [
     lines: ["알고 있던 것이 더 선명해지고, 몰랐던 것이 조금 보이기 시작한 거네요."],
     next: "2-8",
   },
+  */
   {
     id: "2-8",
     chapter: 2,

@@ -73,6 +73,33 @@ export interface LLMContract {
     othersDescription: string;
   }): Promise<{ synthesis: string }>;
 
+  /** [ch3 wow] Editor growth-vision synthesis — pulls all of ch1/ch2/ch3
+   * material together (flow moments, value definitions, identity name,
+   * strength synthesis, attraction, obstacles, growth direction, tools,
+   * contribution, etc.) and weaves a longer magazine-style summary (~1000자
+   * total, 4~6 beat cards). Each beat is one short paragraph; beats are
+   * joined by `\n` so the downstream scene can split them into cards. */
+  synthesizeGrowthVision(input: {
+    name: string;
+    gender: "그" | "그녀";
+    job: string;
+    flowExperience1: string;
+    flowExperience2: string;
+    selectedValues: { word: string; meaning: string }[];
+    topValue: string;
+    identityName: string;
+    strengthSynthesis: string;
+    othersDescription: string;
+    attraction: string;
+    alreadyDoing: string;
+    obstacles: string;
+    whyReason: string;
+    growthDirection: string;
+    currentTool: string[];
+    growthTool: string[];
+    contribution: string;
+  }): Promise<{ synthesis: string }>;
+
   /** From the Ch3 vision inputs plus Ch1/Ch2 carry-over, generate 6 future-
    * direction sentences along distinct axes (role / method / strength /
    * growth / impact / integration). Returns the 6 sentence texts in that

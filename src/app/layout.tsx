@@ -25,8 +25,8 @@ const nanumSeongSirCe = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Persona - The Brand Book",
-  description: "비전 익스프레스에 탑승하여 나만의 브랜딩북을 완성하세요",
+  title: "Magazine STORY · Vision Express",
+  description: "당신만을 위한 단 한 호의 매거진",
 };
 
 export const viewport: Viewport = {

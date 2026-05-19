@@ -26,9 +26,13 @@ const HORIZON_LABELS = ["①", "②", "③"] as const;
 export function TimeHorizonScene({
   spec,
   onAdvance,
+  onPrev,
+  canGoBack,
 }: {
   spec: SceneSpec;
   onAdvance: (n: SceneId) => void;
+  onPrev?: () => void;
+  canGoBack?: boolean;
 }) {
   const { session, patch } = useV3Session();
   const { setStage } = useContext(DialogStageContext);
@@ -142,8 +146,19 @@ export function TimeHorizonScene({
         </p>
       </div>
 
-      {/* 버튼 — sticky 하단 고정 (FULL_HEIGHT dialog의 p-7에 맞춰 -mx-7/-mb-7) */}
-      <div className="sticky bottom-0 z-10 -mx-7 -mb-7 mt-1 flex justify-end px-7 py-3">
+      {/* 이전 + 이걸로 할게요 — 같은 row에 정렬 (ToolSelectScene 패턴) */}
+      <div className="sticky bottom-0 z-10 -mx-7 -mb-7 mt-1 flex items-center justify-between px-7 py-3">
+        {onPrev && canGoBack ? (
+          <button
+            type="button"
+            onClick={onPrev}
+            className="flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
+          >
+            이전
+          </button>
+        ) : (
+          <span />
+        )}
         <StoryButtonV3
           label={spec.buttonLabel ?? "이걸로 할게요"}
           onClick={submit}

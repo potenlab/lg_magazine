@@ -86,6 +86,41 @@ export const stubLLM: LLMContract = {
     return { synthesis: lines.join("\n") };
   },
 
+  async synthesizeGrowthVision({
+    name,
+    identityName,
+    topValue,
+    growthDirection,
+    attraction,
+    contribution,
+    othersDescription,
+  }) {
+    // Always produce 5 beats so the magazine grid has a consistent shape
+    // even when LLM/network failed and the session payload is sparse. Per-beat
+    // text gracefully degrades to placeholder language when the relevant
+    // session field is empty.
+    const id = identityName?.trim() || "스스로의 길을 짓는 사람";
+    const valueWord = topValue?.trim();
+    const valuePhrase = valueWord ? `'${valueWord}'이라는 단어` : `${name}님이 고른 가치들`;
+    const dir = growthDirection?.trim();
+    const attr = attraction?.trim();
+    const contr = contribution?.trim();
+    const others = othersDescription?.trim();
+
+    const beat1 = `${name}님이 들려준 두 몰입 순간에는 같은 결이 흐르고 있었어요. 어떤 일이든 ${name}님은 자기 손과 시선으로 직접 다듬어 보는 사람으로 읽혀요.`;
+    const beat2 = `${valuePhrase}와 '${id}'라는 이름은 그 결을 다른 각도에서 받쳐 주고 있어요. 가치는 행위의 이유가 되고, 정체성은 행위의 모양이 되어가는 모습이 보여요.`;
+    const beat3 = others
+      ? `가까이서 본 사람의 말 — "${others}" — 은 ${name}님 자신이 본 모습과 닮은 듯, 또 한 켜 다른 각도를 비춰 줘요. 안과 밖이 만나는 지점이 ${name}님의 결을 더 또렷하게 만들고 있어요.`
+      : `${name}님이 본 자신과 가까운 사람의 시선이 같은 결을 다른 각도로 비춰 주고 있어요. 안과 밖이 만나는 지점이 ${name}님을 더 또렷하게 만들고 있어요.`;
+    const attrSnippet = attr ? `'${attr.slice(0, 24)}${attr.length > 24 ? "…" : ""}'` : "그 끌림";
+    const dirSnippet = dir ? `'${dir}'` : "지금 잡고 있는 성장 축";
+    const beat4 = `Chapter 3에서 ${name}님이 끌린다고 한 ${attrSnippet}, 그리고 ${dirSnippet}은 결국 하나의 길로 모이고 있어요. 이미 작은 발걸음들이 그쪽을 향하고 있다는 게 보여요.`;
+    const contrSnippet = contr ? `'${contr.slice(0, 30)}${contr.length > 30 ? "…" : ""}'` : "${name}님이 닿고 싶은 끝";
+    const beat5 = `그 길의 끝에는 ${name}님이 닿고 싶다고 말한 ${contr ? contrSnippet : "어떤 영향력"}이 놓여 있어요. 도구는 손에 익혀가면 되고, 방향은 이미 정해져 있는 느낌이에요.`;
+
+    return { synthesis: [beat1, beat2, beat3, beat4, beat5].join("\n") };
+  },
+
   async generateVisionDirections() {
     // Fixed fallback — used when the LLM call / parse fails. Mirrors
     // FALLBACK_DIRECTIONS in VisionSelectScene so both layers show the same 6.

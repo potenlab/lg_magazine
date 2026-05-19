@@ -71,6 +71,7 @@ export type SceneKind =
   | "valueReflection"
   | "strengthConfirm"
   | "strengthSynthesis"
+  | "growthVisionSynthesis"
   | "cardChoice"
   | "toolSelect"
   | "visionSelect"
@@ -227,6 +228,10 @@ export interface V3Session {
    * common-ask pattern, and Ch2 othersDescription. Cached on the session so
    * the [22p] beat is stable on resume. */
   strengthSynthesis: string;
+  /** ch3 growth-vision LLM synthesis — long magazine-style summary (5 beats,
+   * ~1000자) covering ch1/ch2/ch3 material. Cached so the wow beat is stable
+   * on resume. */
+  growthVisionSynthesis: string;
   /** User's answer to "what would someone close to you say about you?" —
    * the final synthesis question before naming themselves at 2-8. */
   othersDescription: string;
@@ -297,6 +302,7 @@ export const EMPTY_V3_SESSION: V3Session = {
   strengthRevised: "",
   selfStrengthAlignment: "",
   strengthSynthesis: "",
+  growthVisionSynthesis: "",
   othersDescription: "",
   patternMirrorSituation: "",
   patternMirrorBehavior: "",

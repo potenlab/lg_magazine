@@ -160,6 +160,17 @@ export const realLLM: LLMContract = {
     }
   },
 
+  async synthesizeGrowthVision(input) {
+    try {
+      const r = await callTask<{ synthesis: string }>("synthesizeGrowthVision", input);
+      if (!r.synthesis?.trim()) return stubLLM.synthesizeGrowthVision(input);
+      return r;
+    } catch (err) {
+      console.warn("[v3 LLM] synthesizeGrowthVision fell back to stub:", err);
+      return stubLLM.synthesizeGrowthVision(input);
+    }
+  },
+
   async generateVisionDirections(input) {
     try {
       return await callTask<{ directions: string[] }>("generateVisionDirections", input);

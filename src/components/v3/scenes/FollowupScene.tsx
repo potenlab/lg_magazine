@@ -74,18 +74,31 @@ export function FollowupScene({
       spec.chapter === 1 || spec.chapter === 2 || spec.chapter === 3 || spec.chapter === 4
         ? spec.chapter
         : 1;
+    // ch4 / neededResource(4-6b) 단계에서는 직전 두 질문(인물·자원) 답변을
+    // 합쳐 LLM에 전달해 통합 반향을 만든다.  topic은 별도 키로 분기.
+    let reflectAnswer = answer;
+    let reflectTopic: string = parentSaveTo;
+    if (reflectChapter === 4 && parentSaveTo === "neededResource") {
+      const supportPerson = String(session.supportPerson ?? "").trim();
+      const neededResource = String(session.neededResource ?? "").trim();
+      if (supportPerson || neededResource) {
+        reflectAnswer = [
+          supportPerson ? `[함께할 사람] ${supportPerson}` : null,
+          neededResource ? `[필요한 자원] ${neededResource}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n");
+        reflectTopic = "supportPersonAndResource";
+      }
+    }
     (async () => {
       const [judged, refl] = await Promise.all([
         llm.judgeBranch({ sceneId: spec.id, answer }),
-        // Pass parentSaveTo as `topic` so reflectShort knows *which*
-        // question this answers — Ch4 alone has 3 question types
-        // (firstStep / supportPerson / neededResource) and chapter-only
-        // context mis-reads them all as "행동".
         llm.reflectShort({
-          answer,
+          answer: reflectAnswer,
           name: session.name,
           chapter: reflectChapter,
-          topic: parentSaveTo,
+          topic: reflectTopic,
         }),
       ]);
       if (cancelled) return;

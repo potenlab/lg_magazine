@@ -50,8 +50,9 @@ yarn-error.log*
 # Keep small SVG/icon assets that have no webp version
 !/public/vision_express/common/*.svg
 
-# Heavy font duplicates — keep woff2, drop ttf
-/public/fonts/v3/*.ttf
+# Font ttf files are required at runtime by react-pdf (browser PDF
+# generation), so they must be committed even though woff2 covers the
+# in-page web font use case.
 
 # typescript
 *.tsbuildinfo

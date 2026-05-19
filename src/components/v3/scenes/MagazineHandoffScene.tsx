@@ -98,15 +98,21 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
   const identityTitle = extractIdentityTitle(session.identityName);
 
   // Summary fields shown above the download button (QA: 마무리에서 결과를 한번에 읽어보는게 좋지 않을까요).
+  // selectedValues에 골라둔 가치가 1~3개 있을 수 있어 모두 표시한다.
+  const pickedValues = (session.selectedValues ?? []).filter((v) => v && v.trim().length > 0);
+  const valueRows: Array<[string, string]> = pickedValues.map((v) => [
+    `'${v}'은 나에게`,
+    session.valueDefinitions[v] ?? "",
+  ]);
   const summary: Array<[string, string]> = [
     ["이름", session.name],
     ["직무", session.job],
     ["나의 정체성", identityTitle],
-    ["가장 소중한 가치", session.topValue],
     [
-      `'${session.topValue}'은 나에게`,
-      session.valueDefinitions[session.topValue] ?? "",
+      "가장 소중한 가치",
+      pickedValues.length > 0 ? pickedValues.join(", ") : session.topValue,
     ],
+    ...valueRows,
     ["4년 후 비전", session.visionLine],
     ["내일부터의 한 걸음", session.firstStep],
     ["곁의 사람", session.supportPerson],

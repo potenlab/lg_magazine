@@ -3,7 +3,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
-import { MagazineBeatPage, MagazineBeatLoading } from "@/components/v3/ui/MagazineArticlePage";
+import { MagazineBeatPage, MagazineBeatLoading, parseBeat } from "@/components/v3/ui/MagazineArticlePage";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
@@ -27,10 +27,13 @@ import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
  * 이전 디자인(4 BEAT 카드 vertical stack + fold)은 Chapter2MagazineScene_v1.tsx 에
  * 보존.
  */
-type Beat = { number: string; category: string; body: string };
+type Beat = { number: string; category: string; body: string; headline?: string };
 
+// "두 몰입 순간" → "두 장면을 잇는 것"으로 변경 (2026-05-20).
+// "몰입" / "Chapter 1" 같은 내부 framing 어휘를 제거하고 사용자 시점의
+// 자연어("들려준 두 장면")로 통일. 매거진 한 호의 immersion 회복.
 const BEAT_LABELS = [
-  { number: "01", category: "두 몰입 순간" },
+  { number: "01", category: "두 장면을 잇는 것" },
   { number: "02", category: "공통의 결" },
   { number: "03", category: "타인의 시선" },
   { number: "04", category: "가치의 뿌리" },
@@ -102,16 +105,19 @@ export function Chapter2MagazineScene({
     return <NarrationBlock text="편집장이 네 가지 재료를 한자리에 모아 천천히 꿰어보고 있어요…" />;
   }
 
-  // Split into 4 BEATs.
+  // Split into 4 BEATs and parse [HEADLINE: ...] from each.
+  // 새 LLM 출력 형식: "[HEADLINE: H1] body1\n[HEADLINE: H2] body2\n..." (v3 톤 강화).
+  // 헤드라인이 없는 옛 데이터(resume 케이스)는 자동으로 body로만 폴백.
   const beatTexts = synthesis
     .split(/\n+/)
     .map((s) => s.trim())
     .filter(Boolean)
     .slice(0, 4);
-  const beats: Beat[] = BEAT_LABELS.map((lbl, i) => ({
-    ...lbl,
-    body: beatTexts[i] ?? "",
-  }));
+  const beats: Beat[] = BEAT_LABELS.map((lbl, i) => {
+    const raw = beatTexts[i] ?? "";
+    const { headline, body } = parseBeat(raw);
+    return { ...lbl, body, headline };
+  });
 
   const submit = async () => {
     if (judging || completed) return;
@@ -282,14 +288,14 @@ function BeatSpread({ left, right }: { left: Beat; right: Beat }) {
     <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-0">
       <BeatPanel side="left">
         {left.body ? (
-          <MagazineBeatPage number={left.number} category={left.category} body={left.body} />
+          <MagazineBeatPage number={left.number} category={left.category} body={left.body} headline={left.headline} />
         ) : (
           <MagazineBeatLoading number={left.number} category={left.category} />
         )}
       </BeatPanel>
       <BeatPanel side="right">
         {right.body ? (
-          <MagazineBeatPage number={right.number} category={right.category} body={right.body} />
+          <MagazineBeatPage number={right.number} category={right.category} body={right.body} headline={right.headline} />
         ) : (
           <MagazineBeatLoading number={right.number} category={right.category} />
         )}
@@ -341,11 +347,11 @@ function IdentityPage({
         className="mb-8 text-center font-serif text-2xl italic text-[#3d2414]"
         style={{ fontFamily: "var(--font-ridi-batang), serif" }}
       >
-        당신은 어떤 사람입니까?
+        {name}님은 어떤 사람입니까?
       </h2>
 
       <div className="mb-6 flex flex-wrap items-baseline justify-center gap-x-2 text-center">
-        <span className="text-[18px] text-[#3d2414]">당신은</span>
+        <span className="text-[18px] text-[#3d2414]">{name}님은</span>
         <span
           className={`inline-block min-w-[200px] border-b-2 border-dashed pb-1 text-[18px] font-semibold tracking-wide transition-colors ${
             completed

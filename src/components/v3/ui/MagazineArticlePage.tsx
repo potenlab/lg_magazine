@@ -69,23 +69,30 @@ export function MagazineArticleLoading({ chapter }: { chapter: 1 | 2 | 3 | 4 }) 
  * 본문 한 문단. synthesis 결과 BEAT (Chapter 2 강점 종합, Chapter 3 성장 비전
  * 종합)를 합본 매거진 스프레드의 좌·우 페이지로 보여줄 때 사용.
  *
- * 룩:
- *   "01" (큰 숫자, gold)         ← 페이지 번호
- *   ─────                        ← gold rule
- *   두 몰입 순간                  ← 카테고리 제목 (italic serif)
- *   본문 문단 …                  ← BEAT 본문 (드롭캡 없음, 한 문단 통째)
+ * 룩 (v3 — 2026-05-19 매거진 톤 강화):
+ *   "01" (큰 숫자, gold)              ← 페이지 번호
+ *   ─                                  ← gold rule
+ *   두 몰입의 순간 · 카테고리          ← 작은 부제 (uppercase letter-spaced)
+ *   판을 짜고 결과를 만드는 사람       ← LLM-generated 헤드라인 (큰 italic serif)
+ *   본문 문단 (with **bold** 강조)     ← BEAT 본문, key phrase는 굵게
+ *
+ * body는 LLM 출력에서 `[HEADLINE: ...]` 마커를 떼고 남은 텍스트.
+ * headline은 별도로 parser가 추출해서 props로 전달.
  */
 export function MagazineBeatPage({
   number,
   category,
   body,
+  headline,
 }: {
   /** 페이지 번호 ("01", "02", ...). 큰 숫자로 prominent하게 표시. */
   number: string;
-  /** 카테고리 이름 ("두 몰입 순간" 등) — italic serif 헤드라인 자리. */
+  /** 카테고리 이름 ("두 몰입 순간" 등) — 작은 uppercase 부제. */
   category: string;
-  /** BEAT 본문 — 한 문단 (Chapter article과 달리 짧음). */
+  /** BEAT 본문 — 한 문단 (Chapter article과 달리 짧음). **bold** 마크다운 지원. */
   body: string;
+  /** LLM이 생성한 매거진 헤드라인 ("판을 짜고 결과를 만드는 사람"). 없으면 카테고리만. */
+  headline?: string;
 }) {
   return (
     <div className="space-y-3">
@@ -96,17 +103,55 @@ export function MagazineBeatPage({
         {number}
       </p>
       <div className="h-px w-12 bg-[#b99b6b]" />
-      <h3
-        className="font-serif text-xl italic text-[#3d2414]"
-        style={{ fontFamily: "var(--font-ridi-batang), serif" }}
-      >
+      <p className="text-[11px] uppercase tracking-[0.32em] text-[#9b8768]">
         {category}
-      </h3>
+      </p>
+      {headline && (
+        <h3
+          className="font-serif text-[22px] italic leading-snug text-[#3d2414]"
+          style={{ fontFamily: "var(--font-ridi-batang), serif" }}
+        >
+          {headline}
+        </h3>
+      )}
       <p className="pt-1 text-[16px] leading-[1.85] text-[#3d2414]">
-        <EditorialInline text={body} />
+        <BoldMarkdown text={body} />
       </p>
     </div>
   );
+}
+
+/** 본문 안의 `**xxx**` 마크다운 → <strong>xxx</strong> 변환.
+ *  매거진 본문에서 LLM이 강조한 핵심 takeaway phrase를 굵게 렌더링하기 위해.
+ *  EditorialInline의 다른 후처리(작은따옴표 변환 등)는 굳이 필요 없어 단순 구현. */
+function BoldMarkdown({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        const m = part.match(/^\*\*([\s\S]+)\*\*$/);
+        if (m) {
+          return (
+            <strong key={i} className="font-semibold text-[#3d2414]">
+              {m[1]}
+            </strong>
+          );
+        }
+        return <EditorialInline key={i} text={part} />;
+      })}
+    </>
+  );
+}
+
+/** LLM synthesis 텍스트(`[HEADLINE: ...] body`)에서 headline + body 분리.
+ *  헤드라인이 없으면 headline은 undefined, body는 원본 그대로. */
+export function parseBeat(raw: string): { headline?: string; body: string } {
+  const trimmed = raw.trim();
+  const m = trimmed.match(/^\[HEADLINE:\s*(.+?)\]\s*([\s\S]+)$/);
+  if (m) {
+    return { headline: m[1].trim(), body: m[2].trim() };
+  }
+  return { body: trimmed };
 }
 
 /** BEAT 페이지 로딩 placeholder. */

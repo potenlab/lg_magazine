@@ -72,45 +72,55 @@ export const stubLLM: LLMContract = {
   },
 
   async synthesizeStrength({ name, strengthCommonAsk, othersDescription, selectedValues }) {
-    // Deterministic fallback — produces 4 BEAT cards even when LLM is offline.
-    // 각 BEAT 200~280자, 4~5 문장. 실 LLM(Claude Sonnet 4.5)이 같은 무게로
-    // 채워주도록 프롬프트가 잡혀있고, stub도 그 호흡에 맞춰서 길이/구조 통일.
-    // 각 BEAT는 도입을 다른 단어로 시작(C-③ 규칙), 평이한 정리체 회피(C-①).
-    const ask = strengthCommonAsk?.trim() || "사람들의 막막함";
+    // Deterministic fallback — produces 4 headlined BEAT cards when LLM offline.
+    // Format mirrors real LLM output: "[HEADLINE: ...] body\n[HEADLINE: ...] body..."
+    // 톤: declarative executive coach (당신은 ~한 사람입니다). 헤지(...처럼 보여요) 금지.
+    // 추상 표현(결/수렴/행위의 형) 금지. **bold** 강조 1~2회.
+    const askPhrase = strengthCommonAsk?.trim() || "어떻게 풀어야 할지 모르는 막막함";
     const others = othersDescription?.trim();
-    const othersQuote = others ? `"${others.slice(0, 36)}${others.length > 36 ? "…" : ""}"` : null;
+    const othersQuote = others ? `"${others.slice(0, 32)}${others.length > 32 ? "…" : ""}"` : null;
     const value1 = selectedValues?.[0]?.word?.trim();
     const value2 = selectedValues?.[1]?.word?.trim();
-    const valueQuote = [value1, value2].filter(Boolean).map((v) => `'${v}'`).join("과 ");
+    const valueList = [value1, value2].filter(Boolean).map((v) => `'${v}'`).join(", ");
+    const namePrefix = name ? `${name}님` : "당신";
 
     const beat1 =
-      `Chapter 1에서 들려준 두 장면을 가만히 포개어 보면, 어떤 일이든 자기 손과 시선으로 직접 다듬어 보는 결이 흐르고 있어요. ` +
-      `장면 안의 인물·장소·소재는 달랐지만, 같은 손길이 두 이야기를 한 사람의 결로 묶고 있어요. ` +
-      `결과를 좇기보다 과정의 결을 잡는 자세가 ${name}님 안에서 자연스럽게 작동하는 것처럼 보여요. ` +
-      `그래서 두 경험은 서로 다른 일이 아니라, 같은 사람이 다른 자리에서 보여준 같은 손길로 읽혀요.`;
+      `[HEADLINE: 직접 판을 짜고 결과를 만드는 사람] ` +
+      `${namePrefix}이 들려준 두 장면은 장소도 상황도 달랐지만, 행동의 패턴은 정확히 같았습니다. ` +
+      `남이 닦아놓은 길을 따라가는 대신 **직접 경로를 설계하고, 그 위에서 끝내 성과를 만들어내는 것**. ` +
+      `${namePrefix}은 어떤 자리에서도 자기 손으로 직접 판을 짜야 직성이 풀리는 사람입니다. ` +
+      `이 행동 방식이 두 이야기를 한 사람의 정체성으로 묶어주고 있습니다.`;
+
     const beat2 =
-      `주변 사람들이 들고 온 건 공통적으로 — ${ask}에 가까운 결이었어요. ` +
-      `그 일들이 두 몰입 순간 안의 손길과 겹쳐 보이는 건 우연이 아니에요. ` +
-      `직무가 아니라 행위의 형(form)이 ${name}님의 결을 만들고, 그 결이 사람들의 부탁을 끌어당기는 자석이 되고 있는 셈이에요. ` +
-      `밖에서 들어오는 일의 종류가 안의 결을 한 번 더 확인해 주는 자리예요.`;
+      `[HEADLINE: 막막함을 풀어내는 자석] ` +
+      `주변 사람들이 유독 ${namePrefix}을 찾아온 이유를 보면, 그들이 가져온 일은 늘 ${askPhrase}이었습니다. ` +
+      `직함이 무엇이든, ${namePrefix}의 존재 자체가 **막막함을 풀어내는 자석**이 되어 사람들을 끌어당기고 있습니다. ` +
+      `${namePrefix}이 들려준 두 장면에서도 같은 자세가 흘러나왔다는 것은 우연이 아닙니다. ` +
+      `이것은 직업이 아니라 정체성의 영역에서 작동하는 힘입니다.`;
+
     const beat3 = othersQuote
-      ? `가까이서 본 사람은 ${othersQuote} 라고 말했어요. ` +
-        `그 말은 ${name}님이 자기 자신에 대해 들려준 결과 같은 그림을 다른 각도에서 비추고 있어요. ` +
-        `안에서 본 결과 밖에서 본 결이 같은 자리에서 만난다는 건 — 그 결이 흔들리지 않는 실체라는 뜻에 가까워요. ` +
-        `타인의 시선이 비추는 거울 속에서 자기다움의 윤곽이 한 켜 더 선명해져요.`
-      : `가까이서 본 누군가의 시선과 스스로 들려준 결은 같은 그림을 다른 각도에서 비추는 것처럼 닿아 있어요. ` +
-        `안과 밖의 두 시선이 만나는 지점이 가장 선명해지고 있어요. ` +
-        `그 지점이 ${name}님이라는 사람의 윤곽을 또렷이 그려내고 있어요. ` +
-        `타인의 거울이 한 켜 더 자기다움의 결을 잡아주는 자리예요.`;
-    const beat4 = valueQuote
-      ? `${valueQuote}이라는 단어가 그 결을 조용히 떠받치고 있어요. ` +
-        `가치는 행위의 이유가 되고, 그 이유가 ${name}님의 손길을 같은 방향으로 모으고 있는 듯해요. ` +
-        `네 장면이 결국 하나의 인물로 수렴해 보이는 건 이 가치가 뿌리에서 같은 결을 길어 올리고 있기 때문이에요. ` +
-        `이름이 다른 가치 단어들이 결국 한 사람의 결을 다른 각도로 부르고 있는 셈이에요.`
-      : `고른 가치 단어들이 그 결을 조용히 떠받치고 있어요. ` +
-        `가치는 행위의 이유가 되고, 그 이유가 손길을 같은 방향으로 모으고 있는 듯해요. ` +
-        `네 장면이 결국 하나의 인물로 수렴해 보이는 건 이 가치들이 뿌리에서 같은 결을 길어 올리고 있기 때문이에요. ` +
-        `다르게 부른 이름들이 결국 한 결을 가리키고 있어요.`;
+      ? `[HEADLINE: 안과 밖이 같은 곳을 가리킬 때] ` +
+        `가까운 누군가는 ${namePrefix}을 두고 ${othersQuote} 라고 말했습니다. ` +
+        `밖에서 보는 시선과 안에서 ${namePrefix}이 스스로 들려준 모습이 정확히 한 지점에서 만납니다. ` +
+        `이 일치는 단순한 우연이 아니라, **흔들리지 않는 정체성의 증거**입니다. ` +
+        `${namePrefix}의 모습은 보는 사람마다 다르게 해석되지 않는 명확한 윤곽을 가지고 있습니다.`
+      : `[HEADLINE: 안에서 밖으로 일관된 사람] ` +
+        `${namePrefix}이 스스로에 대해 들려준 이야기는, 가까운 사람들의 시선 속 모습과 정확히 같은 곳을 가리킵니다. ` +
+        `이 일치는 **${namePrefix}의 정체성이 흔들리지 않는다는 가장 강력한 증거**입니다. ` +
+        `밖에서도, 안에서도, 같은 사람으로 살아가고 있다는 뜻입니다. ` +
+        `이런 일관성은 신뢰의 토대가 됩니다.`;
+
+    const beat4 = valueList
+      ? `[HEADLINE: ${namePrefix}을 움직이는 단단한 축] ` +
+        `오늘 ${namePrefix}이 고른 ${valueList}이라는 단어들은 단순한 가치 카드가 아닙니다. ` +
+        `${namePrefix}이 왜 그토록 직접 판을 짜려 했는지, 왜 다른 사람의 막막함 앞에서 발을 떼지 않았는지를 설명해주는 **행동의 이유**입니다. ` +
+        `이 가치들이 든든한 주춧돌이 되어주기에, ${namePrefix}의 여정은 거친 파도를 만나도 흔들리지 않습니다. ` +
+        `매거진 네 페이지는 결국 한 사람의 이야기로 모입니다.`
+      : `[HEADLINE: ${namePrefix}의 행동 뒤에 자리한 이유] ` +
+        `${namePrefix}이 고른 가치 카드들은 단순한 단어가 아니라 **${namePrefix}이 매 순간 그렇게 살아온 이유**입니다. ` +
+        `이 가치들이 든든한 주춧돌이 되어주기에, ${namePrefix}의 여정은 거친 파도를 만나도 흔들리지 않습니다. ` +
+        `매거진 네 페이지는 결국 한 사람의 이야기로 모입니다.`;
+
     return { synthesis: [beat1, beat2, beat3, beat4].join("\n") };
   },
 
@@ -120,33 +130,92 @@ export const stubLLM: LLMContract = {
     topValue,
     growthDirection,
     attraction,
+    alreadyDoing,
+    obstacles,
+    whyReason,
+    currentTool,
+    growthTool,
     contribution,
-    othersDescription,
   }) {
-    // Always produce 5 beats so the magazine grid has a consistent shape
-    // even when LLM/network failed and the session payload is sparse. Per-beat
-    // text gracefully degrades to placeholder language when the relevant
-    // session field is empty.
-    const id = identityName?.trim() || "스스로의 길을 짓는 사람";
-    const valueWord = topValue?.trim();
-    const valuePhrase = valueWord ? `'${valueWord}'이라는 단어` : `${name}님이 고른 가치들`;
-    const dir = growthDirection?.trim();
+    // ── [2026-05-20] Ch3-focused 4 BEAT (Gem 6→4 merge 전략) ──────────
+    // Ch3 응답 6개(attraction/whyReason/alreadyDoing/obstacles/contribution +
+    // 객관식 growthDirection·currentTool·growthTool)를 4 BEAT에 압축.
+    // 객관식은 standalone이 아니라 관련 텍스트 BEAT 안에 인젝션.
+    // Ch1·Ch2는 BEAT 본문 주재료로 쓰지 않고 echo 한 줄 정도만.
+    const namePrefix = name ? `${name}님` : "당신";
     const attr = attraction?.trim();
+    const why = whyReason?.trim();
+    const dir = growthDirection?.trim();
+    const doing = alreadyDoing?.trim();
+    const obs = obstacles?.trim();
     const contr = contribution?.trim();
-    const others = othersDescription?.trim();
+    const id = identityName?.trim();
+    const top = topValue?.trim();
+    const curTools = (currentTool ?? []).filter(Boolean);
+    const growTools = (growthTool ?? []).filter(Boolean);
 
-    const beat1 = `${name}님이 들려준 두 몰입 순간에는 같은 결이 흐르고 있었어요. 어떤 일이든 ${name}님은 자기 손과 시선으로 직접 다듬어 보는 사람으로 읽혀요.`;
-    const beat2 = `${valuePhrase}와 '${id}'라는 이름은 그 결을 다른 각도에서 받쳐 주고 있어요. 가치는 행위의 이유가 되고, 정체성은 행위의 모양이 되어가는 모습이 보여요.`;
-    const beat3 = others
-      ? `가까이서 본 사람의 말 — "${others}" — 은 ${name}님 자신이 본 모습과 닮은 듯, 또 한 켜 다른 각도를 비춰 줘요. 안과 밖이 만나는 지점이 ${name}님의 결을 더 또렷하게 만들고 있어요.`
-      : `${name}님이 본 자신과 가까운 사람의 시선이 같은 결을 다른 각도로 비춰 주고 있어요. 안과 밖이 만나는 지점이 ${name}님을 더 또렷하게 만들고 있어요.`;
-    const attrSnippet = attr ? `'${attr.slice(0, 24)}${attr.length > 24 ? "…" : ""}'` : "그 끌림";
-    const dirSnippet = dir ? `'${dir}'` : "지금 잡고 있는 성장 축";
-    const beat4 = `Chapter 3에서 ${name}님이 끌린다고 한 ${attrSnippet}, 그리고 ${dirSnippet}은 결국 하나의 길로 모이고 있어요. 이미 작은 발걸음들이 그쪽을 향하고 있다는 게 보여요.`;
-    const contrSnippet = contr ? `'${contr.slice(0, 30)}${contr.length > 30 ? "…" : ""}'` : "${name}님이 닿고 싶은 끝";
-    const beat5 = `그 길의 끝에는 ${name}님이 닿고 싶다고 말한 ${contr ? contrSnippet : "어떤 영향력"}이 놓여 있어요. 도구는 손에 익혀가면 되고, 방향은 이미 정해져 있는 느낌이에요.`;
+    // 짧은 snippet 만드는 헬퍼.
+    const snip = (s: string | undefined, n: number) =>
+      s ? (s.length > n ? `${s.slice(0, n)}…` : s) : "";
 
-    return { synthesis: [beat1, beat2, beat3, beat4, beat5].join("\n") };
+    // BEAT 1 — 내면의 부름 : attraction + whyReason + growthDirection
+    const attrSnippet = attr ? `'${snip(attr, 28)}'` : `${namePrefix}의 끌림`;
+    const whySnippet = why ? snip(why, 50) : "그 길로 끌리는 이유";
+    const dirInject = dir
+      ? `${namePrefix}이 고른 다음 역의 방향은 '${dir}'을 향하고 있습니다.`
+      : `${namePrefix}이 고른 다음 역의 방향이 이미 그쪽을 가리키고 있습니다.`;
+    const beat1 =
+      `[HEADLINE: 열망이 이미 가리키는 방향] ` +
+      `${namePrefix}이 지금 마음에 품고 있는 것은 ${attrSnippet}입니다. ` +
+      `${whySnippet}이 그 끌림의 뿌리이고, 단순한 호기심이 아니라 **이미 안에서 자라난 부름**입니다. ` +
+      `${dirInject} ` +
+      `열망과 방향이 한 곳에서 만난다는 것은, 이미 다음 페이지가 펼쳐지기 시작했다는 신호입니다.`;
+
+    // BEAT 2 — 이미 시작된 움직임 : alreadyDoing + currentTool
+    const doingSnippet = doing ? snip(doing, 60) : "이미 행동으로 옮기고 있는 작은 시도들";
+    const curInject = curTools.length >= 2
+      ? `이 움직임을 떠받치는 도구는 이미 ${namePrefix} 손에 익은 '${curTools[0]}'·'${curTools[1]}'입니다.`
+      : curTools.length === 1
+        ? `이 움직임을 떠받치는 도구는 이미 ${namePrefix} 손에 익은 '${curTools[0]}'입니다.`
+        : `이 움직임을 떠받치는 도구는 이미 ${namePrefix}의 손에 익어 있습니다.`;
+    const beat2 =
+      `[HEADLINE: 이미 시작된 항해] ` +
+      `${namePrefix}은 말로만 그치지 않고 이미 ${doingSnippet}을 하고 있습니다. ` +
+      `생각하는 사람과 움직이는 사람의 차이는 한 끗인데, ${namePrefix}은 **이미 움직이는 쪽**에 서 있습니다. ` +
+      `${curInject} ` +
+      `남이 시작해 주기를 기다리지 않는 사람의 모습이 이 페이지에 그려집니다.`;
+
+    // BEAT 3 — 안개를 걷어낼 도구 : obstacles + growthTool
+    const obsSnippet = obs ? snip(obs, 50) : `${namePrefix}을 머뭇거리게 하는 그 안개`;
+    const growInject = growTools.length >= 2
+      ? `이 안개를 걷어낼 무기로 ${namePrefix}이 본능적으로 고른 건 '${growTools[0]}'·'${growTools[1]}'입니다.`
+      : growTools.length === 1
+        ? `이 안개를 걷어낼 무기로 ${namePrefix}이 본능적으로 고른 건 '${growTools[0]}'입니다.`
+        : `이 안개를 걷어낼 무기를 ${namePrefix}은 이미 알고 있습니다.`;
+    const beat3 =
+      `[HEADLINE: 안개를 걷어낼 한 자루의 무기] ` +
+      `${namePrefix}을 멈춰 세우는 것은 ${obsSnippet}입니다. ` +
+      `이 안개는 외부에서 온 것이 아니라, 한 단계 더 나아가려는 사람만이 마주하는 안개입니다. ` +
+      `${growInject} ` +
+      `이 무기를 손에 쥐었을 때, **안개는 걷히고 그 너머의 풍경이 열릴 것입니다**.`;
+
+    // BEAT 4 — 종착지의 풍경 : contribution + (Ch2 echo)
+    const contrSnippet = contr ? `'${snip(contr, 36)}'` : `${namePrefix}이 남기고 싶다고 말한 영향력`;
+    const echoCh2 = id && top
+      ? `${namePrefix}을 움직이는 '${top}'이 이 종착지의 이유이고, '${id}'이라는 정체성이 이 풍경의 주인공입니다. `
+      : id
+        ? `'${id}'이라는 정체성이 이 풍경의 주인공입니다. `
+        : top
+          ? `${namePrefix}을 움직이는 '${top}'이 이 종착지의 이유입니다. `
+          : "";
+    const beat4 =
+      `[HEADLINE: ${namePrefix}이 남기고 싶은 풍경] ` +
+      `${namePrefix}이 닿고 싶다고 말한 풍경은 ${contrSnippet}입니다. ` +
+      `이것은 단순한 목표가 아니라 **${namePrefix}이 살아 있었음을 증명할 유산**의 모습입니다. ` +
+      `${echoCh2}` +
+      `매거진 세 페이지의 끌림과 움직임과 도구는 모두 이 풍경으로 모입니다. ${namePrefix}의 항해는 이미 출발했고, 종착지는 이미 보입니다.`;
+
+    return { synthesis: [beat1, beat2, beat3, beat4].join("\n") };
   },
 
   async generateVisionDirections() {

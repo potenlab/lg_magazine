@@ -3,7 +3,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
-import { MagazineBeatPage, MagazineBeatLoading } from "@/components/v3/ui/MagazineArticlePage";
+import { MagazineBeatPage, MagazineBeatLoading, parseBeat } from "@/components/v3/ui/MagazineArticlePage";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
@@ -11,36 +11,42 @@ import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 /**
- * ── [v3 — 2026-05-19] Chapter 3 매거진 4 spread + visionLine 입력 ─────
+ * ── [v4 — 2026-05-19] Chapter 3 매거진 3 spread + visionLine 입력 ─────
  *
- * 2-10 (Chapter2MagazineScene)과 동일한 통합 패턴: 종합 카드 + 본인 언어로
- * 방향 한 줄 입력 + judge·재시도 + "Chapter 3 · 완성" 도장이 한 씬 안에서.
+ * 2-10 (Chapter2MagazineScene)과 동일한 3 spread 구조로 통일:
+ *   - 5 BEAT → 4 BEAT (이전 BEAT 5 "닿고 싶은 끝"은 BEAT 4 "향하는 길"에 흡수)
+ *   - 빈 BEAT 5 단독 페이지가 "로딩 중"처럼 보이던 문제 해결
  *
  * 호흡:
  *   Spread 1 — BEAT 01 두 몰입 순간 (좌) + BEAT 02 가치와 정체성 (우)
  *     → "다음 페이지"
- *   Spread 2 — BEAT 03 안과 밖의 시선 (좌) + BEAT 04 향하고 있는 길 (우)
+ *   Spread 2 — BEAT 03 안과 밖의 시선 (좌) + BEAT 04 향하는 길 (우)
  *     → "다음 페이지"
- *   Spread 3 — BEAT 05 닿고 싶은 끝 (전체 폭, featured)
- *     → "다음 페이지"
- *   Spread 4 — "당신은 어떤 방향으로 성장하고 싶나요?" + visionLine 입력 + judge
+ *   Spread 3 — "당신은 어떤 방향으로 성장하고 싶나요?" + visionLine 입력 + judge
  *     → "이렇게 적어볼래요" → judge 결과 D 또는 시도 3회 소진 시
  *       "Chapter 3 · 완성" 도장 + 편집자 affirmation → "다음 페이지로"
  *
- * 이전 3-spread 디자인은 GrowthVisionSynthesisScene_v1.tsx에 보존.
+ * 이전 디자인(5 BEAT × 4 spread)은 GrowthVisionSynthesisScene_v1.tsx에 보존.
  */
-type Beat = { number: string; category: string; body: string };
+type Beat = { number: string; category: string; body: string; headline?: string };
 
+// ── [2026-05-20] Ch3-focused 4 BEAT (Gem 6→4 merge 전략) ────────────
+// Ch3 응답 6개(attraction·whyReason·alreadyDoing·obstacles·contribution +
+// 객관식 growthDirection·currentTool·growthTool)를 4 BEAT에 압축.
+// 객관식 선택지는 standalone 카드가 아니라 관련 텍스트 BEAT 안에 인젝션:
+//   · BEAT 01 (내면의 부름) ← growthDirection
+//   · BEAT 02 (이미 시작된 움직임) ← currentTool (이미 잘 쓰는 도구)
+//   · BEAT 03 (안개를 걷어낼 도구) ← growthTool (배우고 싶은 도구)
+//   · BEAT 04 (종착지의 풍경) ← contribution + Ch2 echo (topValue/identityName)
 const BEAT_LABELS = [
-  { number: "01", category: "두 몰입 순간" },
-  { number: "02", category: "가치와 정체성" },
-  { number: "03", category: "안과 밖의 시선" },
-  { number: "04", category: "향하고 있는 길" },
-  { number: "05", category: "닿고 싶은 끝" },
+  { number: "01", category: "내면의 부름" },
+  { number: "02", category: "이미 시작된 움직임" },
+  { number: "03", category: "안개를 걷어낼 도구" },
+  { number: "04", category: "종착지의 풍경" },
 ];
 
-const TOTAL_PAGES = 4 as const;
-type PageIndex = 0 | 1 | 2 | 3;
+const TOTAL_PAGES = 3 as const;
+type PageIndex = 0 | 1 | 2;
 
 export function GrowthVisionSynthesisScene({
   spec,
@@ -117,15 +123,18 @@ export function GrowthVisionSynthesisScene({
     );
   }
 
+  // 4 BEAT 파싱 + 각 BEAT에서 [HEADLINE: ...] 추출 (있으면).
+  // 새 LLM 출력 형식과 호환 + 헤드라인 없는 옛 데이터는 body로 폴백.
   const beatTexts = synthesis
     .split(/\n+/)
     .map((s) => s.trim())
     .filter(Boolean)
-    .slice(0, 5);
-  const beats: Beat[] = BEAT_LABELS.map((lbl, i) => ({
-    ...lbl,
-    body: beatTexts[i] ?? "",
-  }));
+    .slice(0, 4);
+  const beats: Beat[] = BEAT_LABELS.map((lbl, i) => {
+    const raw = beatTexts[i] ?? "";
+    const { headline, body } = parseBeat(raw);
+    return { ...lbl, body, headline };
+  });
 
   const submit = async () => {
     if (judging || completed) return;
@@ -169,7 +178,7 @@ export function GrowthVisionSynthesisScene({
   };
 
   const handleNext = () => {
-    if (page < 3) {
+    if (page < 2) {
       setPage(((page + 1) as PageIndex));
       scrollToTop();
     } else if (completed) {
@@ -189,7 +198,7 @@ export function GrowthVisionSynthesisScene({
   // ── Button label / disabled per page ─────────────────────────────────
   let buttonLabel: string;
   let buttonDisabled: boolean;
-  if (page < 3) {
+  if (page < 2) {
     buttonLabel = "다음 페이지";
     buttonDisabled = false;
   } else if (completed) {
@@ -209,9 +218,9 @@ export function GrowthVisionSynthesisScene({
       className="relative flex min-h-0 flex-1 flex-col overflow-y-auto"
       style={{ fontFamily: "var(--font-ridi-batang)" }}
     >
-      {/* 완성 도장 — Spread 4에서 completed일 때만 */}
+      {/* 완성 도장 — 마지막 Spread(입력 페이지)에서 completed일 때만 */}
       <AnimatePresence>
-        {completed && page === 3 && (
+        {completed && page === 2 && (
           <motion.div
             initial={{ opacity: 0, scale: 1.5, rotate: -16 }}
             animate={{ opacity: 1, scale: 1, rotate: -8 }}
@@ -248,8 +257,7 @@ export function GrowthVisionSynthesisScene({
         >
           {page === 0 && <BeatSpread left={beats[0]} right={beats[1]} />}
           {page === 1 && <BeatSpread left={beats[2]} right={beats[3]} />}
-          {page === 2 && <FeaturedBeatPage beat={beats[4]} />}
-          {page === 3 && (
+          {page === 2 && (
             <VisionInputPage
               name={session.name}
               headlineFill={headlineFill}
@@ -294,14 +302,14 @@ function BeatSpread({ left, right }: { left: Beat; right: Beat }) {
     <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-0">
       <BeatPanel side="left">
         {left.body ? (
-          <MagazineBeatPage number={left.number} category={left.category} body={left.body} />
+          <MagazineBeatPage number={left.number} category={left.category} body={left.body} headline={left.headline} />
         ) : (
           <MagazineBeatLoading number={left.number} category={left.category} />
         )}
       </BeatPanel>
       <BeatPanel side="right">
         {right.body ? (
-          <MagazineBeatPage number={right.number} category={right.category} body={right.body} />
+          <MagazineBeatPage number={right.number} category={right.category} body={right.body} headline={right.headline} />
         ) : (
           <MagazineBeatLoading number={right.number} category={right.category} />
         )}
@@ -318,40 +326,7 @@ function BeatPanel({ side, children }: { side: "left" | "right"; children: React
   return <div className={`px-1 py-1 ${fold}`}>{children}</div>;
 }
 
-/** Spread 3 — 마지막 BEAT는 전체 폭으로 featured. "닿고 싶은 끝" 클라이맥스. */
-function FeaturedBeatPage({ beat }: { beat: Beat }) {
-  return (
-    <section className="mx-auto max-w-[640px] py-4 text-center">
-      <p className="mb-4 text-[12px] uppercase tracking-[0.42em] text-[#7a5a3a]">
-        Editor&rsquo;s Final Note
-      </p>
-      {beat.body ? (
-        <>
-          <p
-            className="font-serif text-6xl leading-none text-[#9a7b4c]"
-            style={{ fontFamily: "var(--font-ridi-batang), serif" }}
-          >
-            {beat.number}
-          </p>
-          <div className="mx-auto my-3 h-px w-12 bg-[#b99b6b]" />
-          <h3
-            className="font-serif text-2xl italic text-[#3d2414]"
-            style={{ fontFamily: "var(--font-ridi-batang), serif" }}
-          >
-            {beat.category}
-          </h3>
-          <p className="mx-auto mt-5 max-w-[560px] text-[16px] leading-[1.95] text-[#3d2414]">
-            {beat.body}
-          </p>
-        </>
-      ) : (
-        <p className="italic text-[#8b7050]">편집장이 마지막 문단을 정리하고 있어요…</p>
-      )}
-    </section>
-  );
-}
-
-/** Spread 4 — visionLine 입력 (당신은 어떤 방향으로 성장하고 싶나요?). */
+/** Spread 3 — visionLine 입력 (당신은 어떤 방향으로 성장하고 싶나요?). */
 function VisionInputPage({
   name,
   headlineFill,
@@ -386,12 +361,16 @@ function VisionInputPage({
         className="mb-3 text-center font-serif text-2xl italic text-[#3d2414]"
         style={{ fontFamily: "var(--font-ridi-batang), serif" }}
       >
-        당신은 어떤 방향으로 성장하고 싶나요?
+        {name}님은 어떤 방향으로 성장하고 싶나요?
       </h2>
       <p className="mb-7 text-center text-[14px] italic text-[#8b7050]">
         매거진 카드의 표현을 가져와도 좋고, 합치거나 다시 써도 좋아요.
       </p>
 
+      {/* Ch2가 "당신은 ___ 사람" 정체성 이름을 썼으므로 Ch3은 "방향" 으로
+          차별화. 빈 줄에 들어가는 사용자 입력은 동사·동작 modifier 형태
+          (예: "막막함을 풀어주는 자리에서 자기다운 빛을 내는")가 자연스럽고,
+          뒤에 "방향으로 성장합니다" 가 붙어서 한 문장 완결. */}
       <div className="mb-6 flex flex-wrap items-baseline justify-center gap-x-2 text-center">
         <span className="text-[18px] text-[#3d2414]">나는</span>
         <span
@@ -406,7 +385,7 @@ function VisionInputPage({
         >
           {headlineFill || "                "}
         </span>
-        <span className="text-[18px] text-[#3d2414]">사람.</span>
+        <span className="text-[18px] text-[#3d2414]">방향으로 성장합니다.</span>
       </div>
 
       <AnimatePresence>

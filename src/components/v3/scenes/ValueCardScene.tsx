@@ -2,7 +2,6 @@
 
 import { useContext, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { VALUE_CARD_CATEGORIES, VALUE_CARD_EN } from "@/lib/v3/valueCards";
@@ -16,13 +15,18 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
   const [custom, setCustom] = useState("");
   const [settled, setSettled] = useState(false);
 
-  const lines = (spec.lines ?? []).map((l) => renderTemplate(l, session));
+  const rawLines = (spec.lines ?? []).map((l) => renderTemplate(l, session));
   const narration = spec.narration ? renderTemplate(spec.narration, session) : undefined;
-  const [showLines, setShowLines] = useState(!narration);
+  // narration이 있으면 dark menu board 안의 **첫 줄**로 흡수해서 AutoFlowText로
+  // 자연스럽게 흐르도록. 이전엔 narration phase가 별도 parchment 다이얼로그로
+  // 떴다가(stage="narration") 클릭 시 dark menu board(stage="content")로
+  // 넘어갔는데, 그 전환에서 parchment 잔상이 보였음. narration을 lines 앞에
+  // 끼워 넣고 stage="content"로 즉시 진입 → 한 번에 dark menu board만 보임.
+  const lines = narration ? [narration, ...rawLines] : rawLines;
   const { setStage } = useContext(DialogStageContext);
   useEffect(() => {
-    setStage(!showLines && narration ? "narration" : "content");
-  }, [showLines, narration, setStage]);
+    setStage("content");
+  }, [setStage]);
 
   const toggle = (card: string) => {
     setPicked((prev) =>
@@ -44,22 +48,6 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
     patch({ selectedValues: picked });
     if (typeof spec.next === "string") onAdvance(spec.next);
   };
-
-  if (!showLines && narration) {
-    return (
-      <div
-        className="flex flex-1 cursor-pointer flex-col"
-        onClick={() => setShowLines(true)}
-      >
-        <div className="flex-1">
-          <NarrationBlock text={narration} />
-        </div>
-        <div className="mt-auto flex items-center justify-end text-[16px] text-[#8b7050]">
-          <span className="italic">다음</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-1 flex-col">
@@ -96,9 +84,11 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
                 <div key={cat.id} className="flex flex-col gap-1.5">
                   {/* Category header chip — emoji + Korean label, original
                       taxonomy. EN label retained in data only (was used in
-                      a one-off mock; participants prefer the Korean copy). */}
+                      a one-off mock; participants prefer the Korean copy).
+                      text-[12px] + whitespace-nowrap: "즐거움·표현" (6자)이
+                      한 칸(~107px) 안에서 한 줄로 들어가도록 — 14px에선 줄바꿈. */}
                   <div
-                    className="flex items-center justify-center gap-1 rounded-sm py-1 text-center text-[14px] font-semibold tracking-[0.05em] text-white shadow-sm"
+                    className="flex items-center justify-center gap-1 whitespace-nowrap rounded-sm px-1 py-1 text-center text-[12px] font-semibold tracking-[0.05em] text-white shadow-sm"
                     style={{ background: cat.accent }}
                   >
                     <span>{cat.emoji}</span>

@@ -843,7 +843,10 @@ export function IntroScene({
                       <p className="absolute" style={{ ...valueStyle, top: "78%", left: "40%" }}>
                         {dateStr}
                       </p>
-                      {/* Booking Ref — 디자이너 스펙: 99.81° 기운 앵글, 18px, #D9C1A7 */}
+                      {/* Booking Ref — 디자이너 스펙(99.81°)을 180° 미러링한 값.
+                          원래 스펙은 TOP→BOTTOM 방향으로 읽혀서 빈티지 티켓 stub
+                          관습(BOTTOM→TOP)과 어긋났음. -80.19°(= 99.81° - 180°)는
+                          같은 9.81° 기울기를 유지하면서 reading 방향만 표준에 맞춤. */}
                       <p
                         className="absolute"
                         style={{
@@ -852,7 +855,7 @@ export function IntroScene({
                           fontSize: "18px",
                           top: "50%",
                           right: "9%",
-                          transform: "translateY(-50%) rotate(99.81deg)",
+                          transform: "translateY(-50%) rotate(-80.19deg)",
                           transformOrigin: "center",
                         }}
                       >

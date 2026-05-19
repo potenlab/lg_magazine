@@ -19,6 +19,9 @@ import { ValueReflectionScene } from "./ValueReflectionScene";
 import { StrengthConfirmScene } from "./StrengthConfirmScene";
 import { StrengthSynthesisScene } from "./StrengthSynthesisScene";
 import { GrowthVisionSynthesisScene } from "./GrowthVisionSynthesisScene";
+import { GrowthVisionSynthesisSceneV1 } from "./GrowthVisionSynthesisScene_v1";
+import { Chapter2MagazineScene } from "./Chapter2MagazineScene";
+import { Chapter2MagazineSceneV1 } from "./Chapter2MagazineScene_v1";
 import { CardChoiceScene } from "./CardChoiceScene";
 import { ToolSelectScene } from "./ToolSelectScene";
 import { VisionSelectScene } from "./VisionSelectScene";
@@ -27,6 +30,7 @@ import { RecordPageScene } from "./RecordPageScene";
 import { AmbienceScene } from "./AmbienceScene";
 import { MagazineHandoffScene } from "./MagazineHandoffScene";
 import { MagazinePosterScene } from "./MagazinePosterScene";
+import { MagazinePosterSceneV1 } from "./MagazinePosterScene_v1";
 import { EditorCreditsScene } from "./EditorCreditsScene";
 
 interface SceneComponentProps {
@@ -59,6 +63,9 @@ export const SCENE_COMPONENTS: Record<SceneKind, ComponentType<SceneComponentPro
   strengthConfirm: StrengthConfirmScene,
   strengthSynthesis: StrengthSynthesisScene,
   growthVisionSynthesis: GrowthVisionSynthesisScene,
+  growthVisionSynthesisV1: GrowthVisionSynthesisSceneV1,
+  chapter2Magazine: Chapter2MagazineScene,
+  chapter2MagazineV1: Chapter2MagazineSceneV1,
   cardChoice: CardChoiceScene,
   toolSelect: ToolSelectScene,
   visionSelect: VisionSelectScene,
@@ -67,5 +74,6 @@ export const SCENE_COMPONENTS: Record<SceneKind, ComponentType<SceneComponentPro
   ambience: AmbienceScene,
   magazineHandoff: MagazineHandoffScene,
   magazinePoster: MagazinePosterScene,
+  magazinePosterV1: MagazinePosterSceneV1,
   editorCredits: EditorCreditsScene,
 };

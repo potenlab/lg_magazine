@@ -72,18 +72,39 @@ export const stubLLM: LLMContract = {
   },
 
   async synthesizeStrength({ name, strengthCommonAsk, othersDescription, selectedValues }) {
-    // Deterministic fallback — used when the LLM call/parse fails. Three short
-    // editor-voice sentences that weave whatever ingredients are present.
-    const ask = strengthCommonAsk?.trim() || "사람들이 들고 오는 막막한 것들";
+    // Deterministic fallback — produces 4 BEAT cards even when LLM is offline.
+    // 각 BEAT 120~170자, 3~4 문장. 진짜 LLM이 비슷한 무게로 채울 거라 stub도
+    // 같은 호흡으로 맞춰 둠 (로컬에서 카드가 너무 가벼워 보이지 않도록).
+    const ask = strengthCommonAsk?.trim() || "사람들의 막막함";
     const others = othersDescription?.trim();
-    const valueWord = selectedValues?.[0]?.word?.trim();
-    const lines = [
-      `${name}님의 두 몰입 순간과 주변에서 들고 온 일들 사이에 같은 결이 흐르는 것 같아요.`,
-      `사람들이 ${name}님에게 들고 온 건 공통적으로 — ${ask}이었고, 그 순간들 안에서도 같은 손길이 보여요.`,
-    ];
-    if (others) lines.push(`가까이서 본 사람의 말 — "${others}" — 도 같은 결을 다른 각도에서 비추고 있어요.`);
-    if (valueWord) lines.push(`${valueWord}이라는 단어가 그 결을 조용히 떠받치고 있는 듯해요.`);
-    return { synthesis: lines.join("\n") };
+    const othersQuote = others ? `"${others.slice(0, 36)}${others.length > 36 ? "…" : ""}"` : null;
+    const value1 = selectedValues?.[0]?.word?.trim();
+    const value2 = selectedValues?.[1]?.word?.trim();
+    const valueQuote = [value1, value2].filter(Boolean).map((v) => `'${v}'`).join("과 ");
+
+    const beat1 =
+      `Chapter 1에서 들려준 두 순간을 가만히 포개어 보면, ${name}님은 어떤 일이든 자기 손과 시선으로 직접 다듬어 보는 결로 흐르고 있어요. ` +
+      `장면 안의 인물·장소·소재는 달랐지만, 같은 손길이 두 이야기를 한 사람의 결로 묶고 있어요. ` +
+      `그래서 두 경험은 서로 다른 일이 아니라, 같은 사람이 다른 자리에서 보여준 같은 손길로 읽혀요.`;
+    const beat2 =
+      `주변 사람들이 ${name}님 앞에 들고 온 건 공통적으로 — ${ask}에 가까운 결이었어요. ` +
+      `그 일들이 두 몰입 순간 안의 손길과 겹쳐 보이는 건 우연이 아니에요. ` +
+      `직무가 아니라 행위의 형(form)이 ${name}님의 결을 만들고, 그 결이 사람들의 부탁을 끌어당기는 자석이 되고 있는 셈이에요.`;
+    const beat3 = othersQuote
+      ? `가까이서 본 사람은 ${othersQuote} 라고 말했어요. ` +
+        `그 말은 ${name}님이 자기 자신에 대해 들려준 결과 같은 그림을 다른 각도에서 비추고 있어요. ` +
+        `안에서 본 결과 밖에서 본 결이 같은 자리에서 만난다는 건 — 그 결이 흔들리지 않는 실체라는 뜻에 가까워요.`
+      : `가까이서 본 누군가의 시선과 ${name}님이 스스로 들려준 결은 같은 그림을 다른 각도에서 비추는 것처럼 닿아 있어요. ` +
+        `안과 밖의 두 시선이 만나는 지점이 가장 선명해지고 있어요. ` +
+        `그 지점이 ${name}님이라는 사람의 윤곽을 또렷이 그려내고 있어요.`;
+    const beat4 = valueQuote
+      ? `${valueQuote}이라는 단어가 그 결을 조용히 떠받치고 있어요. ` +
+        `가치는 행위의 이유가 되고, 그 이유가 ${name}님의 손길을 같은 방향으로 모으고 있는 듯해요. ` +
+        `그래서 카드 위 네 장면이 결국 하나의 인물로 수렴해 보여요.`
+      : `${name}님이 고른 가치들이 그 결을 조용히 떠받치고 있어요. ` +
+        `가치는 행위의 이유가 되고, 그 이유가 손길을 같은 방향으로 모으고 있는 듯해요. ` +
+        `그래서 카드 위 네 장면이 결국 하나의 인물로 수렴해 보여요.`;
+    return { synthesis: [beat1, beat2, beat3, beat4].join("\n") };
   },
 
   async synthesizeGrowthVision({

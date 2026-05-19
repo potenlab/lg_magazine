@@ -34,14 +34,13 @@ export const CLOSING_SCENES: SceneSpec[] = [
       "한 호가 다 적혔어요. 곧 전해드릴게요.",
     ],
     buttonLabel: "고맙습니다",
-    next: "C-3",
+    next: "C-2b",
   },
-  /*
-  // ── [숨김] C-2b 매거진 포스터 — 사용자가 나중에 다시 살릴 수 있도록 보존.
-  // 활성화하려면 다음 작업을 같이 되돌릴 것:
-  //   1) 위 C-2의 next를 "C-2b"로 변경
-  //   2) 아래 객체의 주석을 풀어 CLOSING_SCENES 배열에 다시 포함
   {
+    // ── [2026-05-19 재활성] 합본 매거진 스프레드 ──────────────────────
+    // C-2(PDF handoff) 직후, 사용자가 화면에서 4 챕터 article을 좌·우 2면씩
+    // 직접 읽어볼 수 있게 함. 마지막 spread는 Editor's Cards(가치/비전/...).
+    // 새 디자인은 MagazinePosterScene.tsx, v1 백업은 MagazinePosterScene_v1.tsx.
     id: "C-2b",
     chapter: "C",
     kind: "magazinePoster",
@@ -50,9 +49,24 @@ export const CLOSING_SCENES: SceneSpec[] = [
     timeOfDay: "dawnFirstLight",
     bgImage: "/vision_express/common/morning-room.webp",
     hideSpeakerLabel: true,
+    buttonLabel: "이 호를 닫을게요",
     next: "C-3",
   },
-  */
+  {
+    // ── [임시 — 디자인 비교용] 기존 v1 디자인을 같은 흐름에서 비교 ──
+    // 실제 flow에서는 도달하지 않음 (어디서도 next로 가리키지 않음).
+    // URL ?scene=C-2b-v1 로 직접 진입해서 새 디자인과 비교만 가능.
+    // 비교 끝나면 이 객체와 SceneKind/SCENE_COMPONENTS 매핑까지 같이 제거.
+    id: "C-2b-v1",
+    chapter: "C",
+    kind: "magazinePosterV1",
+    owl: "handing",
+    hideOwl: true,
+    timeOfDay: "dawnFirstLight",
+    bgImage: "/vision_express/common/morning-room.webp",
+    hideSpeakerLabel: true,
+    next: "C-3",
+  },
   {
     id: "C-3",
     chapter: "C",

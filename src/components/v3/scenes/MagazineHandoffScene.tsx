@@ -15,7 +15,7 @@ import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 type Status = "loading" | "ready" | "error";
 
 export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance: (n: SceneId) => void }) {
-  const { session } = useV3Session();
+  const { session, patch } = useV3Session();
   const [data, setData] = useState<MagazineData | null>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [downloading, setDownloading] = useState(false);
@@ -61,6 +61,16 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
           editorOutro,
           chapters: { 1: ch1, 2: ch2, 3: ch3, 4: ch4 },
         });
+        // Cache fetched articles to session so the next scene (C-2b 합본 매거진
+        // 스프레드)이 재호출하지 않도록. 캐시에 이미 있던 챕터는 그대로 유지.
+        const newlyFetched: Record<number, { headline: string; body: string; pullQuote: string | null }> = {};
+        const chaptersToCache: [1 | 2 | 3 | 4, typeof ch1][] = [[1, ch1], [2, ch2], [3, ch3], [4, ch4]];
+        for (const [c, art] of chaptersToCache) {
+          if (!cached[c] && art) newlyFetched[c] = art;
+        }
+        if (Object.keys(newlyFetched).length > 0) {
+          patch({ chapterArticles: { ...cached, ...newlyFetched } });
+        }
         setStatus("ready");
       } catch (err) {
         console.error("[v3] MagazineHandoff load failed:", err);

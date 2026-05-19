@@ -11,38 +11,32 @@ import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 /**
- * ── [v3 — 2026-05-19] Chapter 3 매거진 4 spread + visionLine 입력 ─────
+ * ── [v2 — 2026-05-19] Chapter 2 매거진 스프레드 ──────────────────────
  *
- * 2-10 (Chapter2MagazineScene)과 동일한 통합 패턴: 종합 카드 + 본인 언어로
- * 방향 한 줄 입력 + judge·재시도 + "Chapter 3 · 완성" 도장이 한 씬 안에서.
+ * C-2b(최종 합본 매거진)와 동일한 spread 디자인을 적용한 Chapter 2 종합 페이지.
  *
  * 호흡:
- *   Spread 1 — BEAT 01 두 몰입 순간 (좌) + BEAT 02 가치와 정체성 (우)
+ *   Spread 1 — BEAT 01 두 몰입 순간 (좌) + BEAT 02 공통의 결 (우)
  *     → "다음 페이지"
- *   Spread 2 — BEAT 03 안과 밖의 시선 (좌) + BEAT 04 향하고 있는 길 (우)
+ *   Spread 2 — BEAT 03 타인의 시선 (좌) + BEAT 04 가치의 뿌리 (우)
  *     → "다음 페이지"
- *   Spread 3 — BEAT 05 닿고 싶은 끝 (전체 폭, featured)
- *     → "다음 페이지"
- *   Spread 4 — "당신은 어떤 방향으로 성장하고 싶나요?" + visionLine 입력 + judge
- *     → "이렇게 적어볼래요" → judge 결과 D 또는 시도 3회 소진 시
- *       "Chapter 3 · 완성" 도장 + 편집자 affirmation → "다음 페이지로"
+ *   Spread 3 — 정체성 입력 ("당신은 어떤 사람입니까?" + 빈 줄 + 입력 + judge)
+ *     → "이렇게 부를래요" → judge 결과 D 또는 시도 3회 소진 시 "Chapter 2 · 완성"
+ *       도장 + 편집자 affirmation → "다음 페이지로"
  *
- * 이전 3-spread 디자인은 GrowthVisionSynthesisScene_v1.tsx에 보존.
+ * 이전 디자인(4 BEAT 카드 vertical stack + fold)은 Chapter2MagazineScene_v1.tsx 에
+ * 보존.
  */
 type Beat = { number: string; category: string; body: string };
 
 const BEAT_LABELS = [
   { number: "01", category: "두 몰입 순간" },
-  { number: "02", category: "가치와 정체성" },
-  { number: "03", category: "안과 밖의 시선" },
-  { number: "04", category: "향하고 있는 길" },
-  { number: "05", category: "닿고 싶은 끝" },
+  { number: "02", category: "공통의 결" },
+  { number: "03", category: "타인의 시선" },
+  { number: "04", category: "가치의 뿌리" },
 ];
 
-const TOTAL_PAGES = 4 as const;
-type PageIndex = 0 | 1 | 2 | 3;
-
-export function GrowthVisionSynthesisScene({
+export function Chapter2MagazineScene({
   spec,
   onAdvance,
 }: {
@@ -50,58 +44,51 @@ export function GrowthVisionSynthesisScene({
   onAdvance: (n: SceneId) => void;
 }) {
   const { session, patch } = useV3Session();
-  const [synthesis, setSynthesis] = useState<string>(session.growthVisionSynthesis);
-  const [loaded, setLoaded] = useState<boolean>(Boolean(session.growthVisionSynthesis));
-  const [page, setPage] = useState<PageIndex>(0);
   const { setStage } = useContext(DialogStageContext);
 
-  // ── visionLine 입력 + judge ──────────────────────────────────────
-  const [visionInput, setVisionInput] = useState<string>(session.visionLine ?? "");
+  // ── LLM-loaded card content ───────────────────────────
+  const [synthesis, setSynthesis] = useState<string>(session.strengthSynthesis);
+  const [loaded, setLoaded] = useState<boolean>(Boolean(session.strengthSynthesis));
+
+  // ── Spread navigation (0, 1 = BEAT spreads / 2 = identity input) ─────
+  const [page, setPage] = useState<0 | 1 | 2>(0);
+
+  // ── User input + judging ──────────────────────────────
+  const [nameInput, setNameInput] = useState<string>(session.identityName ?? "");
   const [attempts, setAttempts] = useState(0);
   const MAX_ATTEMPTS = 3;
   const [judging, setJudging] = useState(false);
   const [editorHint, setEditorHint] = useState<string | null>(null);
-  const [completed, setCompleted] = useState<boolean>(Boolean(session.visionLine));
+  const [completed, setCompleted] = useState<boolean>(Boolean(session.identityName));
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setStage("content");
   }, [setStage]);
 
+  // Synthesis fetch (4 BEATs).
   useEffect(() => {
     if (loaded) return;
     let cancelled = false;
     (async () => {
       try {
-        const r = await llm.synthesizeGrowthVision({
+        const r = await llm.synthesizeStrength({
           name: session.name,
-          gender: session.gender,
-          job: session.job,
           flowExperience1: session.flowExperience1,
           flowExperience2: session.flowExperience2,
           selectedValues: session.selectedValues
             .map((word) => ({ word, meaning: session.valueDefinitions[word] ?? "" }))
             .filter((v) => v.word.trim().length > 0),
-          topValue: session.topValue,
-          identityName: session.identityName,
-          strengthSynthesis: session.strengthSynthesis,
+          strengthCommonAsk: session.strengthCommonAsk,
           othersDescription: session.othersDescription,
-          attraction: session.attraction,
-          alreadyDoing: session.alreadyDoing,
-          obstacles: session.obstacles,
-          whyReason: session.whyReason,
-          growthDirection: session.growthDirection,
-          currentTool: session.currentTool,
-          growthTool: session.growthTool,
-          contribution: session.contribution,
         });
         if (cancelled) return;
         const text = (r.synthesis ?? "").trim();
         setSynthesis(text);
-        if (text) patch({ growthVisionSynthesis: text });
+        if (text) patch({ strengthSynthesis: text });
         setLoaded(true);
       } catch (err) {
-        console.error("[v3] synthesizeGrowthVision failed:", err);
+        console.error("[v3] synthesizeStrength failed:", err);
         if (!cancelled) setLoaded(true);
       }
     })();
@@ -112,16 +99,15 @@ export function GrowthVisionSynthesisScene({
   }, []);
 
   if (!loaded || !synthesis) {
-    return (
-      <NarrationBlock text="편집장이 그동안의 이야기를 한자리에 모아 매거진으로 엮고 있어요…" />
-    );
+    return <NarrationBlock text="편집장이 네 가지 재료를 한자리에 모아 천천히 꿰어보고 있어요…" />;
   }
 
+  // Split into 4 BEATs.
   const beatTexts = synthesis
     .split(/\n+/)
     .map((s) => s.trim())
     .filter(Boolean)
-    .slice(0, 5);
+    .slice(0, 4);
   const beats: Beat[] = BEAT_LABELS.map((lbl, i) => ({
     ...lbl,
     body: beatTexts[i] ?? "",
@@ -129,7 +115,7 @@ export function GrowthVisionSynthesisScene({
 
   const submit = async () => {
     if (judging || completed) return;
-    const v = visionInput.trim();
+    const v = nameInput.trim();
     if (!v) return;
     setJudging(true);
     setEditorHint(null);
@@ -138,20 +124,20 @@ export function GrowthVisionSynthesisScene({
       const next = attempts + 1;
       setAttempts(next);
       if (r.branch === "D" || next >= MAX_ATTEMPTS) {
-        patch({ visionLine: v });
+        patch({ identityName: v });
         setEditorHint(null);
         setCompleted(true);
       } else {
         const hint =
           r.branch === "A"
-            ? `조금 더 ${session.name}님다운 표현으로 — 매거진 카드의 단어를 가져와도 좋아요.`
-            : `직책이나 외적인 표현보다, ${session.name}님이 향하는 결을 한 줄로 적어볼까요?`;
+            ? `조금 더 ${session.name}님다운 표현을 찾아볼까요? 가치 단어가 살짝 들어가도 좋아요.`
+            : `그 표현은 세상에 많아요 — ${session.name}님만의 방식으로 한 번 더 적어볼까요?`;
         setEditorHint(hint);
         setTimeout(() => inputRef.current?.focus(), 50);
       }
     } catch (err) {
       console.error("[v3] judgeBranch failed:", err);
-      patch({ visionLine: v });
+      patch({ identityName: v });
       setCompleted(true);
     } finally {
       setJudging(false);
@@ -160,28 +146,28 @@ export function GrowthVisionSynthesisScene({
 
   const advanceScene = () => {
     if (typeof spec.next === "string") onAdvance(spec.next);
-    else if (typeof spec.next === "function") onAdvance(spec.next(session));
   };
 
   const scrollToTop = () => {
-    const root = document.getElementById("ch3-magazine-root");
+    const root = document.getElementById("ch2-magazine-root");
     if (root) root.scrollTop = 0;
   };
 
   const handleNext = () => {
-    if (page < 3) {
-      setPage(((page + 1) as PageIndex));
+    if (page < 2) {
+      setPage(((page + 1) as 0 | 1 | 2));
       scrollToTop();
     } else if (completed) {
       advanceScene();
     } else {
+      // page === 2 + not yet completed → submit identity
       void submit();
     }
   };
 
   const handlePrev = () => {
     if (page > 0) {
-      setPage(((page - 1) as PageIndex));
+      setPage(((page - 1) as 0 | 1 | 2));
       scrollToTop();
     }
   };
@@ -189,46 +175,47 @@ export function GrowthVisionSynthesisScene({
   // ── Button label / disabled per page ─────────────────────────────────
   let buttonLabel: string;
   let buttonDisabled: boolean;
-  if (page < 3) {
+  if (page < 2) {
     buttonLabel = "다음 페이지";
     buttonDisabled = false;
   } else if (completed) {
     buttonLabel = "다음 페이지로";
     buttonDisabled = false;
   } else {
-    buttonLabel = judging ? "편집장이 들여다보는 중…" : spec.buttonLabel ?? "이렇게 적어볼래요";
-    buttonDisabled = visionInput.trim().length === 0 || judging;
+    buttonLabel = judging ? "편집장이 들여다보는 중…" : spec.buttonLabel ?? "이렇게 부를래요";
+    buttonDisabled = nameInput.trim().length === 0 || judging;
   }
 
-  const pageIndicator = `${page + 1} / ${TOTAL_PAGES}`;
-  const headlineFill = visionInput || "";
+  const pageIndicator = `${page + 1} / 3`;
+  const headlineFill = nameInput || "";
 
   return (
     <div
-      id="ch3-magazine-root"
+      id="ch2-magazine-root"
       className="relative flex min-h-0 flex-1 flex-col overflow-y-auto"
       style={{ fontFamily: "var(--font-ridi-batang)" }}
     >
-      {/* 완성 도장 — Spread 4에서 completed일 때만 */}
+      {/* 완성 도장 — Spread 3에서 completed일 때만 */}
       <AnimatePresence>
-        {completed && page === 3 && (
+        {completed && page === 2 && (
           <motion.div
             initial={{ opacity: 0, scale: 1.5, rotate: -16 }}
             animate={{ opacity: 1, scale: 1, rotate: -8 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
             className="pointer-events-none absolute right-1 top-0 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.18em] text-[#a13c2a]/90"
           >
-            CHAPTER 3 · 완성
+            CHAPTER 2 · 완성
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* ── 매거진 마스트헤드 ──────────────────────────────────────── */}
       <header className="mb-3 shrink-0 text-center">
         <p className="text-[11px] tracking-[0.42em] text-[#7a5a3a]">
-          STORY · MAGAZINE · CHAPTER 3
+          STORY · MAGAZINE · CHAPTER 2
         </p>
         <h1 className="mt-1 text-[18px] font-semibold tracking-wide text-[#3d2414]">
-          향하는 길
+          발견
         </h1>
         <div className="mt-2 flex items-center justify-center gap-3">
           <div className="h-px w-8 bg-[#b99b6b]/55" />
@@ -237,6 +224,7 @@ export function GrowthVisionSynthesisScene({
         </div>
       </header>
 
+      {/* ── 스프레드 ───────────────────────────────────────────────── */}
       <AnimatePresence mode="wait">
         <motion.div
           key={page}
@@ -248,25 +236,25 @@ export function GrowthVisionSynthesisScene({
         >
           {page === 0 && <BeatSpread left={beats[0]} right={beats[1]} />}
           {page === 1 && <BeatSpread left={beats[2]} right={beats[3]} />}
-          {page === 2 && <FeaturedBeatPage beat={beats[4]} />}
-          {page === 3 && (
-            <VisionInputPage
+          {page === 2 && (
+            <IdentityPage
               name={session.name}
               headlineFill={headlineFill}
-              visionInput={visionInput}
-              setVisionInput={setVisionInput}
+              nameInput={nameInput}
+              setNameInput={setNameInput}
               completed={completed}
               attempts={attempts}
               maxAttempts={MAX_ATTEMPTS}
               editorHint={editorHint}
               inputRef={inputRef}
               onSubmit={submit}
-              canSubmit={visionInput.trim().length > 0 && !judging}
+              canSubmit={nameInput.trim().length > 0 && !judging}
             />
           )}
         </motion.div>
       </AnimatePresence>
 
+      {/* ── 푸터 ─────────────────────────────────────────────────── */}
       <footer className="mt-5 flex shrink-0 items-center justify-between border-t border-[#d7bd83]/30 pt-4">
         <button
           type="button"
@@ -318,45 +306,12 @@ function BeatPanel({ side, children }: { side: "left" | "right"; children: React
   return <div className={`px-1 py-1 ${fold}`}>{children}</div>;
 }
 
-/** Spread 3 — 마지막 BEAT는 전체 폭으로 featured. "닿고 싶은 끝" 클라이맥스. */
-function FeaturedBeatPage({ beat }: { beat: Beat }) {
-  return (
-    <section className="mx-auto max-w-[640px] py-4 text-center">
-      <p className="mb-4 text-[12px] uppercase tracking-[0.42em] text-[#7a5a3a]">
-        Editor&rsquo;s Final Note
-      </p>
-      {beat.body ? (
-        <>
-          <p
-            className="font-serif text-6xl leading-none text-[#9a7b4c]"
-            style={{ fontFamily: "var(--font-ridi-batang), serif" }}
-          >
-            {beat.number}
-          </p>
-          <div className="mx-auto my-3 h-px w-12 bg-[#b99b6b]" />
-          <h3
-            className="font-serif text-2xl italic text-[#3d2414]"
-            style={{ fontFamily: "var(--font-ridi-batang), serif" }}
-          >
-            {beat.category}
-          </h3>
-          <p className="mx-auto mt-5 max-w-[560px] text-[16px] leading-[1.95] text-[#3d2414]">
-            {beat.body}
-          </p>
-        </>
-      ) : (
-        <p className="italic text-[#8b7050]">편집장이 마지막 문단을 정리하고 있어요…</p>
-      )}
-    </section>
-  );
-}
-
-/** Spread 4 — visionLine 입력 (당신은 어떤 방향으로 성장하고 싶나요?). */
-function VisionInputPage({
+/** Spread 3 — 정체성 입력 페이지 (당신은 ___ 사람). */
+function IdentityPage({
   name,
   headlineFill,
-  visionInput,
-  setVisionInput,
+  nameInput,
+  setNameInput,
   completed,
   attempts,
   maxAttempts,
@@ -367,8 +322,8 @@ function VisionInputPage({
 }: {
   name: string;
   headlineFill: string;
-  visionInput: string;
-  setVisionInput: (v: string) => void;
+  nameInput: string;
+  setNameInput: (v: string) => void;
   completed: boolean;
   attempts: number;
   maxAttempts: number;
@@ -383,19 +338,16 @@ function VisionInputPage({
         Editor&rsquo;s Question
       </p>
       <h2
-        className="mb-3 text-center font-serif text-2xl italic text-[#3d2414]"
+        className="mb-8 text-center font-serif text-2xl italic text-[#3d2414]"
         style={{ fontFamily: "var(--font-ridi-batang), serif" }}
       >
-        당신은 어떤 방향으로 성장하고 싶나요?
+        당신은 어떤 사람입니까?
       </h2>
-      <p className="mb-7 text-center text-[14px] italic text-[#8b7050]">
-        매거진 카드의 표현을 가져와도 좋고, 합치거나 다시 써도 좋아요.
-      </p>
 
       <div className="mb-6 flex flex-wrap items-baseline justify-center gap-x-2 text-center">
-        <span className="text-[18px] text-[#3d2414]">나는</span>
+        <span className="text-[18px] text-[#3d2414]">당신은</span>
         <span
-          className={`inline-block min-w-[260px] border-b-2 border-dashed pb-1 text-[18px] font-semibold tracking-wide transition-colors ${
+          className={`inline-block min-w-[200px] border-b-2 border-dashed pb-1 text-[18px] font-semibold tracking-wide transition-colors ${
             completed
               ? "border-[#3d2414] text-[#3d2414]"
               : headlineFill
@@ -404,7 +356,7 @@ function VisionInputPage({
           }`}
           style={{ fontFamily: "var(--font-ridi-batang)" }}
         >
-          {headlineFill || "                "}
+          {headlineFill || "        "}
         </span>
         <span className="text-[18px] text-[#3d2414]">사람.</span>
       </div>
@@ -424,18 +376,18 @@ function VisionInputPage({
       </AnimatePresence>
 
       {!completed && (
-        <div className="mx-auto max-w-[520px]">
+        <div className="mx-auto max-w-[480px]">
           <input
             ref={inputRef}
-            value={visionInput}
-            onChange={(e) => setVisionInput(e.target.value)}
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
                 if (canSubmit) void onSubmit();
               }
             }}
-            placeholder="예: '막막함을 풀어주는 자리에서 자기다운 빛을 내는'"
+            placeholder="예: '잇는 사람' / '흩어진 걸 하나로 모으는 사람'"
             className="w-full rounded-md border border-[#b99b6b]/50 bg-white/70 px-4 py-3 text-center text-[16px] text-[#3d2414] outline-none placeholder:text-[#a18965] focus:border-[#3d2414] disabled:opacity-50"
             style={{ fontFamily: "var(--font-ridi-batang)" }}
           />
@@ -455,8 +407,8 @@ function VisionInputPage({
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mx-auto mt-2 max-w-[560px] space-y-1 text-center text-[15px] italic leading-[1.7] text-[#5a4a36]"
           >
-            <p>Chapter 3이 완성됐어요.</p>
-            <p>이 방향이 오늘 STORY {name}호의 비전 페이지에 새겨질 거예요.</p>
+            <p>Chapter 2가 완성됐어요.</p>
+            <p>이 이름은 오늘 STORY {name}호의 첫 페이지에 새겨질 거예요.</p>
           </motion.div>
         )}
       </AnimatePresence>

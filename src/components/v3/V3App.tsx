@@ -50,7 +50,17 @@ const FULL_HEIGHT_KINDS: ReadonlySet<SceneKind> = new Set<SceneKind>([
   "recordPage",
   "magazineHandoff",
   "magazinePoster",
+  "magazinePosterV1", // 임시 비교용 — v1 백업 디자인.
   "editorCredits",
+  // 매거진 스프레드 씬들 — 좌·우 2 페이지 + 다음 페이지 흐름이라 풀-height.
+  // FULL_HEIGHT_KINDS에 등록되면 (1) 자체적인 max-w/min-h 분기에 맞춰
+  // 스타일링되고 (2) 다이얼로그 우상단 "이전" 전역 버튼이 자동 숨김 처리됨
+  // (각 씬이 자체 footer에 ← 이전을 그리기 때문에 전역과 충돌하지 않게).
+  "chapter2Magazine",
+  "growthVisionSynthesis",
+  // v1 백업 — URL 직접 진입으로만 비교용. 비교 끝나면 같이 제거.
+  "chapter2MagazineV1",
+  "growthVisionSynthesisV1",
 ]);
 
 // Final-stage scenes have no meaningful "back" — by the time the magazine
@@ -438,7 +448,10 @@ function V3Inner() {
                     // + backdrop blur so background image stays visible behind narration.
                     ? "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md bg-[#f6efdf]/55 p-7 backdrop-blur-[2px]"
                     : FULL_HEIGHT_KINDS.has(spec.kind) && stage === "content"
-                  ? spec.kind === "timeHorizon"
+                  ? // ── FULL_HEIGHT_KINDS 분기 — kind-specific 스타일 먼저, 그 다음 default ──
+                  // 주의: 모든 kind-specific 검사는 반드시 FULL_HEIGHT_KINDS 분기 *안*에
+                  // 있어야 함. 이전엔 일부가 분기 바깥(else)에 있어서 영원히 도달 못 했음.
+                  spec.kind === "timeHorizon"
                     // timeHorizon은 LLM이 3줄만 채워주는 짧은 콘텐츠라 viewport
                     // 가득 채우면 빈 공간이 너무 많이 보인다. max-h로 잘리는 케이스만
                     // 보호하고 평소엔 콘텐츠에 맞춰 높이를 자동으로 줄인다.
@@ -447,35 +460,27 @@ function V3Inner() {
                     // valueCards renders its own dark "menu board" container,
                     // so the dialog wrapper goes transparent — no parchment
                     // background, no border, no padding fighting the menu.
-                    // Height is purely viewport-based: 100vh-200px leaves
-                    // room for the speaker label (~56px) + pt-24 (96px) +
-                    // pb-12 (48px) that sit OUTSIDE the dialog, so the box
-                    // always fits on-screen and its sticky bottom action
-                    // button stays reachable. min-h-[300px] only guards
-                    // pathologically short windows; no max-h since h is
-                    // already viewport-derived. (Old min-h-[560px]/[400px]
-                    // pushed the box — and its button — off short screens.)
                     ? "relative mx-auto flex h-[calc(100vh_-_200px)] min-h-[300px] flex-col overflow-y-auto"
+                    : spec.kind === "chapter2Magazine" || spec.kind === "growthVisionSynthesis" || spec.kind === "magazinePoster"
+                    // 매거진 스프레드 씬들 — 좌·우 2 페이지가 가로로 펼쳐지므로 와이드 폭
+                    // (1024px). 세 씬 모두 동일한 비율로 통일.
+                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[640px] w-full max-w-[1024px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
+                    : spec.kind === "magazineHandoff" || spec.kind === "editorCredits"
+                    // 콘텐츠 짧은 final-stage 씬들 — 콘텐츠 hug로 빈 양피지 회귀 방지.
+                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[420px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
+                    // default FULL_HEIGHT — recordPage / toolSelect / visionSelect / magazinePosterV1
                     : "relative mx-auto flex h-[calc(100vh_-_200px)] min-h-[300px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-7 shadow-2xl"
                   : spec.kind === "cardChoice" && stage === "content"
                     // cardChoice keeps the same bottom-anchored position +
                     // 1156px width as other dialogs, but drops the min-height
                     // so the dialog hugs the 3-choice content instead of
                     // forcing 480px of empty space + losing scroll.
-                    // max-h is 220px (not 140px): the speaker label (~52px),
-                    // pt-24 (96px) and pb-12 (48px) all sit OUTSIDE the
-                    // dialog — with 140px the box grew taller than the
-                    // viewport and <main>'s overflow-hidden clipped the top,
-                    // hiding the lower choice cards. 220px keeps the whole
-                    // dialog on-screen; content beyond it scrolls inside.
                     ? "relative mx-auto flex max-h-[calc(100vh_-_220px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
                     : INPUT_KINDS.has(spec.kind) && stage === "content"
                       ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[360px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-[108px] shadow-2xl text-[16px]"
-                      : (spec.kind === "strengthSynthesis" || spec.kind === "growthVisionSynthesis") && stage === "content"
-                        // Magazine-card synthesis scenes — LLM 로딩 동안엔 짧은
-                        // narration만 보이는데, 이때 wrapper가 잠깐 작아졌다가
-                        // 카드 grid가 뜨면 급격히 커지면서 점프가 생긴다. min-h를
-                        // 박아 로딩 → 카드 전환을 부드럽게.
+                      : spec.kind === "strengthSynthesis" && stage === "content"
+                        // [v1 백업용] strengthSynthesis 단독 씬 — Chapter 2 통합으로
+                        // 대체된 이후엔 도달 없음. 폴백 유지.
                         ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[500px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
                         : "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-7 shadow-2xl"
               }

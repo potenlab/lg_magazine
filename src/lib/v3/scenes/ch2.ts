@@ -1,5 +1,8 @@
 import { INTERVIEW_OWL_POOL, type SceneSpec } from "./types";
-import { RECEIVE_OPENERS } from "./openers";
+// RECEIVE_OPENERS — 2-9 followup B 분기에서 쓰던 opener 풀. 해당 씬이 2-magazine
+// 통합으로 흡수되며 주석 처리되어 import도 같이 비활성. 분리 흐름 복원 시 함께
+// 언커뮤트.
+// import { RECEIVE_OPENERS } from "./openers";
 
 export const CH2_SCENES: SceneSpec[] = [
   {
@@ -162,11 +165,49 @@ export const CH2_SCENES: SceneSpec[] = [
     timeOfDay: "starsRising",
     owl: "noteHanding",
     narration: "편집장이 고개를 끄덕인다.",
-    next: "2-7-synth",
+    next: "2-10",
   },
   {
-    // [22p] 4재료(Ch1 몰입 / Ch2 가치 / Ch2 강점 결 / Ch2 타인이 보는 나) 종합.
-    // 매거진 카드 형식으로 표시되어 2-8 identity 질문으로 자연스럽게 이어진다.
+    // ── [신규 — 2026-05-19] Chapter 2 통합 매거진 페이지 (3 spread) ─────
+    // 이전 ID였던 "2-magazine"을 사용자 요청대로 "2-10"으로 통일 (이전 2-10
+    // ambience는 이미 주석 처리되어 ID 충돌 없음).
+    //
+    // 5개 씬(2-7-synth / 2-8 / 2-9 / 2-10 ambience / 2-11 recordPage)을
+    // 한 화면으로 합친 "매거진 펼침". 카드 4장 + 정체성 입력 + judge + 도장이
+    // 같은 페이지 안에서 흐름. judge 결과 D 또는 시도 3회 소진 시 페이지에
+    // "Chapter 2 · 완성" 도장이 찍히고 다음 버튼 활성화.
+    //
+    // 카드 본문은 LLM(v3SynthesizeStrength)이 BEAT 4개 × ~120자로 채움.
+    // 사용자 답변/judge/identityName 저장은 새 씬 컴포넌트가 직접 처리.
+    //
+    // next는 "2-12"(별 떠오름) — 기존 2-11(recordPage)은 backup으로 빠짐.
+    id: "2-10",
+    chapter: 2,
+    kind: "chapter2Magazine",
+    timeOfDay: "starsRising",
+    owl: "focusedWriting",
+    owlPool: INTERVIEW_OWL_POOL,
+    buttonLabel: "이렇게 부를래요",
+    next: "2-12",
+  },
+  {
+    // ── [임시 — 디자인 비교용] Chapter 2 v1 백업 디자인 ──
+    // 실제 flow에서는 도달하지 않음 (next로 가리키는 씬 없음).
+    // URL ?scene=2-10-v1 로 직접 진입해서 새 디자인과 비교만 가능.
+    // 비교 끝나면 이 객체 + SceneKind/SCENE_COMPONENTS 매핑 같이 제거.
+    id: "2-10-v1",
+    chapter: 2,
+    kind: "chapter2MagazineV1",
+    timeOfDay: "starsRising",
+    owl: "focusedWriting",
+    owlPool: INTERVIEW_OWL_POOL,
+    buttonLabel: "이렇게 부를래요",
+    next: "2-12",
+  },
+  /*
+  // ── [숨김 — 2-magazine으로 통합됨] 4재료 종합 카드 단독 씬.
+  // 복원: 위 2-7-nod.next를 "2-7-synth"로 되돌리고 아래 객체 주석 풀기.
+  {
     id: "2-7-synth",
     chapter: 2,
     kind: "strengthSynthesis",
@@ -174,6 +215,7 @@ export const CH2_SCENES: SceneSpec[] = [
     owl: "focusedWriting",
     next: "2-8",
   },
+  */
   /*
   // ── [숨김] 평소 모습과 겹치는지 binaryChoice + 각 분기 반응.
   // 피드백: 4재료 wow 카드 요약 후 2-8 identity로 바로 이어지도록 제거.
@@ -219,6 +261,12 @@ export const CH2_SCENES: SceneSpec[] = [
     next: "2-8",
   },
   */
+  /*
+  // ── [숨김 — 2-magazine 통합 씬으로 합쳐짐] 2026-05-19
+  // 이름 입력(2-8) + judge 재질문(2-9) + 펜 ambience(2-10) 세 단계가 모두
+  // 2-magazine 안의 하단 입력/judge/도장 흐름으로 흡수됨. 분리된 호흡으로
+  // 되돌리고 싶으면 위 2-magazine 블록의 next를 "2-11"에서 "2-10" 또는 "2-8"로
+  // 바꾸고 이 아래 객체들 주석을 풀면 됨.
   {
     id: "2-8",
     chapter: 2,
@@ -294,7 +342,13 @@ export const CH2_SCENES: SceneSpec[] = [
     narration: "편집장이 매거진의 첫 페이지에 천천히 적는다.",
     next: "2-11",
   },
+  */
   {
+    // ── [Backup — 2026-05-19] Ch2 단독 recordPage ─────────────────────
+    // 2-10 합본 매거진(spread)이 Chapter 2 본문 + 정체성 입력을 모두 흡수하므로
+    // 메인 흐름에서 빠짐. 단독 매거진 article 룩을 보고 싶을 때 URL 직접 진입.
+    // 어느 씬도 next로 가리키지 않는 orphan — SCENES 등록은 유지(URL 접근).
+    // 메인 흐름 복원: 위 2-10.next를 "2-11"로 되돌리기.
     id: "2-11",
     chapter: 2,
     kind: "recordPage",
@@ -312,7 +366,9 @@ export const CH2_SCENES: SceneSpec[] = [
     chapter: 2,
     kind: "ambience",
     owl: "contemplating",
-    timeOfDay: "starsFull",
+    // 내레이션이 "별이 하나둘 떠오르기 *시작*한다" 이므로 starsRising 으로
+    // 통일. 별이 가득 차는 starsFull 분위기는 Ch3 진입(3-card)부터.
+    timeOfDay: "starsRising",
     bgImage: "/vision_express/common/Chapter02-3.webp",
     narration: "창밖에 별이 하나둘 떠오르기 시작한다. 편집장이 잠시 그 빛들을 바라본다.",
     lines: [

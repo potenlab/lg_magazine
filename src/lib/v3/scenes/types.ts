@@ -72,6 +72,9 @@ export type SceneKind =
   | "strengthConfirm"
   | "strengthSynthesis"
   | "growthVisionSynthesis"
+  | "growthVisionSynthesisV1"
+  | "chapter2Magazine"
+  | "chapter2MagazineV1"
   | "cardChoice"
   | "toolSelect"
   | "visionSelect"
@@ -80,6 +83,7 @@ export type SceneKind =
   | "ambience"
   | "magazineHandoff"
   | "magazinePoster"
+  | "magazinePosterV1"
   | "editorCredits";
 
 export type SceneId = string;

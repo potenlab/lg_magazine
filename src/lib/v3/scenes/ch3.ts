@@ -364,17 +364,37 @@ export const CH3_SCENES: SceneSpec[] = [
   {
     // [ch3 wow] 매거진 5 카드 통합 반향. 기존 visionSelect(6옵션+textarea)를
     // 대체. 사용자 visionLine 입력 단계는 별도 scene으로 이후 추가 예정.
+    // ── [2026-05-19] Chapter 3 매거진 4 spread + visionLine 입력 통합 ──
+    // 5 BEAT 카드 spread × 3 + visionLine 입력 spread × 1.
+    // 이전 분리 흐름(3-10 → 3-10c question → 3-11 narration → 3-12 recordPage
+    // → 3-13)을 한 씬으로 흡수. 메인 흐름은 3-10 → 3-13으로 직행.
     id: "3-10",
     chapter: 3,
     kind: "growthVisionSynthesis",
     owl: "focusedWriting",
     timeOfDay: "starsFull",
     bgImage: BG_ROOM,
-    next: "3-10c",
+    buttonLabel: "이렇게 적어볼래요",
+    next: "3-13",
   },
   {
-    // [신규] 매거진 카드 반향을 본 뒤 본인 언어로 성장 방향을 적는 단계.
-    // 기존 visionSelect의 textarea 역할을 분리해서 가져왔다.
+    // ── [임시 — 디자인 비교용] Chapter 3 v1 백업 디자인 ──
+    // 실제 flow에서는 도달하지 않음 (next로 가리키는 씬 없음).
+    // URL ?scene=3-10-v1 로만 진입 가능. 비교 끝나면 이 객체 +
+    // SceneKind/SCENE_COMPONENTS 매핑 같이 제거.
+    id: "3-10-v1",
+    chapter: 3,
+    kind: "growthVisionSynthesisV1",
+    owl: "focusedWriting",
+    timeOfDay: "starsFull",
+    bgImage: BG_ROOM,
+    next: "3-13",
+  },
+  {
+    // ── [Backup — 2026-05-19] visionLine 단독 입력 씬 ──────────────
+    // 3-10 통합 매거진의 마지막 spread(visionLine 입력)에 흡수됨.
+    // 메인 흐름에서 빠짐 — 어느 씬도 next로 가리키지 않음 (orphan).
+    // 분리 흐름 복원: 3-10.next를 "3-10c"로, 3-11.next/3-12.next 등 체인 복원.
     id: "3-10c",
     chapter: 3,
     kind: "question",
@@ -410,7 +430,9 @@ export const CH3_SCENES: SceneSpec[] = [
   },
   */
 
-  // ── 비전 확인 내레이션 ─────────────────────────────────────
+  // ── [Backup] 비전 확인 내레이션 ─────────────────────────────
+  // 3-10 통합 매거진의 완성 affirmation에 흡수됨. 메인 흐름에서 빠짐 (orphan).
+  // 복원: 3-10.next를 "3-10c"로, 3-10c.next를 "3-11"로 되돌리기.
   {
     id: "3-11",
     chapter: 3,
@@ -428,7 +450,9 @@ export const CH3_SCENES: SceneSpec[] = [
     next: "3-12",
   },
 
-  // ── 챕터 기록 페이지 ───────────────────────────────────────
+  // ── [Backup] Chapter 3 단독 recordPage ────────────────────────
+  // 3-10 매거진 spread가 Ch3 본문을 충분히 보여주므로 메인 흐름에서 빠짐.
+  // URL ?scene=3-12 로 직접 진입 시 단독 매거진 article 룩 확인 가능.
   {
     id: "3-12",
     chapter: 3,

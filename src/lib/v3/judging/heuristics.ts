@@ -143,6 +143,13 @@ export function ruleForScene(sceneId: string): BranchRule {
   if (sceneId === "1-2" || sceneId === "1-4") return "ch1FlowAnswer";
   if (sceneId === "2-2") return "ch2Common";
   if (sceneId === "2-9") return "ch2IdentityName";
+  // 새 통합 매거진 씬(2-10, 이전 "2-magazine"): 카드 + 헤드라인 + 정체성 입력이
+  // 한 페이지에 들어가며, 입력 즉시 같은 ch2IdentityName 룰로 judge → A/B면
+  // 페이지 내 재질문, D면 페이지 "완성" 처리.
+  if (sceneId === "2-10" || sceneId === "2-magazine") return "ch2IdentityName";
+  // Chapter 3 매거진(3-10): 5 BEAT 카드 + visionLine 입력 + judge가 모두 통합.
+  // 같은 ch3VisionLine 룰을 인라인으로 적용.
+  if (sceneId === "3-10") return "ch3VisionLine";
   if (sceneId === "3-1b") return "ch3Attraction";
   if (sceneId === "3-2b") return "ch3AlreadyDoing";
   if (sceneId === "3-3b") return "ch3Obstacles";

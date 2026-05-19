@@ -1,0 +1,15 @@
+services:
+  lg-magazine:
+    build:
+      context: .
+    image: lg-magazine:latest
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-3002}:3000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+    restart: unless-stopped

@@ -21,6 +21,21 @@ npm run dev
 
 App routes to `/v3`. Root `/` redirects.
 
+## Docker Deployment
+
+This deploys as one Next.js service. There is no separate backend process, but
+the app does include server-side API routes for LLM calls and Supabase session
+storage.
+
+```bash
+cp .env.example .env
+# fill in .env
+docker compose up -d --build
+```
+
+The app listens on `http://localhost:3000` by default. Set `APP_PORT` in `.env`
+to publish a different host port.
+
 ## Env
 
 See `.env.example`. At minimum:

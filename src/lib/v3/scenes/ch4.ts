@@ -59,12 +59,9 @@ export const CH4_SCENES: SceneSpec[] = [
     placeholder: "예: 좋은 참가자 경험을 일구어낸 사례 (웨비나, 컨퍼런스, 프로그램 등 형식 무관) 찾아보기",
     saveTo: "firstStep",
     buttonLabel: "건네기",
-    reviewFields: [
-      { label: "성장 방향", field: "visionSummary" },
-      { label: "1년 목표", field: "timeHorizon1" },
-      { label: "3년 목표", field: "timeHorizon2" },
-      { label: "언젠가의 꿈", field: "timeHorizon3" },
-    ],
+    // [2026-05-20] reviewFields 제거 — 3-10b timeHorizon 단계가 사라지면서
+    // visionSummary/timeHorizon1/2/3 필드가 모두 dead가 됐고, 패널이 항상
+    // "아직 답변이 없어요"만 4줄 띄워서 사용자 혼동만 유발. 깨끗이 제거.
     next: "4-3",
   },
   {
@@ -128,12 +125,7 @@ export const CH4_SCENES: SceneSpec[] = [
     inputHint: "떠오르는 분의 이름이나 어떤 관계의 사람인지 적어주세요.",
     saveTo: "supportPerson",
     buttonLabel: "건네기",
-    reviewFields: [
-      { label: "성장 방향", field: "visionSummary" },
-      { label: "1년 목표", field: "timeHorizon1" },
-      { label: "3년 목표", field: "timeHorizon2" },
-      { label: "언젠가의 꿈", field: "timeHorizon3" },
-    ],
+    // [2026-05-20] reviewFields 제거 — 4-2와 동일 이유 (dead timeHorizon 필드).
     next: "4-6",
   },
   {

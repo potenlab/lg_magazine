@@ -367,12 +367,11 @@ function VisionInputPage({
         매거진 카드의 표현을 가져와도 좋고, 합치거나 다시 써도 좋아요.
       </p>
 
-      {/* Ch2가 "당신은 ___ 사람" 정체성 이름을 썼으므로 Ch3은 "방향" 으로
-          차별화. 빈 줄에 들어가는 사용자 입력은 동사·동작 modifier 형태
-          (예: "막막함을 풀어주는 자리에서 자기다운 빛을 내는")가 자연스럽고,
-          뒤에 "방향으로 성장합니다" 가 붙어서 한 문장 완결. */}
+      {/* 질문 헤딩에 "방향 + 성장하고 싶나요" 모두 들어있어서, 빈 줄 라인은
+          "나는" 같은 prefix 없이 간결하게 `[입력] 방향.` 만. 사용자 입력
+          (예: "막막함을 풀어주는 자리에서 자기다운 빛을 내는")이 "방향"을
+          직접 수식해서 한 호흡으로 읽힘. */}
       <div className="mb-6 flex flex-wrap items-baseline justify-center gap-x-2 text-center">
-        <span className="text-[18px] text-[#3d2414]">나는</span>
         <span
           className={`inline-block min-w-[260px] border-b-2 border-dashed pb-1 text-[18px] font-semibold tracking-wide transition-colors ${
             completed
@@ -385,7 +384,7 @@ function VisionInputPage({
         >
           {headlineFill || "                "}
         </span>
-        <span className="text-[18px] text-[#3d2414]">방향으로 성장합니다.</span>
+        <span className="text-[18px] text-[#3d2414]">방향.</span>
       </div>
 
       <AnimatePresence>

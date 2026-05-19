@@ -134,7 +134,11 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
     // height + overflow-y-auto. Wrapping with flex-1 made child content
     // ignore the cap and spill below the viewport (which has overflow-hidden
     // on <main>), making the summary list + PDF button invisible.
-    <div className="flex flex-col gap-5">
+    // pb-[60px]: sticky 버튼 영역(약 50px) + 여유. 다른 sticky 버튼 씬들과
+    // 동일하게 sticky wrapper는 transparent로 두고, 콘텐츠 쪽에서 footer 만큼
+    // 여백을 확보. 이렇게 하면 dialog wrapper bg와 footer 영역 색이 완전 일치
+    // (= 사용자 피드백: "다른 색 띠처럼 보이는 회귀" 해결).
+    <div className="flex flex-col gap-5 pb-[60px]">
       <AutoFlowText lines={lines} onSettled={() => setSettled(true)} />
 
       {settled && summary.length > 0 && (
@@ -142,6 +146,10 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
+          // 원본 full-width 디자인 유지. 한때 max-w-[560px]로 좁혀봤으나
+          // 사용자 피드백: 다이얼로그가 비어 보여서 어색함 → 100% 폭 복원.
+          // (당시 "잘리는 에러"는 박스 폭이 아니라 sticky 버튼 wrapper에
+          // bg가 빠져 summary 하단 row가 버튼 뒤로 비치는 게 진짜 원인이었음.)
           className="rounded-md border border-[#b99b6b]/30 bg-white/40 p-5"
         >
           <p className="mb-3 text-center text-[16px] uppercase tracking-[0.3em] text-[#8b7050]">
@@ -172,7 +180,11 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
           scrolled out of reach with the list — same "버튼이 밑으로 내려가서
           클릭이 안 된다" failure as the cardChoice scene. The negative
           -mx-7/-mb-7 + matching px-7 + opaque bg extend this footer to the
-          dialog edges (dialog padding is p-7 for FULL_HEIGHT_KINDS). */}
+          dialog edges (dialog padding is p-7 for FULL_HEIGHT_KINDS).
+          [2026-05-20] 다른 sticky 버튼 씬(CardChoice/ToolSelect/VisionSelect)과
+          동일하게 sticky wrapper는 완전 transparent. bg/border/blur 추가하면
+          dialog wrapper bg와 미세한 색 차이로 "다른 색 띠"처럼 보임. 콘텐츠
+          쪽에서 pb-[60px]로 footer 영역 만큼 여백 확보해서 overlap 방지. */}
       <div
         className={`sticky bottom-0 z-10 -mx-7 -mb-7 mt-1 flex justify-end px-7 py-3 transition-opacity duration-500 ${
           settled ? "opacity-100" : "pointer-events-none opacity-0"

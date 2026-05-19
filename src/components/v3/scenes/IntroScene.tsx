@@ -374,7 +374,18 @@ export function IntroScene({
               <Header small />
             </div>
 
-            <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 py-6">
+            <div className="relative z-10 flex h-full flex-col items-center justify-center overflow-hidden px-4 py-6">
+              {/* Scale wrapper — 편지지 카드는 내부 레이아웃(패딩·폰트)이 630×420
+                  픽셀에 고정돼 있어서, 모바일처럼 좁은 뷰포트에선 통째로 transform
+                  scale 해서 줄인다. (이전엔 고정 630px이라 ~390px 폰에서 양옆이
+                  잘렸음.) framer-motion의 entrance transform(y/opacity)과 충돌하지
+                  않도록 scale은 이 plain wrapper에, 애니메이션은 안쪽 motion.div에. */}
+              <div
+                style={{
+                  transform: "scale(min(1, calc((100vw - 36px) / 630)))",
+                  transformOrigin: "center center",
+                }}
+              >
               <motion.div
                 className={
                   // Card is click-to-advance on pages 0/1; on the last page
@@ -388,7 +399,7 @@ export function IntroScene({
                 style={{
                   // Fixed letter paper dimensions — visual layout stays
                   // identical across viewports / browser zoom, no jitter
-                  // as the page size changes.
+                  // as the page size changes. (모바일 축소는 위 scale wrapper가 담당.)
                   width: 630,
                   height: 420,
                   filter: "drop-shadow(0 6px 20px rgba(0,0,0,0.3))",
@@ -535,6 +546,7 @@ export function IntroScene({
                   )}
                 </motion.div>
               </motion.div>
+              </div>{/* /scale wrapper */}
             </div>
           </motion.div>
         )}
@@ -563,7 +575,7 @@ export function IntroScene({
                 >
                   <h2 className="mb-6 text-center text-[20px] font-semibold tracking-[0.02em] text-[#3d2414]">승객 명부</h2>
 
-                  <div className="min-h-0 flex-1 overflow-y-auto pr-1 pb-20">
+                  <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                     <div>
                       <label className="text-[16px] font-semibold leading-[1.7] text-[#5a4a38]">탑승객의 성함을 알려주세요.</label>
                       <input
@@ -609,13 +621,16 @@ export function IntroScene({
 
                     <div className="mt-[20px]">
                       <label className="text-[16px] font-semibold leading-[1.7] text-[#5a4a38]">탑승객의 직무를 알려주세요.</label>
+                      {/* 직무 버튼: h-9 고정 + 16px이면 "설계/엔지니어링" 같은
+                          긴 라벨이 모바일 좁은 칸에서 2줄 wrap되며 잘렸음.
+                          min-h + py + 작은 폰트 + leading-tight로 2줄도 안 잘리게. */}
                       <div className="mt-3 grid grid-cols-3 gap-2">
                         {[...JOB_OPTIONS, "기타"].map((j) => (
                           <button
                             key={j}
                             type="button"
                             onClick={() => setJob(j)}
-                            className={`h-9 rounded-sm border px-2 text-[16px] transition ${
+                            className={`flex min-h-9 items-center justify-center rounded-sm border px-1.5 py-1.5 text-center text-[13px] leading-tight transition ${
                               job === j
                                 ? "border-[#d4a54a] bg-[#efe2c4] text-[#3d2414]"
                                 : "border-[#8c785a]/25 bg-[#f2ebdd]/35 text-[#8a6f5f]"
@@ -637,15 +652,14 @@ export function IntroScene({
                       )}
                     </div>
                   </div>
-                </div>
 
-                {/* Footer — anchored to bottom of form card matching letter phase
-                    positioning (bottom: 44) */}
-                <div
-                  className="absolute flex items-end justify-center"
-                  style={{ bottom: 44, left: 36, right: 36 }}
-                >
-                  <StoryButtonV3 label="다음" onClick={handleRegisterSubmit} disabled={!registerReady} ritual />
+                  {/* 다음 버튼: 기존엔 카드 밖 absolute(bottom:44)라 모바일에서
+                      하단 ProgressRail("Chapter 0...")과 겹쳤음. 카드 안쪽 flex
+                      흐름으로 옮겨서 scroll 영역(flex-1) 아래에 자연스럽게 위치 →
+                      외부 footer와 절대 안 겹침. */}
+                  <div className="shrink-0 flex justify-center pt-4">
+                    <StoryButtonV3 label="다음" onClick={handleRegisterSubmit} disabled={!registerReady} ritual />
+                  </div>
                 </div>
               </motion.div>
             </div>
@@ -662,7 +676,7 @@ export function IntroScene({
               <Header small />
             </div>
 
-            <div className="relative z-10 flex min-h-full flex-col items-center justify-center px-4 pb-10 pt-36">
+            <div className="relative z-10 flex min-h-full flex-col items-center justify-center px-4 pb-10 pt-24">
               <motion.div
                 className="w-full"
                 style={{ maxWidth: 568, filter: "drop-shadow(0 10px 32px rgba(0,0,0,0.28))" }}
@@ -670,15 +684,19 @@ export function IntroScene({
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.7 }}
               >
+                {/* [2026-05-20 모바일] 한 화면에 들어가도록 컴팩트화:
+                    pt-36→24, h2 mb-7→4, textarea min-h 230→150(md:200),
+                    button mt-7→4. 입력하기 버튼은 scroll 영역 밖 flex 흐름으로
+                    빼서 항상 보이고 progress rail과 안 겹치게. */}
                 <div
-                  className="flex max-h-[calc(100vh_-_190px)] flex-col overflow-hidden rounded-md border border-[#d7bd83]/35 bg-[#f6efdf]/95 px-7 py-8 md:px-10 md:py-10"
+                  className="flex max-h-[calc(100vh_-_160px)] flex-col overflow-hidden rounded-md border border-[#d7bd83]/35 bg-[#f6efdf]/95 px-7 py-6 md:px-10 md:py-8"
                   style={{ fontFamily: "var(--font-ridi-batang)" }}
                 >
-                  <h2 className="mb-7 text-center text-[22px] font-semibold tracking-[0.02em] text-[#3d2414] md:text-[25px]">
+                  <h2 className="mb-4 text-center text-[20px] font-semibold tracking-[0.02em] text-[#3d2414] md:text-[24px]">
                     승객 명부
                   </h2>
                   <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-                    <p className="text-[16px] font-semibold leading-[1.7] text-[#5a4a38]">
+                    <p className="text-[16px] font-semibold leading-[1.6] text-[#5a4a38]">
                       이 열차에 오르기 전, 마음에 남아 있는 것이 있을까요?
                     </p>
                     <textarea
@@ -686,24 +704,26 @@ export function IntroScene({
                       onChange={(e) => setFreeText(e.target.value)}
                       aria-label="열차에 오르기 전 남기고 싶은 기록"
                       placeholder={"이 여정에 남기는 기록은 바깥에 공개되지 않아요.\n지금 안고 있는 작은 고민, 기대, 망설임 중\n함께 싣고 갈 것을 편하게 남겨주세요."}
-                      className="mt-3 min-h-[230px] w-full resize-none rounded-sm border border-[#8c785a]/25 bg-[#fbf6ea]/55 px-4 py-3 text-[16px] leading-[1.7] text-[#3d2414] outline-none transition placeholder:text-[#8a7a68]/70 focus:border-[#b99b6b] focus:bg-[#fffaf0]/75 md:text-[16px]"
+                      className="mt-2 min-h-[150px] w-full resize-none rounded-sm border border-[#8c785a]/25 bg-[#fbf6ea]/55 px-4 py-3 text-[16px] leading-[1.6] text-[#3d2414] outline-none transition placeholder:text-[#8a7a68]/70 focus:border-[#b99b6b] focus:bg-[#fffaf0]/75 md:min-h-[200px]"
                     />
-                    <div className="mt-[8px]">
+                    <div className="mt-2">
                       <button
                         type="button"
                         onClick={() => setExamplesOpen(true)}
-                        className="text-[16px] text-[#8a7a68] underline decoration-[#8a7a68]/40 underline-offset-[3px] transition hover:text-[#3d2414] hover:decoration-[#3d2414] md:text-[16px]"
+                        className="text-[14px] text-[#8a7a68] underline decoration-[#8a7a68]/40 underline-offset-[3px] transition hover:text-[#3d2414] hover:decoration-[#3d2414] md:text-[16px]"
                       >
                         다른 승객들은 주로 어떤 생각을 가졌을까요?
                       </button>
                     </div>
-                    <div className="mt-7 flex items-center justify-center">
-                      <StoryButtonV3
-                        label="입력하기"
-                        onClick={handleFreeSubmit}
-                        ritual
-                      />
-                    </div>
+                  </div>
+                  {/* 입력하기 버튼 — scroll 영역(flex-1) 밖 shrink-0으로 빼서
+                      항상 카드 하단에 고정 보임. progress rail과 겹침 없음. */}
+                  <div className="shrink-0 flex items-center justify-center pt-4">
+                    <StoryButtonV3
+                      label="입력하기"
+                      onClick={handleFreeSubmit}
+                      ritual
+                    />
                   </div>
                 </div>
               </motion.div>

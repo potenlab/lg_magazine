@@ -64,7 +64,7 @@ export function VolumeControl() {
 
       {/* Volume Control Popover */}
       {showVolumeControl && (
-        <div className="absolute right-0 top-full mt-2 rounded-lg bg-[#2a1f18] border border-[#8b7050]/30 p-4 shadow-xl z-50" style={{ minWidth: "200px" }}>
+        <div className="pointer-events-auto absolute right-0 top-full mt-2 rounded-lg bg-[#2a1f18] border border-[#8b7050]/30 p-4 shadow-xl z-50" style={{ minWidth: "200px" }}>
           <div className="space-y-3">
             {/* Volume Slider */}
             <div className="space-y-2">

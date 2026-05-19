@@ -472,10 +472,11 @@ function V3Inner() {
                     : INPUT_KINDS.has(spec.kind) && stage === "content"
                       ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[360px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-[108px] shadow-2xl text-[16px]"
                       : (spec.kind === "strengthSynthesis" || spec.kind === "growthVisionSynthesis") && stage === "content"
-                        // Magazine-card synthesis scenes — need enough vertical room
-                        // for the card grid but should hug the content (no forced
-                        // viewport height).
-                        ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
+                        // Magazine-card synthesis scenes — LLM 로딩 동안엔 짧은
+                        // narration만 보이는데, 이때 wrapper가 잠깐 작아졌다가
+                        // 카드 grid가 뜨면 급격히 커지면서 점프가 생긴다. min-h를
+                        // 박아 로딩 → 카드 전환을 부드럽게.
+                        ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[500px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
                         : "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-7 shadow-2xl"
               }
               style={{ fontFamily: "var(--font-ridi-batang)" }}

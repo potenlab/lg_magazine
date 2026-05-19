@@ -98,7 +98,7 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
                       taxonomy. EN label retained in data only (was used in
                       a one-off mock; participants prefer the Korean copy). */}
                   <div
-                    className="flex items-center justify-center gap-1 rounded-sm py-1 text-center text-[16px] font-semibold tracking-[0.05em] text-white shadow-sm"
+                    className="flex items-center justify-center gap-1 rounded-sm py-1 text-center text-[14px] font-semibold tracking-[0.05em] text-white shadow-sm"
                     style={{ background: cat.accent }}
                   >
                     <span>{cat.emoji}</span>

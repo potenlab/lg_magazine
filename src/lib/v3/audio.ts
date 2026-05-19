@@ -20,7 +20,8 @@ const AUDIO_FILES = {
   station:
     "/vision_express/freesound_community-train_station_outdoor_platform_birds_people-30576.mp3",
   horn: "/vision_express/kauasilbershlachparodes-train-493986.mp3",
-  pen: "/vision_express/freesound_community-writing-with-pen-35109.mp3",
+  // amplified 4x via ffmpeg — 원본은 너무 잔잔해서 사용자가 안 들린다고 함
+  pen: "/vision_express/writing-with-pen-loud.mp3",
   trainLoop: "/vision_express/kokoreli777-inside-old-train-169418.mp3",
   switchOn: "/vision_express/dragon-studio-light-switch-on-382714.mp3",
   card: "/vision_express/freesound_community-flipcard-91468.mp3",

@@ -188,8 +188,9 @@ export function IntroScene({
       audio.stop("paper");
     }
     // pen(손글씨 소리)은 편지 phase 전체에서 loop — 모든 4 페이지 동안 유지.
+    // 원본 mp3 자체가 매우 잔잔해서 max(1.0)로 깔아야 손글씨 결이 들린다.
     if (phase === "letter") {
-      audio.startLoop("pen", 0.7);
+      audio.startLoop("pen", 1.0);
     } else {
       audio.stopLoop("pen");
     }

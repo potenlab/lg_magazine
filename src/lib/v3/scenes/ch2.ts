@@ -293,7 +293,7 @@ export const CH2_SCENES: SceneSpec[] = [
     owlPool: INTERVIEW_OWL_POOL,
     hideOwl: true,
     hideSpeakerLabel: true,
-    bgm: "freesound_community-writing-with-pen-35109.mp3",
+    bgm: "writing-with-pen-loud.mp3",
     buttonLabel: "잘 읽었어요",
     next: "2-12",
   },

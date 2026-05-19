@@ -22,7 +22,7 @@ const VOLUME_LEVELS: Record<string, number> = {
   "kokoreli777-inside-old-train-169418.mp3": 0.55,
   "freesound_community-train_station_outdoor_platform_birds_people-30576.mp3": 0.6,
   // Sound effects (single play or loop)
-  "freesound_community-writing-with-pen-35109.mp3": 0.7,
+  "writing-with-pen-loud.mp3": 1.0,
   "freesound_community-flipcard-91468.mp3": 0.7,
   "dragon-studio-light-switch-on-382714.mp3": 0.75,
   "kauasilbershlachparodes-train-493986.mp3": 0.65,
@@ -104,12 +104,15 @@ export function BGMProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("bgm-enabled", String(isPlaying));
   }, [isPlaying, currentBGM, mounted, volume]);
 
-  // 효과음(SFX) 글로벌 볼륨 동기화 — BGM이 꺼져있으면(isPlaying=false) 효과음도 음소거,
-  // 켜져있으면 BGM volume 값에 맞춰 효과음 볼륨도 같이 조절된다.
+  // 효과음(SFX) 글로벌 볼륨 동기화 — slider 값만 따라간다.
+  // 이전엔 isPlaying=false (BGM 토글 꺼짐)면 효과음도 함께 음소거됐는데,
+  // VolumeControl UI에는 isPlaying 토글이 노출돼 있지 않아서 사용자는
+  // 음량만 100%로 올린 채로 효과음이 안 들리는 상태를 디버깅할 길이 없었다.
+  // 음소거하고 싶으면 슬라이더를 0으로 내리면 된다.
   useEffect(() => {
     if (!mounted) return;
-    setSfxGlobalVolume(isPlaying ? volume : 0);
-  }, [isPlaying, volume, mounted]);
+    setSfxGlobalVolume(volume);
+  }, [volume, mounted]);
 
   const toggle = () => {
     setIsPlaying((prev) => !prev);

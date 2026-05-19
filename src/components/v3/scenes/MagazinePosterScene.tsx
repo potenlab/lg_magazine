@@ -205,11 +205,11 @@ function PosterCard({
       ? "border-[#b99b6b]/55 bg-[#fbf5e6]"
       : "border-[#b99b6b]/35 bg-white/35";
   return (
-    <div className={`flex h-full min-h-0 flex-col rounded-sm border ${accent} px-3 py-3`}>
+    <div className={`flex h-full min-h-0 flex-col overflow-hidden rounded-sm border ${accent} px-3 py-3`}>
       <p className="text-[7.5px] uppercase tracking-[0.28em] text-[#7a5a3a]">
         {label}
       </p>
-      <div className="mt-2 min-h-0 flex-1 text-[#3d2414]">{children}</div>
+      <div className="mt-2 min-h-0 flex-1 overflow-hidden text-[#3d2414]">{children}</div>
     </div>
   );
 }

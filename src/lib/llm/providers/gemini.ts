@@ -24,13 +24,14 @@ export class GeminiProvider implements LLMProvider {
     // (2) 안전 마진으로 maxTokens를 1.5배 늘려둔다. 둘 다 Gemini-only 처리라
     //     Claude/OpenAI provider 동작에는 영향 없음.
     const baseMax = req.maxTokens ?? 300;
-    const generationConfig: Record<string, unknown> = {
+    // SDK 타입엔 thinkingConfig가 없지만 런타임 API는 받아준다. unknown 캐스트로 우회.
+    const generationConfig = {
       maxOutputTokens: Math.ceil(baseMax * 1.5),
       thinkingConfig: { thinkingBudget: 0 },
-    };
+    } as unknown as { maxOutputTokens: number };
     const res = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: req.user }] }],
-      generationConfig: generationConfig as Parameters<typeof model.generateContent>[0]["generationConfig"],
+      generationConfig,
     });
     const text = res.response.text();
     if (!text) throw new Error("gemini: no text in response");

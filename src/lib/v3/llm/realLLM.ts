@@ -152,10 +152,13 @@ export const realLLM: LLMContract = {
       const r = await callTask<{ synthesis: string }>("synthesizeStrength", input);
       // Server may return an empty synthesis on parse failure (soft fallback);
       // route to stub in that case so the scene always has something to show.
-      if (!r.synthesis?.trim()) return stubLLM.synthesizeStrength(input);
+      if (!r.synthesis?.trim()) {
+        console.warn("[v3 LLM][STUB-FALLBACK] synthesizeStrength: empty synthesis from server → using generic stub. Output will look general.");
+        return stubLLM.synthesizeStrength(input);
+      }
       return r;
     } catch (err) {
-      console.warn("[v3 LLM] synthesizeStrength fell back to stub:", err);
+      console.warn("[v3 LLM][STUB-FALLBACK] synthesizeStrength threw → using generic stub:", err);
       return stubLLM.synthesizeStrength(input);
     }
   },
@@ -163,10 +166,13 @@ export const realLLM: LLMContract = {
   async synthesizeGrowthVision(input) {
     try {
       const r = await callTask<{ synthesis: string }>("synthesizeGrowthVision", input);
-      if (!r.synthesis?.trim()) return stubLLM.synthesizeGrowthVision(input);
+      if (!r.synthesis?.trim()) {
+        console.warn("[v3 LLM][STUB-FALLBACK] synthesizeGrowthVision: empty synthesis from server → using generic stub. Output will look general.");
+        return stubLLM.synthesizeGrowthVision(input);
+      }
       return r;
     } catch (err) {
-      console.warn("[v3 LLM] synthesizeGrowthVision fell back to stub:", err);
+      console.warn("[v3 LLM][STUB-FALLBACK] synthesizeGrowthVision threw → using generic stub:", err);
       return stubLLM.synthesizeGrowthVision(input);
     }
   },

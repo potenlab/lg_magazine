@@ -68,6 +68,7 @@ export interface LLMContract {
     name: string;
     flowExperience1: string;
     flowExperience2: string;
+    commonPattern: string;
     selectedValues: { word: string; meaning: string }[];
     strengthCommonAsk: string;
     othersDescription: string;

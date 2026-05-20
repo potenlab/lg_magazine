@@ -51,9 +51,65 @@ const EDITORIAL_PROSE_CONSTRAINT = `
 - 조사 정확성: 받침 있음 → 은/이/을, 받침 없음 → 는/가/를. 명사 끝 글자에 맞춰 정확히 선택.
 - 전문적이되 따뜻한 존댓말을 유지합니다.`;
 
-async function ask(user: string, maxTokens = 300): Promise<LLMResult> {
+// 종합(synthesis) 태스크 전용 시스템 페르소나.
+// EDITOR_PERSONA는 챕터 진행 중 "부드럽게 되비추는" 리플렉션 씬용이라
+// "받아쓰지 말 것 / 단정 금지 / label 금지 / 발견의 시선(헤지)"을 강제한다.
+// 그런데 강점·성장 종합 BEAT는 정반대 — 사용자의 구체 사건을 끌어와
+// 단언체로 정체성을 선언해야 한다. 같은 system을 쓰면 모델이 페르소나 쪽으로
+// 수렴해 일반론·헤지 출력이 나오므로(피드백: "구체 사례 차용 문장이 없다"),
+// 종합 태스크는 이 전용 페르소나를 쓴다.
+const SYNTHESIS_PERSONA = `당신은 임원·창업가 한 사람만을 위한 프리미엄 매거진 STORY의 시니어 에디터입니다.
+한 사람의 이야기를 모아, 그 사람이 읽고 무릎을 탁 칠 강점·방향 포트레이트를 BEAT 단위로 종합합니다.
+
+스타일 규칙:
+- **단언체로 정체성을 선언**합니다. "~한 사람입니다", "~가 곧 ~였습니다" 같은 declarative 매거진 톤. 헤지("~처럼 보여요/~로 들렸어요/~인 것 같아요")는 절대 금지.
+- **사용자가 실제로 들려준 구체 사건·표현을 적극 끌어와** 본문에 박아 넣습니다. 장소·인물·숫자·기업·프로젝트명·역할·시기를 그대로 재구성해 근거로 씁니다. (리플렉션 씬과 달리, 여기서는 구체 차용이 핵심입니다.)
+- LLM이 지어낸 가짜 사례·일반론("사람을 돕는 걸 좋아합니다")은 절대 금지. 누구에게나 해당되는 문장이 한 줄이라도 들어가면 실패.
+- 짧고 정확한 한국어. 과한 수사·관용구·이모지·클리셰("가장 완벽한", "치열하게", "어깨의 무거운 짐") 금지.
+- 조사 정확성: 받침 있음 → 은/이/을, 받침 없음 → 는/가/를. 어미 중복("있었군요이었군요") 금지, 한 문장 = 한 마침 어미.
+- 따뜻하지만 날카로운 존댓말. 출력은 지시한 형식(JSON)만, 군더더기·해설 금지.`;
+
+async function ask(user: string, maxTokens = 300, system: string = EDITOR_PERSONA): Promise<LLMResult> {
   const provider = await getProvider();
-  return provider.generateText({ system: EDITOR_PERSONA, user, maxTokens });
+  return provider.generateText({ system, user, maxTokens });
+}
+
+// 종합 태스크의 {"synthesis": "..."} 응답을 견고하게 파싱한다.
+// 모델이 본문 안에 \n 대신 실제 줄바꿈/따옴표를 넣으면 JSON.parse가 깨지는데,
+// 그러면 멀쩡한 출력인데도 호출부가 빈 문자열 → 제너럴 스텁으로 폴백해버린다.
+// (1) 정상 JSON.parse 시도 → (2) 실패하면 synthesis 필드만 정규식으로 추출해
+// 이스케이프를 풀어 복구. 어느 쪽이 쓰였는지 + 실패 사유를 로그로 남겨,
+// 진짜 LLM이 도는지/왜 폴백되는지 서버 로그에서 바로 보이게 한다.
+function parseSynthesis(rawText: string, task: string): string {
+  const text = rawText.trim();
+  const match = text.match(/\{[\s\S]*\}/);
+  if (match) {
+    try {
+      const parsed = JSON.parse(match[0]) as { synthesis?: string };
+      const synthesis = (parsed.synthesis ?? "").trim();
+      if (synthesis) return synthesis;
+      console.warn(`[v3 LLM][${task}] JSON parsed but synthesis empty.`);
+    } catch (err) {
+      // JSON.parse 실패 — 보통 본문 안 unescaped 줄바꿈/따옴표. 느슨하게 복구 시도.
+      const msg = err instanceof Error ? err.message : String(err);
+      const loose = text.match(/"synthesis"\s*:\s*"([\s\S]*)"\s*\}?\s*$/);
+      if (loose?.[1]) {
+        const recovered = loose[1]
+          .replace(/\\n/g, "\n")
+          .replace(/\\"/g, '"')
+          .replace(/\\\\/g, "\\")
+          .trim();
+        if (recovered) {
+          console.warn(`[v3 LLM][${task}] strict JSON.parse failed (${msg}); recovered via loose extraction.`);
+          return recovered;
+        }
+      }
+      console.warn(`[v3 LLM][${task}] JSON.parse failed and loose recovery failed (${msg}). raw head: ${text.slice(0, 160)}`);
+    }
+  } else {
+    console.warn(`[v3 LLM][${task}] no JSON object found in model output. raw head: ${text.slice(0, 160)}`);
+  }
+  return "";
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -646,6 +702,7 @@ export async function v3SynthesizeStrength(input: {
   name: string;
   flowExperience1: string;
   flowExperience2: string;
+  commonPattern: string;
   selectedValues: { word: string; meaning: string }[];
   strengthCommonAsk: string;
   othersDescription: string;
@@ -653,11 +710,14 @@ export async function v3SynthesizeStrength(input: {
   const valueLines = input.selectedValues
     .map((v, i) => `${i + 1}. ${v.word}${v.meaning ? ` — ${v.meaning}` : ""}`)
     .join("\n");
-  const user = `${input.name}님이 들려준 네 가지 재료입니다.
+  const user = `${input.name}님이 들려준 다섯 가지 재료입니다.
 
 [1. Chapter 1 — 몰입했던 두 순간]
 경험 A: ${input.flowExperience1 || "—"}
 경험 B: ${input.flowExperience2 || "—"}
+
+[1-1. Chapter 1 — ${input.name}님이 두 순간에서 직접 찾아낸 공통점]
+${input.commonPattern || "—"}
 
 [2. Chapter 2 — 소중히 여기는 가치]
 ${valueLines || "—"}
@@ -676,7 +736,7 @@ ${input.othersDescription || "—"}
 {"synthesis": "[HEADLINE: 헤드라인1] 본문1\\n[HEADLINE: 헤드라인2] 본문2\\n[HEADLINE: 헤드라인3] 본문3\\n[HEADLINE: 헤드라인4] 본문4"}
 
 [BEAT 순서 — 반드시 이 순서대로]
-1) **두 장면을 잇는 것** — ${input.name}님이 들려준 두 장면을 관통하는 공통된 **행동/결정 방식**. 본문에 "Chapter 1" 같은 내부 용어 절대 금지. "${input.name}님이 들려준 두 장면" 식으로 자연스럽게 호명.
+1) **두 장면을 잇는 것** — ${input.name}님이 들려준 두 장면을 관통하는 공통된 **행동/결정 방식**. ${input.name}님이 스스로 짚은 공통점("${input.commonPattern || "—"}")을 출발점으로 삼되, 그걸 그대로 받아쓰지 말고 두 장면의 구체 사건으로 한 단계 더 또렷하게 증명할 것. 본문에 "Chapter 1" 같은 내부 용어 절대 금지. "${input.name}님이 들려준 두 장면" 식으로 자연스럽게 호명.
 2) **공통의 결** — 주변이 ${input.name}님 앞에 들고 온 일(${input.strengthCommonAsk || "—"})과 두 장면을 잇는 ${input.name}님의 정체성 한 줄.
 3) **타인의 시선** — 가까운 사람의 말("${input.othersDescription || "—"}")과 ${input.name}님이 스스로 들려준 모습이 만나는 지점.
 4) **가치의 뿌리** — 선택한 가치 단어들이 ${input.name}님의 행동·결정의 어떤 이유가 되는지.
@@ -703,7 +763,7 @@ ${input.othersDescription || "—"}
 - 예) "같은 결이 흘러요" → "같은 행동 패턴을 보입니다" / "직접 판을 짭니다"
 
 [구체 데이터 강제]
-- 사용자 답변(flowExperience1, flowExperience2, helpRequests, othersDescription)에서 **고유 데이터** — 구체적 **장소·인물·숫자·기업·이벤트·역할·시기** 중 **최소 2개**를 BEAT마다 직접 발췌해서 본문에 박아 넣을 것.
+- 사용자 답변(flowExperience1, flowExperience2, commonPattern, helpRequests, othersDescription)에서 **고유 데이터** — 구체적 **장소·인물·숫자·기업·이벤트·역할·시기** 중 **최소 2개**를 BEAT마다 직접 발췌해서 본문에 박아 넣을 것.
 - 예) "독일의 낯선 땅", "30곳 넘는 꽃집을 직접 발로 뛰며", "팀장직을 거절하고", "신입 첫 해의 발표 자리에서"
 - 단순 단어 인용이 아니라 **사용자가 실제로 한 이야기/사건**을 짧게 재구성.
 - **LLM이 지어낸 가짜 사례·일반 예시 절대 금지.** "사람을 돕는 걸 좋아합니다" 같은 누구에게나 해당되는 일반론이 한 줄이라도 들어가면 그 BEAT 실패.
@@ -722,19 +782,9 @@ ${input.othersDescription || "—"}
 - "정말", "참", "굉장히", "대단", "훌륭", "멋진", "완벽", "최고", "특별", 이모지.
 - 카드 번호(01, 02), 카테고리 라벨("두 몰입 순간" 등)은 본문에 절대 포함 금지 — 라벨/번호는 UI가 따로 붙임.
 - 헤드라인은 따옴표로 감싸지 말 것. "[HEADLINE: 판을 짜고 결과를 만드는 사람]" O / "[HEADLINE: "판을 짜고…"]" X.`;
-  const r = await ask(user, 2200);
-  const text = r.text.trim();
-  try {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("no JSON found");
-    const parsed = JSON.parse(match[0]) as { synthesis?: string };
-    const synthesis = (parsed.synthesis ?? "").trim();
-    if (!synthesis) throw new Error("empty synthesis");
-    return { synthesis };
-  } catch {
-    // Soft fallback so the scene never blocks — caller may also fall back to stub.
-    return { synthesis: "" };
-  }
+  const r = await ask(user, 2200, SYNTHESIS_PERSONA);
+  // Soft fallback (empty) so the scene never blocks — caller falls back to stub.
+  return { synthesis: parseSynthesis(r.text, "synthesizeStrength") };
 }
 
 export async function v3SynthesizeGrowthVision(input: {
@@ -872,21 +922,12 @@ BEAT 04 · 종착지의 풍경
 [일반 금칙어]
 - "정말", "참", "굉장히", "대단", "훌륭", "멋진", "완벽", "최고", "특별", 이모지.
 - 카드 번호(01, 02), 카테고리 라벨은 본문에 절대 포함 금지 — UI가 따로 붙임.
-- 헤드라인 자체를 따옴표로 감싸지 말 것.
-
-${EDITORIAL_PROSE_CONSTRAINT}`;
-  const r = await ask(user, 2400);
-  const text = r.text.trim();
-  try {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("no JSON found");
-    const parsed = JSON.parse(match[0]) as { synthesis?: string };
-    const synthesis = (parsed.synthesis ?? "").trim();
-    if (!synthesis) throw new Error("empty synthesis");
-    return { synthesis };
-  } catch {
-    return { synthesis: "" };
-  }
+- 헤드라인 자체를 따옴표로 감싸지 말 것.`;
+  // EDITORIAL_PROSE_CONSTRAINT(헤지 어미 강제·사용자 표현 차용 금지)를 더 이상
+  // 붙이지 않는다 — 이 종합 BEAT의 단언체·구체 차용 요구와 정면 충돌해 출력을
+  // 일반론으로 끌어내렸다. SYNTHESIS_PERSONA가 톤·조사 규칙을 대신 담당.
+  const r = await ask(user, 2400, SYNTHESIS_PERSONA);
+  return { synthesis: parseSynthesis(r.text, "synthesizeGrowthVision") };
 }
 
 export async function v3ExtractKeyword(input: { answer: string; rule: "flow" | "common" | "future" }): Promise<string> {

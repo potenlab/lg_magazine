@@ -82,6 +82,7 @@ export function Chapter2MagazineSceneV2({
           name: session.name,
           flowExperience1: session.flowExperience1,
           flowExperience2: session.flowExperience2,
+          commonPattern: session.commonPattern,
           selectedValues: session.selectedValues
             .map((word) => ({ word, meaning: session.valueDefinitions[word] ?? "" }))
             .filter((v) => v.word.trim().length > 0),

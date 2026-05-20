@@ -3,7 +3,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
-import { parseBeat } from "@/components/v3/ui/MagazineArticlePage";
+import { parseBeats } from "@/components/v3/ui/MagazineArticlePage";
 import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
@@ -105,13 +105,9 @@ export function GrowthVisionSynthesisScene({
     );
   }
 
-  const beatTexts = synthesis
-    .split(/\n+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, 4);
+  const parsed = parseBeats(synthesis, 4);
   const beats: Beat[] = BEAT_LABELS.map((lbl, i) => {
-    const { headline, body } = parseBeat(beatTexts[i] ?? "");
+    const { headline, body } = parsed[i] ?? { body: "" };
     return { ...lbl, body, headline };
   });
 

@@ -51,10 +51,22 @@ function looksMeaningful(text: string): boolean {
   return true;
 }
 
+/** URL 첫 segment에서 LLM mode를 뽑는다. `/gem`, `/claude`, `/mix` 라우트에서
+ *  진입했을 때만 헤더를 붙이고, 루트(`/`)에서는 헤더 없이 env 기본값을 사용. */
+function readLLMMode(): "gem" | "claude" | "mix" | null {
+  if (typeof window === "undefined") return null;
+  const seg = window.location.pathname.split("/").filter(Boolean)[0];
+  if (seg === "gem" || seg === "claude" || seg === "mix") return seg;
+  return null;
+}
+
 async function callTask<T>(task: string, payload: unknown): Promise<T> {
+  const mode = readLLMMode();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (mode) headers["x-llm-mode"] = mode;
   const res = await fetch("/api/v3/llm", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ task, payload }),
   });
   if (!res.ok) {

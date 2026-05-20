@@ -3,7 +3,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
-import { parseBeat } from "@/components/v3/ui/MagazineArticlePage";
+import { parseBeats } from "@/components/v3/ui/MagazineArticlePage";
 import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
@@ -95,13 +95,9 @@ export function Chapter2MagazineScene({
     return <NarrationBlock text="편집장이 네 가지 재료를 한자리에 모아 천천히 꿰어보고 있어요…" />;
   }
 
-  const beatTexts = synthesis
-    .split(/\n+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, 4);
+  const parsed = parseBeats(synthesis, 4);
   const beats: Beat[] = BEAT_LABELS.map((lbl, i) => {
-    const { headline, body } = parseBeat(beatTexts[i] ?? "");
+    const { headline, body } = parsed[i] ?? { body: "" };
     return { ...lbl, body, headline };
   });
 

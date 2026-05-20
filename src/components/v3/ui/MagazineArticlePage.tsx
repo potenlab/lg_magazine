@@ -144,14 +144,41 @@ function BoldMarkdown({ text }: { text: string }) {
 }
 
 /** LLM synthesis 텍스트(`[HEADLINE: ...] body`)에서 headline + body 분리.
- *  헤드라인이 없으면 headline은 undefined, body는 원본 그대로. */
+ *  헤드라인이 없으면 headline은 undefined, body는 원본 그대로.
+ *  헤드라인과 본문 사이가 줄바꿈(\n)으로 분리돼 있어도 정상 파싱한다. */
 export function parseBeat(raw: string): { headline?: string; body: string } {
   const trimmed = raw.trim();
-  const m = trimmed.match(/^\[HEADLINE:\s*(.+?)\]\s*([\s\S]+)$/);
+  // 헤드라인 + (공백/줄바꿈) + 본문. 본문이 비어도 매칭은 되고, 본문은 빈 문자열로 반환.
+  const m = trimmed.match(/^\[HEADLINE:\s*(.+?)\]\s*([\s\S]*)$/);
   if (m) {
     return { headline: m[1].trim(), body: m[2].trim() };
   }
   return { body: trimmed };
+}
+
+/** synthesis 전체 텍스트에서 BEAT 4개를 견고하게 추출.
+ *  - LLM이 `[HEADLINE: H] body\n[HEADLINE: H] body` 한 줄당 한 BEAT로 줘도 OK
+ *  - `[HEADLINE: H]\nbody\n[HEADLINE: H]\nbody` 헤드라인-본문 줄 분리 형식도 OK
+ *  - 헤드라인 마커로 split하므로 본문 안에 줄바꿈이 있어도 안전. */
+export function parseBeats(synthesis: string, count = 4): { headline?: string; body: string }[] {
+  const text = synthesis.trim();
+  if (!text) return [];
+  // 1) 헤드라인 마커 기준으로 자르기. 헤드라인이 있으면 무조건 새 BEAT 시작.
+  if (text.includes("[HEADLINE:")) {
+    const chunks = text
+      .split(/(?=\[HEADLINE:)/g)
+      .map((c) => c.trim())
+      .filter(Boolean)
+      .slice(0, count);
+    return chunks.map((c) => parseBeat(c));
+  }
+  // 2) 헤드라인 마커가 없으면 옛 데이터 — 줄 단위로 자름 (백워드 호환).
+  return text
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, count)
+    .map((c) => parseBeat(c));
 }
 
 /** BEAT 페이지 로딩 placeholder. */

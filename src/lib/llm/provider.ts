@@ -19,33 +19,61 @@ export interface LLMProvider {
   generateText(req: LLMRequest): Promise<LLMResult>;
 }
 
-let cached: LLMProvider | null = null;
+const cache = new Map<string, LLMProvider>();
 
-export async function getProvider(): Promise<LLMProvider> {
+async function makeProvider(name: string): Promise<LLMProvider> {
+  const cached = cache.get(name);
   if (cached) return cached;
-  const which = (process.env.LLM_PROVIDER || "anthropic").toLowerCase();
-  switch (which) {
+  let provider: LLMProvider;
+  switch (name) {
     case "openai": {
       const { OpenAIProvider } = await import("./providers/openai");
-      cached = new OpenAIProvider();
+      provider = new OpenAIProvider();
       break;
     }
     case "gemini": {
       const { GeminiProvider } = await import("./providers/gemini");
-      cached = new GeminiProvider();
+      provider = new GeminiProvider();
       break;
     }
     case "aistudio": {
       const { AIStudioProvider } = await import("./providers/aistudio");
-      cached = new AIStudioProvider();
+      provider = new AIStudioProvider();
       break;
     }
     case "anthropic":
     default: {
       const { AnthropicProvider } = await import("./providers/anthropic");
-      cached = new AnthropicProvider();
+      provider = new AnthropicProvider();
       break;
     }
   }
-  return cached;
+  cache.set(name, provider);
+  return provider;
+}
+
+/** 전역 기본 provider.
+ *  우선순위: URL mode context (gem/claude/mix) > LLM_PROVIDER env > anthropic */
+export async function getProvider(): Promise<LLMProvider> {
+  const { resolveProviderName } = await import("./modeContext");
+  const fromMode = resolveProviderName("default");
+  const which = (fromMode || process.env.LLM_PROVIDER || "anthropic").toLowerCase();
+  return makeProvider(which);
+}
+
+/**
+ * 태스크별 provider 선택.
+ *
+ * 우선순위:
+ *   1) URL mode context (gem/claude/mix) — task별 매핑 적용
+ *   2) LLM_PROVIDER_<TASK> 환경변수 (예: LLM_PROVIDER_SYNTHESIS=gemini)
+ *   3) LLM_PROVIDER 전역 기본값
+ */
+export async function getProviderFor(task: string): Promise<LLMProvider> {
+  const { resolveProviderName } = await import("./modeContext");
+  const key = `LLM_PROVIDER_${task.toUpperCase()}`;
+  const taskKey = task.toLowerCase() === "synthesis" ? "synthesis" : "default";
+  const fromMode = resolveProviderName(taskKey);
+  const which = (fromMode || process.env[key] || process.env.LLM_PROVIDER || "anthropic").toLowerCase();
+  return makeProvider(which);
 }

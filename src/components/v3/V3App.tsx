@@ -492,7 +492,7 @@ function V3Inner() {
               }
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             >
-              {spec.kind === "toolSelect" || spec.kind === "cardChoice" || spec.kind === "timeHorizon" ? (
+              {spec.kind === "toolSelect" || spec.kind === "cardChoice" || spec.kind === "timeHorizon" || spec.kind === "valueCards" ? (
                 <SceneComponent
                   spec={spec}
                   onAdvance={handleAdvance}

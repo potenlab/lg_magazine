@@ -843,18 +843,19 @@ export function IntroScene({
                   const bookingNo = `NO. ${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
                   return (
                     <>
-                      {/* Journey value — next to "Journey :" label (right column of main ticket) */}
-                      <p className="absolute" style={{ ...valueStyle, top: "57%", left: "62%" }}>
+                      {/* Journey value — next to "Journey :" label (right column of main ticket).
+                          [2026-05-20] 라벨과 baseline 맞추려 위로. 4px은 안 보여서 12px로. */}
+                      <p className="absolute" style={{ ...valueStyle, top: "57%", left: "62%", transform: "translateY(-12px)" }}>
                         {session.job || finalJob || "—"}
                       </p>
-                      {/* Passenger value — 라벨 옆. -50% baseline + 4px 위로 보정 */}
+                      {/* Passenger value — 라벨 옆. -50% baseline + 8px 위로 보정 (기존 4px → 8px). */}
                       <p
                         className="absolute"
                         style={{
                           ...valueStyle,
                           top: "70%",
                           left: "45%",
-                          transform: "translateY(calc(-50% - 4px))",
+                          transform: "translateY(calc(-50% - 8px))",
                         }}
                       >
                         {session.name || name || "—"}
@@ -863,10 +864,10 @@ export function IntroScene({
                       <p className="absolute" style={{ ...valueStyle, top: "78%", left: "40%" }}>
                         {dateStr}
                       </p>
-                      {/* Booking Ref — 디자이너 스펙(99.81°)을 180° 미러링한 값.
-                          원래 스펙은 TOP→BOTTOM 방향으로 읽혀서 빈티지 티켓 stub
-                          관습(BOTTOM→TOP)과 어긋났음. -80.19°(= 99.81° - 180°)는
-                          같은 9.81° 기울기를 유지하면서 reading 방향만 표준에 맞춤. */}
+                      {/* Booking Ref — bottom→top 읽기 방향 유지.
+                          [2026-05-20] -100° 기울기 (NO 쪽 5도 더 내림).
+                          right를 9%→calc(9% - 8px)로 줄여 시각적 오른쪽
+                          (글자 기준 아래)으로 8px 이동. */}
                       <p
                         className="absolute"
                         style={{
@@ -874,8 +875,8 @@ export function IntroScene({
                           color: "#D9C1A7",
                           fontSize: "18px",
                           top: "50%",
-                          right: "9%",
-                          transform: "translateY(-50%) rotate(-80.19deg)",
+                          right: "calc(9% - 8px)",
+                          transform: "translateY(-50%) rotate(-100deg)",
                           transformOrigin: "center",
                         }}
                       >

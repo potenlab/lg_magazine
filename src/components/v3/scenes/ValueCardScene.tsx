@@ -7,32 +7,47 @@ import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { VALUE_CARD_CATEGORIES, VALUE_CARD_EN } from "@/lib/v3/valueCards";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { DialogStageContext } from "@/components/v3/V3App";
+import * as audio from "@/lib/v3/audio";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
-export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance: (n: SceneId) => void }) {
+export function ValueCardScene({
+  spec,
+  onAdvance,
+  onPrev,
+  canGoBack,
+}: {
+  spec: SceneSpec;
+  onAdvance: (n: SceneId) => void;
+  onPrev?: () => void;
+  canGoBack?: boolean;
+}) {
   const { session, patch } = useV3Session();
   const [picked, setPicked] = useState<string[]>(session.selectedValues);
   const [custom, setCustom] = useState("");
   const [settled, setSettled] = useState(false);
 
-  const rawLines = (spec.lines ?? []).map((l) => renderTemplate(l, session));
-  const narration = spec.narration ? renderTemplate(spec.narration, session) : undefined;
-  // narration이 있으면 dark menu board 안의 **첫 줄**로 흡수해서 AutoFlowText로
-  // 자연스럽게 흐르도록. 이전엔 narration phase가 별도 parchment 다이얼로그로
-  // 떴다가(stage="narration") 클릭 시 dark menu board(stage="content")로
-  // 넘어갔는데, 그 전환에서 parchment 잔상이 보였음. narration을 lines 앞에
-  // 끼워 넣고 stage="content"로 즉시 진입 → 한 번에 dark menu board만 보임.
-  const lines = narration ? [narration, ...rawLines] : rawLines;
+  // narration("카드들이 펼쳐진다")은 무대 지시문이라 카드 화면 상단에 또 띄울
+  // 필요 없음 — spec.lines만 노출. (직전 전환 비트 2-3-1에서 이미 카드 꺼내는
+  // 내레이션을 건넴.)
+  const lines = (spec.lines ?? []).map((l) => renderTemplate(l, session));
   const { setStage } = useContext(DialogStageContext);
   useEffect(() => {
     setStage("content");
   }, [setStage]);
 
   const toggle = (card: string) => {
-    setPicked((prev) =>
-      prev.includes(card) ? prev.filter((c) => c !== card) : prev.length < 3 ? [...prev, card] : prev,
-    );
+    setPicked((prev) => {
+      if (prev.includes(card)) return prev.filter((c) => c !== card);
+      if (prev.length < 3) {
+        audio.playOnce("card"); // 카드 고를 때 flip 효과음
+        return [...prev, card];
+      }
+      return prev;
+    });
   };
+
+  // "다른 단어 고르기" — 고른 단어 전부 초기화하고 다시 선택.
+  const resetPicks = () => setPicked([]);
 
   const addCustom = () => {
     const v = custom.trim();
@@ -56,12 +71,15 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
           card grid feels like the cabin's wall-mounted value menu rather
           than a generic web form. */}
       <div
-        className="fixed inset-0 z-10 overflow-y-auto p-6 shadow-2xl sm:p-8"
+        className="fixed inset-0 z-10 flex flex-col p-6 shadow-2xl sm:p-8"
         style={{
           background:
             "linear-gradient(180deg, #3a2818 0%, #2a1d12 100%)",
           // Full-viewport dark menu board; chrome (ChapterHeader z-20,
           // ChapterIndexPanel z-[55+]) sits above thanks to higher z-index.
+          // [2026-05-20] overflow-y-auto → flex flex-col: intro 라인은 상단
+          // 고정, 카드 이하 콘텐츠만 내부 flex-1 영역에서 스크롤. 카드가 100vh
+          // 넘어가도 전체 페이지가 아니라 콘텐츠 영역 안에서만 스크롤.
           paddingTop: "80px", // leave room for the masthead
           paddingBottom: "80px", // leave room for ProgressRail
         }}
@@ -69,11 +87,28 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
         {/* Gilded inner frame */}
         <div className="pointer-events-none absolute inset-2 rounded-md ring-1 ring-[#a78550]/30" />
 
-        {/* Intro lines — sit on the dark board, parchment ink color */}
-        <div className="relative mb-4 px-2 text-center">
+        {/* 이전 버튼 — 메뉴보드(fixed inset-0)라 전역 "이전"이 안 뜸. 하단보다
+            상단-왼쪽에 두어 스크롤 없이 항상 보이게. 뒤로 가도 selectedValues는
+            세션에 남아 다시 들어오면 선택 복원. */}
+        {canGoBack && onPrev && (
+          <button
+            type="button"
+            onClick={onPrev}
+            className="absolute left-6 top-[84px] z-10 italic text-[16px] text-[#d4b88a]/80 transition hover:text-[#f5d97a] sm:left-8"
+          >
+            ← 이전
+          </button>
+        )}
+
+        {/* Intro lines — sit on the dark board, parchment ink color.
+            shrink-0: 상단 고정, 스크롤은 아래 콘텐츠 영역만. */}
+        <div className="relative mb-4 shrink-0 px-2 text-center">
           <AutoFlowTextLight lines={lines} onSettled={() => setSettled(true)} />
         </div>
 
+        {/* 스크롤 영역 — 카드 그리드 + 직접입력 + 카운터 + 칩. 콘텐츠가
+            뷰포트를 넘어가도 전체 페이지가 아니라 이 영역 안에서만 스크롤. */}
+        <div className="relative min-h-0 flex-1 overflow-y-auto">
         {settled && (
           // Portrait (3:4) cards — capped grid width keeps each card a
           // sensible size on wide dialogs (instead of stretching the whole
@@ -202,6 +237,7 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
             ))}
           </div>
         )}
+        </div>
       </div>
 
       {/* Center popup — appears once participant has filled all 3 picks.
@@ -223,13 +259,21 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
             <p className="mb-3 text-center text-[16px] tracking-[0.18em] text-[#d4b88a]">
               세 단어를 모두 골랐어요
             </p>
-            <div className="flex justify-center">
+            <div className="flex items-center justify-center gap-3">
               <StoryButtonV3
                 label={spec.buttonLabel ?? "전달하기"}
                 onClick={submit}
                 disabled={picked.length === 0}
                 ritual
               />
+              {/* 다른 단어 고르기 — 선택 초기화 → popup 사라지고 다시 고를 수 있음 */}
+              <button
+                type="button"
+                onClick={resetPicks}
+                className="rounded-md border border-[#d4b88a]/40 px-4 py-2 text-[16px] italic text-[#d4b88a] transition hover:border-[#f5d97a] hover:text-[#f5d97a]"
+              >
+                다른 단어 고르기
+              </button>
             </div>
           </motion.div>
         </motion.div>

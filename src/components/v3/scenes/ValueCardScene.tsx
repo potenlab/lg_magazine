@@ -122,7 +122,9 @@ export function ValueCardScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
                         {/* English label as the small sub-tag, Korean word
                             as the main face — Korean is what participants
                             actually read, so it gets the size + weight. */}
-                        <span className="text-[16px] tracking-wide leading-tight text-[#8b7050]">
+                        {/* 영어 라벨 -2px(16→14): "Independence" 등 긴 단어가
+                            카드 폭을 넘쳐서 삐져나오던 것 방지. */}
+                        <span className="text-[14px] tracking-wide leading-tight text-[#8b7050]">
                           {en}
                         </span>
                         <span className="mt-0.5 text-[16px] font-semibold leading-tight text-[#3d2414]">

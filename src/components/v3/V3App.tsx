@@ -465,8 +465,14 @@ function V3Inner() {
                     // 매거진 스프레드 씬들 — 좌·우 2 페이지가 가로로 펼쳐지므로 와이드 폭
                     // (1024px). 세 씬 모두 동일한 비율로 통일.
                     ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[640px] w-full max-w-[1024px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
-                    : spec.kind === "magazineHandoff" || spec.kind === "editorCredits"
-                    // 콘텐츠 짧은 final-stage 씬들 — 콘텐츠 hug로 빈 양피지 회귀 방지.
+                    : spec.kind === "magazineHandoff"
+                    // [2026-05-20] 풀 세션이면 요약이 8~12줄로 길어져 dialog
+                    // overflow-y-auto + sticky 버튼 조합에서 하단이 잘리던 회귀.
+                    // overflow-hidden으로 두고, 씬 내부에서 flex-1 스크롤 영역 +
+                    // 고정 푸터(register/freetext와 동일 패턴)로 처리.
+                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[420px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
+                    : spec.kind === "editorCredits"
+                    // 콘텐츠 짧은 final-stage 씬 — 콘텐츠 hug로 빈 양피지 회귀 방지.
                     ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[420px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
                     // default FULL_HEIGHT — recordPage / toolSelect / visionSelect / magazinePosterV1
                     : "relative mx-auto flex h-[calc(100vh_-_200px)] min-h-[300px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-7 shadow-2xl"

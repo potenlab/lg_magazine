@@ -94,7 +94,7 @@ export function StrengthSynthesisScene({
       style={{ fontFamily: "var(--font-ridi-batang)" }}
     >
       <p className="mb-4 text-[16px] leading-[1.7] text-[#3d2414]">
-        그럼 그 얘기를 제가 매거진으로 요약해봤어요.
+        해주신 이야기를 제가 정리해봤어요.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         {lines.map((line, i) => (

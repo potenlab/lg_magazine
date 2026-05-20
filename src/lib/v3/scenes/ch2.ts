@@ -158,13 +158,16 @@ export const CH2_SCENES: SceneSpec[] = [
     next: "2-7-nod",
   },
   {
-    // [25p] 편집장이 고개를 끄덕이는 짧은 비트 — 4재료 종합 직전 호흡.
+    // [25p] 편집장이 고개를 끄덕이는 짧은 비트 — 매거진 펼치기 직전 호흡.
+    // 편집자가 "해주신 이야기를 제가 정리해봤어요" 라고 건네며 2-10 매거진
+    // spread로 이어진다. (이 lead는 2-10 spread 안이 아니라 이 전환 비트에서만.)
     id: "2-7-nod",
     chapter: 2,
     kind: "ambience",
     timeOfDay: "starsRising",
     owl: "noteHanding",
     narration: "편집장이 고개를 끄덕인다.",
+    lines: ["해주신 이야기를 제가 정리해봤어요."],
     next: "2-10",
   },
   {

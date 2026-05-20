@@ -159,7 +159,7 @@ export function Chapter2MagazineSceneV1({
 
       {/* ── 편집자 리드 ─────────────────────────────────── */}
       <p className="mb-5 px-2 text-center text-[14px] italic leading-[1.6] text-[#5a4a36]">
-        그럼 그 이야기를 제가 매거진으로 정리해봤어요.
+        해주신 이야기를 제가 정리해봤어요.
       </p>
 
       {/* ── 1면 — 카드 1, 2 ───────────────────────────── */}

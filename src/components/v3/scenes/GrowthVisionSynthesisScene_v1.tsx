@@ -102,7 +102,7 @@ export function GrowthVisionSynthesisSceneV1({
       style={{ fontFamily: "var(--font-ridi-batang)" }}
     >
       <p className="mb-4 text-[16px] leading-[1.7] text-[#3d2414]">
-        그동안의 이야기를 제가 매거진 한 호로 정리해봤어요.
+        해주신 이야기를 제가 정리해봤어요.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         {beats.map((beat, i) => (

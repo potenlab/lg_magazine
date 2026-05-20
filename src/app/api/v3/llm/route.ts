@@ -98,8 +98,10 @@ export async function POST(req: Request) {
     const rawMode = req.headers.get("x-llm-mode");
     const mode: LLMMode =
       rawMode === "gem" || rawMode === "claude" || rawMode === "mix" ? rawMode : null;
+    // ?deep=1 query에서 온 적극 해석 토글.
+    const deep = req.headers.get("x-llm-deep") === "1";
 
-    const result = await runWithMode(mode, () => dispatch(body.task, body.payload));
+    const result = await runWithMode(mode, deep, () => dispatch(body.task, body.payload));
     return NextResponse.json({ result });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown error";

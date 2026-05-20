@@ -51,19 +51,43 @@ function looksMeaningful(text: string): boolean {
   return true;
 }
 
-/** URL 첫 segment에서 LLM mode를 뽑는다. `/gem`, `/claude`, `/mix` 라우트에서
- *  진입했을 때만 헤더를 붙이고, 루트(`/`)에서는 헤더 없이 env 기본값을 사용. */
-function readLLMMode(): "gem" | "claude" | "mix" | null {
-  if (typeof window === "undefined") return null;
+/** URL 첫 segment에서 LLM mode + deep 토글을 동시에 뽑는다.
+ *
+ *  매핑:
+ *    /           → { mode: null, deep: false }  (env 기본값 = Claude)
+ *    /claude     → { mode: "claude", deep: false }
+ *    /gem        → { mode: "gem",    deep: false }
+ *    /mix        → { mode: "mix",    deep: false }
+ *    /deep       → { mode: null,     deep: true } (env 기본값 + Deep)
+ *    /gem_deep   → { mode: "gem",    deep: true }
+ *    /mix_deep   → { mode: "mix",    deep: true }
+ */
+function readUrlConfig(): { mode: "gem" | "claude" | "mix" | null; deep: boolean } {
+  if (typeof window === "undefined") return { mode: null, deep: false };
   const seg = window.location.pathname.split("/").filter(Boolean)[0];
-  if (seg === "gem" || seg === "claude" || seg === "mix") return seg;
-  return null;
+  switch (seg) {
+    case "claude":
+      return { mode: "claude", deep: false };
+    case "gem":
+      return { mode: "gem", deep: false };
+    case "mix":
+      return { mode: "mix", deep: false };
+    case "deep":
+      return { mode: null, deep: true };
+    case "gem_deep":
+      return { mode: "gem", deep: true };
+    case "mix_deep":
+      return { mode: "mix", deep: true };
+    default:
+      return { mode: null, deep: false };
+  }
 }
 
 async function callTask<T>(task: string, payload: unknown): Promise<T> {
-  const mode = readLLMMode();
+  const { mode, deep } = readUrlConfig();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (mode) headers["x-llm-mode"] = mode;
+  if (deep) headers["x-llm-deep"] = "1";
   const res = await fetch("/api/v3/llm", {
     method: "POST",
     headers,

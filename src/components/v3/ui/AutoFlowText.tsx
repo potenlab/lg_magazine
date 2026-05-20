@@ -39,8 +39,11 @@ export function AutoFlowText({
     return () => clearTimeout(t);
   }, [shown, displayLines.length, onSettled]);
 
+  // 3문단 이상일 땐 문단 사이 간격을 줄여 행간이 휑해 보이는 걸 방지.
+  // (?deep=1 모드의 3문단 reflection 케이스를 위한 자동 조절. 기본 2문장 reflection은 영향 없음.)
+  const gapClass = displayLines.length >= 3 ? "space-y-2" : "space-y-4";
   return (
-    <div className="space-y-4 leading-[1.58] text-[#3d2414]">
+    <div className={`${gapClass} leading-[1.58] text-[#3d2414]`}>
       {displayLines.slice(0, shown).map((line, i) => (
         <motion.p
           key={i}

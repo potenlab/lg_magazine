@@ -7,7 +7,7 @@ import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
 import { renderTemplate } from "@/lib/v3/scenes/template";
-import { paginateMirror } from "@/lib/v3/paginateMirror";
+import { paginateMirror, splitReadableChunks } from "@/lib/v3/paginateMirror";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
@@ -95,7 +95,7 @@ export function ValueReflectionScene({
               className="space-y-3 text-[16px] font-bold leading-[1.5] text-[#3d2414]"
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             >
-              {(reflectionPages[reflectionPage] ?? reflection).split(/\n\s*\n/).map((para, i) => (
+              {splitReadableChunks(reflectionPages[reflectionPage] ?? reflection).map((para, i) => (
                 <p key={i}>
                   <EditorialInline text={para} />
                 </p>

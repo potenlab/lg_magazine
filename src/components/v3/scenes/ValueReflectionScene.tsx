@@ -87,16 +87,20 @@ export function ValueReflectionScene({
 
         {beat === "reflection" &&
           (reflection ? (
-            <motion.p
+            <motion.div
               key={reflectionPage}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
-              className="whitespace-pre-line text-[16px] font-bold leading-[1.6] text-[#3d2414] md:text-[16px]"
+              className="space-y-3 text-[16px] font-bold leading-[1.5] text-[#3d2414]"
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             >
-              <EditorialInline text={reflectionPages[reflectionPage] ?? reflection} />
-            </motion.p>
+              {(reflectionPages[reflectionPage] ?? reflection).split(/\n\s*\n/).map((para, i) => (
+                <p key={i}>
+                  <EditorialInline text={para} />
+                </p>
+              ))}
+            </motion.div>
           ) : (
             <NarrationBlock text="편집장이 적힌 의미들을 가만히 들여다본다…" />
           ))}

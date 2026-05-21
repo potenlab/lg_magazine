@@ -90,16 +90,20 @@ export function Ch1KeywordScene({ spec, onAdvance }: { spec: SceneSpec; onAdvanc
 
         {beat === "mirror" && (
           mirror ? (
-            <motion.p
+            <motion.div
               key={mirrorPage}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
-              className="whitespace-pre-line text-[16px] font-bold leading-[1.6] text-[#3d2414] md:text-[16px]"
+              className="space-y-3 text-[16px] font-bold leading-[1.5] text-[#3d2414]"
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             >
-              <EditorialInline text={mirrorPages[mirrorPage] ?? mirror} />
-            </motion.p>
+              {(mirrorPages[mirrorPage] ?? mirror).split(/\n\s*\n/).map((para, i) => (
+                <p key={i}>
+                  <EditorialInline text={para} />
+                </p>
+              ))}
+            </motion.div>
           ) : (
             <NarrationBlock text="편집장이 두 이야기를 나란히 놓고 천천히 들여다본다…" />
           )

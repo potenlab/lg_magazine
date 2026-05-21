@@ -652,7 +652,7 @@ ${EDITORIAL_PROSE_CONSTRAINT}
 - 해설·번호 없이 두 문장만
 - 평가·교훈조 금지${deepSuffix(input.name)}`;
   // deep 모드는 3문단 200~360자 출력이라 토큰을 더 줘야 잘림 방지.
-  const r = await ask(user, getDeep() ? 700 : 280);
+  const r = await ask(user, getDeep() ? 1000 : 280);
   return r.text.trim();
 }
 
@@ -687,7 +687,8 @@ ${input.storyB}
 - "${input.name}님은 …" 같은 단정 대신, 발견의 시선으로
 - 반드시 "~~한 결이 흐르는 것 같아요" 또는 "~~한 결로 이어지는 것처럼 보여요"에 가까운 문장으로 풀어쓰기
 - 한 문장, 40~90자, 따옴표 없이 문장만 출력${deepSuffix(input.name)}`;
-  const r = await ask(user, 250);
+  // deep 모드는 3문단 출력 — 비-deep 한도(250)로는 잘리므로 토큰 상향.
+  const r = await ask(user, getDeep() ? 1000 : 250);
   return r.text.trim();
 }
 
@@ -710,7 +711,8 @@ ${valueLines}
 - 한 문장, 60~120자, 따옴표 없이 문장만 출력
 
 예시 톤: "스스로 방향을 잡고, 믿을 수 있는 사람들과 함께, 매일 조금씩 나아지는 방식으로 일할 때 가장 힘이 나는 사람이시군요."${deepSuffix(input.name)}`;
-  const r = await ask(user, 320);
+  // deep 모드는 3문단 출력 — 비-deep 한도(320)로는 잘리므로 토큰 상향.
+  const r = await ask(user, getDeep() ? 1000 : 320);
   return r.text.trim();
 }
 

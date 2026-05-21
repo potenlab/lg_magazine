@@ -403,7 +403,7 @@ function V3Inner() {
     <DialogStageContext.Provider value={{ setStage }}>
     <main className="relative min-h-screen overflow-hidden bg-[#160d08] text-[#f5ead6]">
       <TimeOfDayBackground time={time} bgImage={spec.bgImage} bgColor={spec.bgColor} chapter={typeof chapter === "number" ? chapter : undefined} />
-      <ChapterHeader />
+      <ChapterHeader dim={spec.dimBackground} />
       {/* key on chapter → panel remounts fresh when the chapter changes,
           resetting its open/selected state without an effect. */}
       <ChapterIndexPanel key={String(chapter)} currentChapter={chapter} />
@@ -419,6 +419,13 @@ function V3Inner() {
         >
           <OwlStage pose={resolvedPose} large={spec.owlLarge} />
         </div>
+      )}
+
+      {/* dimBackground 씬: 배경 + 부엉이를 어둡게 가려 상단 코너 버튼이 도드라지게.
+          z-15는 owl(z-10) 위, dialog(z-20) 아래. ChapterHeader 로고는 헤더 컴포넌트
+          쪽에서 별도로 opacity-down 되고, 볼륨·기록 버튼은 z-40/z-57로 위에 떠 있다. */}
+      {spec.dimBackground && (
+        <div className="pointer-events-none absolute inset-0 z-[15] bg-black/55" />
       )}
 
       <div className="relative z-20 flex min-h-screen flex-col items-center justify-end px-5 pb-12 pt-24 lg:px-10">

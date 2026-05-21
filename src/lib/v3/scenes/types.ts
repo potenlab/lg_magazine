@@ -130,6 +130,10 @@ export interface SceneSpec {
   hideSpeakerLabel?: boolean;
   /** Widen the dialog and reduce its min-height (more landscape-shaped). */
   dialogWide?: boolean;
+  /** Dim the background, owl, and masthead logo so the top-left 기록 button +
+   * top-right volume control read clearly against the parchment dialog. Used
+   * when the dialog content references the corner controls (e.g. 0-5-2). */
+  dimBackground?: boolean;
   /**
    * Cinematic ambience: opens with NO dialog (background only, click anywhere
    * to advance), then reveals narration in a semi-transparent (~55%) parchment.

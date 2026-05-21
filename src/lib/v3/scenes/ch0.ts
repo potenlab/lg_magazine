@@ -144,6 +144,22 @@ export const CH0_SCENES: SceneSpec[] = [
       "이 객실은 {name}님만의 공간이에요.",
     ],
     buttonLabel: "네, 이해했어요",
+    next: "0-5-2",
+  },
+  {
+    id: "0-5-2",
+    chapter: 0,
+    kind: "ritual",
+    owl: "listening",
+    timeOfDay: "sunset",
+    dimBackground: true,
+    lines: [
+      "혹시라도 깊은 생각에 빠져 앞선 질문들이 기억나지 않는다면, 언제든 화면 왼쪽 위를 살펴봐 주세요.",
+      "우리가 나눈 대화가 고스란히 담겨 있습니다.",
+      "그리고 이 공간에 흐르는 소리가 생각의 흐름을 방해한다면, 오른쪽 위에서 가장 편안한 볼륨으로 맞춰주세요.",
+      "온전히 당신에게 집중할 수 있게요.",
+    ],
+    buttonLabel: "네, 알겠어요",
     next: "0-6",
   },
   {

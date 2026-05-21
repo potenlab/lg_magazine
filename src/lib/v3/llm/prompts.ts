@@ -1075,6 +1075,20 @@ BEHAVIOR: 다른 사람의 결을 듣고 거기에 자기 길을 더할 때
   };
 }
 
+// /deep 토글이 켜졌을 때만 챕터 기사 task 끝에 덧붙는 풍부화 블록.
+// 기본 모드에서는 호출되지 않으며, 호출되면 위 [출력 형식]의 분량 제약만 덮어쓴다.
+// 톤·금지 규칙(TONE_GUIDE)은 그대로 유지된다.
+function buildChapterDeepBlock(): string {
+  return `
+[OVERRIDE — 적극 서술 모드 (위 [출력 형식]의 분량 제약보다 우선)]
+- 위 [출력 형식]의 "본문 3문단, 각 문단 2~3문장" 제약을 해제한다.
+- BODY는 5문단, 각 문단 3~4문장으로 쓴다.
+- 각 문단은 사건을 단순히 서술하는 데 그치지 말고, 그 순간이 '무엇이었는지' 한 겹 더 해석할 것 — 참가자가 그때 무엇을 감각했고 어떤 결정을 내렸는지.
+- 주어진 컨텍스트의 구체 디테일(장소·숫자·인물·시기·역할)을 더 촘촘히 본문에 엮을 것.
+- 단, 위 [기록 페이지 톤 가이드]와 [금지 사항]의 모든 규칙은 그대로 유지된다 — 3인칭 회고체, 저널리스틱 산문체, 평가 형용사 금지, 그리고 주어진 컨텍스트에 없는 사실·일화·인물의 임의 생성 절대 금지.
+- HEADLINE과 PULL의 형식·길이는 위 [출력 형식] 그대로.`;
+}
+
 export async function v3WriteChapterArticle(input: {
   name: string;
   gender: "그" | "그녀";
@@ -1198,7 +1212,11 @@ BODY: <본문 3문단, 각 문단 2~3문장>
 - v3.8 11.4: Chapter 4는 풀쿼트 없음. PULL 출력하지 말 것.`,
   };
 
-  const r = await ask(taskByChapter[chapter], 800);
+  const deep = getDeep();
+  const task = deep
+    ? taskByChapter[chapter] + buildChapterDeepBlock()
+    : taskByChapter[chapter];
+  const r = await ask(task, deep ? 1800 : 800);
   const text = r.text;
   const hm = text.match(/HEADLINE:\s*([^\n]+)/);
   const bm = text.match(/BODY:\s*([\s\S]*?)(?=\n\s*PULL:|$)/);

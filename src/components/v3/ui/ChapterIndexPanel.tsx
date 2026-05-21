@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { buildV3ChapterThreads } from "@/lib/v3/session/adminView";
 import { ChapterReviewOverlay } from "@/components/v3/ui/ChapterReviewOverlay";
+import { useCornerHint } from "@/components/v3/context/CornerHintContext";
 import type { Chapter } from "@/lib/v3/scenes/types";
 
 /**
@@ -20,6 +21,7 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
   const { session } = useV3Session();
   const [open, setOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const { hint } = useCornerHint();
 
   // buildV3ChapterThreads returns one thread per chapter, in order:
   // index 0 → Chapter 0, index 1 → Chapter 1, ... index 4 → Chapter 4.
@@ -41,7 +43,7 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="pointer-events-auto fixed left-4 top-4 z-[57] rounded-md border border-[#d7bd83]/40 bg-[#160d08]/70 px-3 py-1.5 text-[16px] tracking-wide text-[#e9d5a8] backdrop-blur transition hover:bg-[#160d08]/90"
+        className={`pointer-events-auto fixed left-4 top-4 z-[57] rounded-md border border-[#d7bd83]/40 bg-[#160d08]/70 px-3 py-1.5 text-[16px] tracking-wide text-[#e9d5a8] backdrop-blur transition hover:bg-[#160d08]/90 ${hint === "record" ? "corner-hint-pulse" : ""}`}
         style={{ fontFamily: "var(--font-ridi-batang)" }}
         aria-label="챕터 기록"
       >

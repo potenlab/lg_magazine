@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { PaginatedNarration } from "@/components/v3/ui/PaginatedNarration";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
+import { useCornerHint } from "@/components/v3/context/CornerHintContext";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 export function RitualScene({
@@ -16,7 +17,16 @@ export function RitualScene({
   onAdvance: (n: SceneId) => void;
 }) {
   const { session } = useV3Session();
+  const { setHint } = useCornerHint();
   const [buttonReady, setButtonReady] = useState(false);
+
+  // Clear any corner-control highlight when leaving this scene.
+  useEffect(() => () => setHint(null), [setHint]);
+  // Pulse the corner button this paginated-narration page points at.
+  const handlePageChange = useCallback(
+    (pageIndex: number) => setHint(spec.cornerHints?.[pageIndex] ?? null),
+    [setHint, spec.cornerHints],
+  );
   const lines = (spec.lines ?? []).map((l) => renderTemplate(l, session));
   const narration = spec.narration ? renderTemplate(spec.narration, session) : undefined;
   const [showLines, setShowLines] = useState(!narration);
@@ -59,6 +69,7 @@ export function RitualScene({
       <PaginatedNarration
         lines={lines}
         pageSize={spec.pageSize}
+        onPageChange={handlePageChange}
         onSettled={(isLastPage) => {
           if (isLastPage) setButtonReady(true);
         }}

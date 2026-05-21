@@ -146,6 +146,10 @@ export interface SceneSpec {
    * each line land on its own beat — handy for long mirror lines that contain
    * full user-input quotes (e.g. value-def / pattern recap scenes). */
   pageSize?: number;
+  /** Per-page corner-control hint for the 0-5-2 ritual hint scene: which
+   * always-mounted corner button (기록 / 음량) should pulse while that
+   * paginated-narration page is showing. Indexed by page. */
+  cornerHints?: ("record" | "volume")[];
   narration?: string;
   inputHint?: string;
   /** Editor's aside — a meta-comment from L-OWL about how to respond

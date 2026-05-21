@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useBGM } from "@/components/v3/context/BGMContext";
+import { useCornerHint } from "@/components/v3/context/CornerHintContext";
 
 /**
  * Floating volume control button — speaker icon that toggles a popover
@@ -11,6 +12,7 @@ import { useBGM } from "@/components/v3/context/BGMContext";
  */
 export function VolumeControl() {
   const { isPlaying, volume, setVolume } = useBGM();
+  const { hint } = useCornerHint();
   const [showVolumeControl, setShowVolumeControl] = useState(false);
   const volumeControlRef = useRef<HTMLDivElement>(null);
 
@@ -37,7 +39,7 @@ export function VolumeControl() {
       <button
         type="button"
         onClick={() => setShowVolumeControl(!showVolumeControl)}
-        className="pointer-events-auto rounded-full p-2 transition hover:bg-[#f5ead6]/10"
+        className={`pointer-events-auto rounded-full p-2 transition hover:bg-[#f5ead6]/10 ${hint === "volume" ? "corner-hint-pulse" : ""}`}
         aria-label={isPlaying ? "음악 조절" : "음악 켜기"}
         title={isPlaying ? `음악: ${volumePercent}%` : "음악: 끔"}
       >

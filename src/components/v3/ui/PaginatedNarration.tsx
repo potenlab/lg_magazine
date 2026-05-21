@@ -29,6 +29,7 @@ export function PaginatedNarration({
   onSettled,
   onPageEnd,
   onAdvance,
+  onPageChange,
   tight = false,
 }: {
   lines: string[];
@@ -39,6 +40,8 @@ export function PaginatedNarration({
   onPageEnd?: () => void;
   /** Fires when the user clicks past the last page. */
   onAdvance?: () => void;
+  /** Fires with the current page index on mount and on every page turn. */
+  onPageChange?: (pageIndex: number) => void;
   /** When true, the component sizes to content (no flex-1 stretching) and
    * hides the bottom "다음 페이지" hint. Use when a sibling input/control
    * sits below the narration and we want them tight together. */
@@ -62,6 +65,12 @@ export function PaginatedNarration({
 
   const isLastPage = page >= totalPages - 1;
   const pageLines = pages[page] ?? [];
+
+  // Report the current page index (mount + every page turn) so a host can
+  // react — e.g. the 0-5-2 hint scene pulsing the matching corner button.
+  useEffect(() => {
+    onPageChange?.(page);
+  }, [page, onPageChange]);
 
   // Stagger reveal of lines on the current page.
   // setState is deferred via queueMicrotask to satisfy react-hooks/set-state-in-effect.

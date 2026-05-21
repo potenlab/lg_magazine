@@ -7,6 +7,7 @@ import { useBGM } from "@/components/v3/context/BGMContext";
 import { ResumeModal } from "@/components/v3/ResumeModal";
 import { ChapterHeader } from "@/components/v3/ui/ChapterHeader";
 import { ChapterIndexPanel } from "@/components/v3/ui/ChapterIndexPanel";
+import { CornerHintProvider } from "@/components/v3/context/CornerHintContext";
 import { ProgressRail } from "@/components/v3/ui/ProgressRail";
 import { OwlStage } from "@/components/v3/ui/OwlStage";
 import { TimeOfDayBackground } from "@/components/v3/ui/TimeOfDayBackground";
@@ -76,7 +77,9 @@ const HIDE_PREV_KINDS: ReadonlySet<SceneKind> = new Set<SceneKind>([
 export default function V3App() {
   return (
     <V3SessionProvider>
-      <V3Inner />
+      <CornerHintProvider>
+        <V3Inner />
+      </CornerHintProvider>
     </V3SessionProvider>
   );
 }

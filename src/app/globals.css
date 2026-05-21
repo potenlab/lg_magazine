@@ -447,3 +447,14 @@ body {
 .section-gap > * + * { margin-top: var(--space-2xl); }  /* 48px */
 .block-gap  > * + * { margin-top: var(--space-lg); }    /* 24px */
 .tight-gap  > * + * { margin-top: var(--space-sm); }    /* 12px */
+
+/* ═══════ Corner Hint Pulse (0-5-2 코너 안내 — 기록/음량 버튼 강조) ═══════ */
+@keyframes corner-hint-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(233, 213, 168, 0.55); }
+  70%  { box-shadow: 0 0 0 12px rgba(233, 213, 168, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(233, 213, 168, 0); }
+}
+.corner-hint-pulse {
+  animation: corner-hint-pulse 1.7s ease-out infinite;
+  border-radius: inherit;
+}

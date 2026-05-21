@@ -70,3 +70,6 @@ bun.lock
 # graphify per-machine runtime state (absolute paths)
 graphify-out/.graphify_python
 graphify-out/.graphify_root
+
+# local reference material (separate project copy, not part of this repo)
+/docs/reference/

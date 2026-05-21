@@ -22,7 +22,7 @@ import { personaConcept } from "@/concepts";
 // - "ambient": transparent dialog (no border / shadow, reduced parchment opacity)
 //   so the narration sits softly over the background image.
 // - "hidden": dialog wrapper fully hidden — used for cinematic ambience first-beats.
-export type DialogStage = "narration" | "content" | "hidden" | "ambient";
+export type DialogStage = "narration" | "content" | "hidden" | "ambient" | "reflection";
 export const DialogStageContext = createContext<{
   setStage: (s: DialogStage) => void;
 }>({ setStage: () => {} });
@@ -454,6 +454,10 @@ function V3Inner() {
                     // Transparent dialog — no border / shadow, lower parchment opacity
                     // + backdrop blur so background image stays visible behind narration.
                     ? "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md bg-[#f6efdf]/55 p-7 backdrop-blur-[2px]"
+                    : stage === "reflection"
+                    // 페이지 분할된 LLM 반향(미러/되비춤) — 입력칸 없는 콘텐츠 박스.
+                    // 짧은 페이지는 min-h로 받치고, 긴 페이지는 스크롤. pb-7로 "다음"이 바닥 정렬.
+                    ? "relative mx-auto flex min-h-[240px] max-h-[calc(100vh_-_140px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
                     : FULL_HEIGHT_KINDS.has(spec.kind) && stage === "content"
                   ? // ── FULL_HEIGHT_KINDS 분기 — kind-specific 스타일 먼저, 그 다음 default ──
                   // 주의: 모든 kind-specific 검사는 반드시 FULL_HEIGHT_KINDS 분기 *안*에

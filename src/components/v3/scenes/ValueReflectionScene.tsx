@@ -56,7 +56,7 @@ export function ValueReflectionScene({
   }, []);
 
   useEffect(() => {
-    setStage(beat === "narration" ? "narration" : "content");
+    setStage(beat === "narration" ? "narration" : "reflection");
   }, [beat, setStage]);
 
   const advance = () => {

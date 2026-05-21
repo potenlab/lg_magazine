@@ -58,7 +58,7 @@ export function Ch1KeywordScene({ spec, onAdvance }: { spec: SceneSpec; onAdvanc
   // narration1 is a stage direction (compact). mirror is the editorial
   // climax — content-sized so the line gets visual weight.
   useEffect(() => {
-    setStage(beat === "narration1" ? "narration" : "content");
+    setStage(beat === "narration1" ? "narration" : "reflection");
   }, [beat, setStage]);
 
   const advance = () => {

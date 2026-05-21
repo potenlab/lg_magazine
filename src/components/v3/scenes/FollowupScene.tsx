@@ -205,8 +205,8 @@ function FollowupExitBody({
   // is a dense block. Short exit affirmations (≤1 page) stay compact.
   const pages = paginateMirror(reflection);
   useEffect(() => {
-    setStage(pages.length > 1 ? "content" : "narration");
-  }, [setStage, pages.length]);
+    setStage("reflection");
+  }, [setStage]);
   const lastPage = page >= pages.length - 1;
   // Split on newlines so a multi-sentence page staggers line by line.
   const lines = (pages[page] ?? reflection)
@@ -279,9 +279,13 @@ function FollowupBody({
   const onReflectionPage = pagedReflection && reflPage < reflectionPages.length;
 
   useEffect(() => {
-    // Compact dialog while showing italic prelude OR while lead-in lines
-    // are still staggering. Reflection pages and the settled input grow it.
-    const compact = (!showLines && narration) || (!onReflectionPage && !settled);
+    // Reflection pages get the dedicated reflection box (no input padding).
+    // Otherwise compact while showing the italic prelude or staggering lines.
+    if (onReflectionPage) {
+      setStage("reflection");
+      return;
+    }
+    const compact = (!showLines && narration) || !settled;
     setStage(compact ? "narration" : "content");
   }, [showLines, narration, settled, onReflectionPage, setStage]);
 

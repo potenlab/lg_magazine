@@ -153,6 +153,8 @@ export const CH0_SCENES: SceneSpec[] = [
     owl: "listening",
     timeOfDay: "sunset",
     dimBackground: true,
+    // pageSize 2 → 1번째 페이지: 기록 안내, 2번째 페이지: 볼륨 안내.
+    pageSize: 2,
     lines: [
       "혹시라도 깊은 생각에 빠져 앞선 질문들이 기억나지 않는다면, 언제든 화면 왼쪽 위를 살펴봐 주세요.",
       "우리가 나눈 대화가 고스란히 담겨 있습니다.",

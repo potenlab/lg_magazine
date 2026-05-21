@@ -12,12 +12,10 @@ import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 // 의미 입력 페이지 다음 흐름:
-//   1) intro      — "{name}님이 적어주신 내용을 모아보면" (일반 다이얼로그)
-//   2) narration  — "편집장이 적힌 의미들을 가만히 들여다본다." (이탤릭 나레이션)
-//   3) reflection — LLM 반향 (selectedValues + valueDefinitions 기반)
+//   1) narration  — "편집장이 적힌 의미들을 가만히 들여다본다." (이탤릭 나레이션)
+//   2) reflection — LLM 반향 (selectedValues + valueDefinitions 기반)
 // reflection은 session.valueReflection에 캐시돼 재진입 시 재호출되지 않는다.
-type Beat = "narration" | "intro" | "reflection";
-const BEAT_ORDER: Beat[] = ["intro", "narration", "reflection"];
+type Beat = "narration" | "reflection";
 
 export function ValueReflectionScene({
   spec,
@@ -29,7 +27,7 @@ export function ValueReflectionScene({
   const { session, patch } = useV3Session();
   const [reflection, setReflection] = useState(session.valueReflection);
   const hasNarration = Boolean(spec.narration);
-  const [beat, setBeat] = useState<Beat>("intro");
+  const [beat, setBeat] = useState<Beat>(hasNarration ? "narration" : "reflection");
   const [reflectionPage, setReflectionPage] = useState(0);
   const { setStage } = useContext(DialogStageContext);
 
@@ -37,7 +35,6 @@ export function ValueReflectionScene({
   const reflectionPages = reflection ? paginateMirror(reflection) : [];
 
   const narration = spec.narration ? renderTemplate(spec.narration, session) : undefined;
-  const introLine = spec.lines?.[0] ? renderTemplate(spec.lines[0], session) : `${session.name}님이 적어주신 의미들을 함께 보고 있어요.`;
 
   useEffect(() => {
     if (session.valueReflection) return;
@@ -63,19 +60,12 @@ export function ValueReflectionScene({
   }, [beat, setStage]);
 
   const advance = () => {
-    let idx = BEAT_ORDER.indexOf(beat);
-    // narration 비트는 spec.narration이 있을 때만 보여준다 — 없으면 건너뛴다.
-    while (idx < BEAT_ORDER.length - 1) {
-      const nextBeat = BEAT_ORDER[idx + 1];
-      if (nextBeat === "narration" && !hasNarration) {
-        idx++;
-        continue;
-      }
-      if (nextBeat === "reflection" && !reflection) return;
-      setBeat(nextBeat);
+    if (beat === "narration") {
+      if (!reflection) return;
+      setBeat("reflection");
       return;
     }
-    // 마지막 비트(reflection) — 페이지가 나뉜 반향을 먼저 넘긴 뒤 씬 전환.
+    // reflection 비트 — 페이지가 나뉜 반향을 먼저 넘긴 뒤 씬 전환.
     if (!reflection) return;
     if (reflectionPage < reflectionPages.length - 1) {
       setReflectionPage(reflectionPage + 1);
@@ -85,9 +75,7 @@ export function ValueReflectionScene({
   };
 
   const canAdvance =
-    beat === "narration" ||
-    beat === "intro" ||
-    (beat === "reflection" && Boolean(reflection));
+    beat === "narration" || (beat === "reflection" && Boolean(reflection));
 
   return (
     <div
@@ -96,15 +84,6 @@ export function ValueReflectionScene({
     >
       <div className="flex-1 space-y-4">
         {beat === "narration" && narration && <NarrationBlock text={narration} />}
-
-        {beat === "intro" && (
-          <p
-            className="text-[18px] leading-[1.7] text-[#3d2414]"
-            style={{ fontFamily: "var(--font-ridi-batang)" }}
-          >
-            {introLine}
-          </p>
-        )}
 
         {beat === "reflection" &&
           (reflection ? (

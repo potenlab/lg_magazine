@@ -95,7 +95,6 @@ export const CH2_SCENES: SceneSpec[] = [
     timeOfDay: "starsRising",
     owl: "contemplating",
     narration: "편집장이 적힌 의미들을 가만히 들여다본다.",
-    lines: ["{name}님이 적어주신 내용을 모아보면"],
     next: "2-6",
   },
   {

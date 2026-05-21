@@ -8,6 +8,7 @@ import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { extractIdentityTitle, renderTemplate } from "@/lib/v3/scenes/template";
 import { llm } from "@/lib/v3/llm";
+import { readUrlConfig } from "@/lib/v3/llm/realLLM";
 import { MagazinePDF, type MagazineData } from "@/lib/v3/pdf/MagazinePDF";
 import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
@@ -86,7 +87,7 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
     if (!data) return;
     setDownloading(true);
     try {
-      const blob = await pdf(<MagazinePDF data={data} />).toBlob();
+      const blob = await pdf(<MagazinePDF data={data} deep={readUrlConfig().deep} />).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

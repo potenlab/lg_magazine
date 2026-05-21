@@ -62,7 +62,7 @@ function looksMeaningful(text: string): boolean {
  *    /gem_deep   → { mode: "gem",    deep: true }
  *    /mix_deep   → { mode: "mix",    deep: true }
  */
-function readUrlConfig(): { mode: "gem" | "claude" | "mix" | null; deep: boolean } {
+export function readUrlConfig(): { mode: "gem" | "claude" | "mix" | null; deep: boolean } {
   if (typeof window === "undefined") return { mode: null, deep: false };
   const seg = window.location.pathname.split("/").filter(Boolean)[0];
   switch (seg) {

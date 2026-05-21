@@ -19,11 +19,11 @@ export interface MagazineData {
   };
 }
 
-export function MagazinePDF({ data }: { data: MagazineData }) {
+export function MagazinePDF({ data, deep = false }: { data: MagazineData; deep?: boolean }) {
   return (
     <Document title={`STORY Vol. ${data.name}`} author="Magazine STORY 편집부">
       <Cover name={data.name} date={data.date} headline={data.coverHeadline} />
-      <TOC />
+      <TOC deep={deep} />
       <EditorIntro body={data.editorIntro} />
       <Chapter chapter={1} headline={data.chapters[1].headline} body={data.chapters[1].body} pullQuote={data.chapters[1].pullQuote} />
       <Chapter chapter={2} headline={data.chapters[2].headline} body={data.chapters[2].body} pullQuote={data.chapters[2].pullQuote} />

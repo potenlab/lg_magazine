@@ -82,18 +82,14 @@ deep 챕터 기사가 2 A5 페이지로 늘어나면 뒤 섹션의 하드코딩 
 2. **`pageNum` prop 제거** — `Chapter` / `EditorIntro` / `EditorOutro`의
    Props 정의와 `MagazinePDF.tsx`의 `pageNum={3..8}` 6개를 모두 삭제.
    `Cover`는 푸터 번호가 없으므로 제외.
-3. **`TOC.tsx`** — 하드코딩된 페이지 번호 칼럼(`03`~`08`)을 제거하고
-   섹션명만 나열한다:
-   ```
-   From the Editor
-   Chapter 1. 내가 지나온 길
-   Chapter 2. 나는 누구인가
-   Chapter 3. 내가 그리는 미래
-   Chapter 4. 내일로 향하는 한 걸음
-   Editor's Note
-   ```
-   라벨에 "Chapter 1~4"가 이미 있어 목차의 안내 기능은 유지된다.
-   (렌더 전에는 챕터 시작 페이지를 알 수 없어 정확한 숫자 계산은 불가)
+3. **`TOC.tsx`** — 페이지 번호 칼럼을 deep 여부에 따라 분기한다.
+   - **비-deep**: 매거진이 8페이지 고정이라 각 섹션 시작 페이지가 항상 같다 →
+     하드코딩 번호(`03`~`08`)를 그대로 표기.
+   - **deep**: 챕터가 2페이지로 넘칠 수 있어 시작 페이지를 렌더 전에 알 수 없다 →
+     번호를 생략하고 섹션명만 나열.
+   `TOC`는 `deep: boolean` prop을 받고, `MagazinePDF`가 `deep` prop을 받아
+   전달한다. `MagazineHandoffScene`은 `readUrlConfig().deep`(realLLM에서 export)로
+   현재 deep 여부를 읽어 `MagazinePDF`에 넘긴다.
 
 페이지 번호 동적화는 deep / 비-deep **양쪽 모두**에 적용된다. 비-deep PDF는
 여전히 8페이지이므로 번호가 동일하게 찍혀 무해하다. PDF 본문 *내용*은
@@ -116,8 +112,10 @@ deep일 때만 풍부해진다.
 | 파일 | 변경 |
 | --- | --- |
 | `src/lib/v3/llm/prompts.ts` | `buildChapterDeepBlock()` 추가, `v3WriteChapterArticle`에 deep 분기 + 토큰 상향 |
-| `src/lib/v3/pdf/MagazinePDF.tsx` | `pageNum` prop 전달 제거 |
+| `src/lib/v3/pdf/MagazinePDF.tsx` | `pageNum` prop 전달 제거, `deep` prop 추가→`TOC`에 전달 |
 | `src/lib/v3/pdf/pages/Chapter.tsx` | 푸터 동적화, `pageNum` prop 제거 |
 | `src/lib/v3/pdf/pages/EditorIntro.tsx` | 푸터 동적화, `pageNum` prop 제거 |
 | `src/lib/v3/pdf/pages/EditorOutro.tsx` | 푸터 동적화, `pageNum` prop 제거 |
-| `src/lib/v3/pdf/pages/TOC.tsx` | 페이지 번호 칼럼 제거, 푸터 동적화 |
+| `src/lib/v3/pdf/pages/TOC.tsx` | 푸터 동적화, 페이지 번호 칼럼을 deep 여부로 분기(비-deep 유지/deep 생략) |
+| `src/lib/v3/llm/realLLM.ts` | `readUrlConfig` export (클라이언트에서 deep 여부 판별용) |
+| `src/components/v3/scenes/MagazineHandoffScene.tsx` | `readUrlConfig().deep`를 `MagazinePDF`에 전달 |

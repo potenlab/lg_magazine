@@ -20,7 +20,7 @@ import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
  *   - 그 아래에 정체성 입력(당신은 ___ 사람) + judge + 완성 도장이 같은 페이지에
  *   - 전체가 한 스크롤 영역
  *
- * 카테고리(BEAT 라벨)는 Ch2 전용(두 장면을 잇는 것/공통의 결/타인의 시선/가치의 뿌리).
+ * 카테고리(BEAT 라벨)는 Ch2 전용(두 장면을 잇는 것/나의 강점/타인의 시선/가치의 뿌리).
  * 직전 전환 비트 2-7-nod에서 "해주신 이야기를 제가 정리해봤어요" lead를 건넴.
  *
  * spread(v2) 디자인은 Chapter2MagazineScene_v2.tsx에 보존.
@@ -29,7 +29,7 @@ type Beat = { number: string; category: string; body: string; headline?: string 
 
 const BEAT_LABELS = [
   { number: "01", category: "두 장면을 잇는 것" },
-  { number: "02", category: "공통의 결" },
+  { number: "02", category: "나의 강점" },
   { number: "03", category: "타인의 시선" },
   { number: "04", category: "가치의 뿌리" },
 ];

@@ -7,6 +7,7 @@ import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
 import { renderTemplate } from "@/lib/v3/scenes/template";
+import { paginateMirror } from "@/lib/v3/paginateMirror";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
@@ -29,7 +30,11 @@ export function ValueReflectionScene({
   const [reflection, setReflection] = useState(session.valueReflection);
   const hasNarration = Boolean(spec.narration);
   const [beat, setBeat] = useState<Beat>("intro");
+  const [reflectionPage, setReflectionPage] = useState(0);
   const { setStage } = useContext(DialogStageContext);
+
+  // Deep mode produces a 3-paragraph reflection; paginate it across 2 pages.
+  const reflectionPages = reflection ? paginateMirror(reflection) : [];
 
   const narration = spec.narration ? renderTemplate(spec.narration, session) : undefined;
   const introLine = spec.lines?.[0] ? renderTemplate(spec.lines[0], session) : `${session.name}님이 적어주신 의미들을 함께 보고 있어요.`;
@@ -70,7 +75,12 @@ export function ValueReflectionScene({
       setBeat(nextBeat);
       return;
     }
+    // 마지막 비트(reflection) — 페이지가 나뉜 반향을 먼저 넘긴 뒤 씬 전환.
     if (!reflection) return;
+    if (reflectionPage < reflectionPages.length - 1) {
+      setReflectionPage(reflectionPage + 1);
+      return;
+    }
     if (typeof spec.next === "string") onAdvance(spec.next);
   };
 
@@ -99,13 +109,14 @@ export function ValueReflectionScene({
         {beat === "reflection" &&
           (reflection ? (
             <motion.p
+              key={reflectionPage}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
-              className="text-[16px] font-bold leading-[1.6] text-[#3d2414] md:text-[16px]"
+              className="whitespace-pre-line text-[16px] font-bold leading-[1.6] text-[#3d2414] md:text-[16px]"
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             >
-              <EditorialInline text={reflection} />
+              <EditorialInline text={reflectionPages[reflectionPage] ?? reflection} />
             </motion.p>
           ) : (
             <NarrationBlock text="편집장이 적힌 의미들을 가만히 들여다본다…" />

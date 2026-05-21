@@ -6,6 +6,7 @@ import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { HintInput } from "@/components/v3/ui/HintInput";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { renderTemplate } from "@/lib/v3/scenes/template";
+import { paginateMirror } from "@/lib/v3/paginateMirror";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
 import { DialogStageContext } from "@/components/v3/V3App";
@@ -198,21 +199,36 @@ function FollowupExitBody({
   onAdvance: () => void;
 }) {
   const [settled, setSettled] = useState(false);
-  // Exit affirmations are 1-3 short lines. Pin the dialog wrapper to compact
-  // size so the box hugs the text instead of stretching to input height.
+  const [page, setPage] = useState(0);
   const { setStage } = useContext(DialogStageContext);
+  // Deep mode produces a 3-paragraph reflection — paginate it so neither page
+  // is a dense block. Short exit affirmations (≤1 page) stay compact.
+  const pages = paginateMirror(reflection);
   useEffect(() => {
-    setStage("narration");
-  }, [setStage]);
-  // Split on newlines so a multi-sentence affirmation paginates by line.
-  const lines = reflection.split("\n").filter((l) => l.trim().length > 0);
+    setStage(pages.length > 1 ? "content" : "narration");
+  }, [setStage, pages.length]);
+  const lastPage = page >= pages.length - 1;
+  // Split on newlines so a multi-sentence page staggers line by line.
+  const lines = (pages[page] ?? reflection)
+    .split("\n")
+    .filter((l) => l.trim().length > 0);
+  const handleClick = () => {
+    if (!settled) return;
+    if (!lastPage) {
+      setSettled(false);
+      setPage(page + 1);
+      return;
+    }
+    onAdvance();
+  };
   return (
     <div
       className={`flex flex-1 flex-col ${settled ? "cursor-pointer" : ""}`}
-      onClick={settled ? onAdvance : undefined}
+      onClick={settled ? handleClick : undefined}
     >
       <div className="flex-1 space-y-4">
         <AutoFlowText
+          key={page}
           lines={lines.length > 0 ? lines : [reflection]}
           onSettled={() => setSettled(true)}
         />
@@ -252,19 +268,31 @@ function FollowupBody({
     : undefined;
   const [showLines, setShowLines] = useState(!narration);
   const { setStage } = useContext(DialogStageContext);
+
+  // Deep mode produces a 3-paragraph reflection. When it paginates into 2+
+  // pages, page through the reflection on its own dialog windows first, then
+  // show the followup question. Non-deep (≤1 page) keeps the reflection inline
+  // with the question as before.
+  const reflectionPages = reflection ? paginateMirror(reflection) : [];
+  const pagedReflection = reflectionPages.length > 1;
+  const [reflPage, setReflPage] = useState(0);
+  const onReflectionPage = pagedReflection && reflPage < reflectionPages.length;
+
   useEffect(() => {
     // Compact dialog while showing italic prelude OR while lead-in lines
-    // are still staggering. Grow only when the input field appears.
-    const compact = (!showLines && narration) || !settled;
+    // are still staggering. Reflection pages and the settled input grow it.
+    const compact = (!showLines && narration) || (!onReflectionPage && !settled);
     setStage(compact ? "narration" : "content");
-  }, [showLines, narration, settled, setStage]);
+  }, [showLines, narration, settled, onReflectionPage, setStage]);
+
   const reflectionLines = reflection
     ? reflection.split("\n").map((l) => l.trim()).filter((l) => l.length > 0)
     : [];
-  const allLines = [
-    ...reflectionLines,
-    ...branchLines,
-  ];
+  // On the question page: if the reflection was shown on its own pages, don't
+  // repeat it inline — show only the followup question lines.
+  const allLines = pagedReflection
+    ? branchLines
+    : [...reflectionLines, ...branchLines];
 
   if (!showLines && narration) {
     return (
@@ -277,6 +305,41 @@ function FollowupBody({
         </div>
         <div className="mt-auto flex items-center justify-end text-[16px] text-[#8b7050]">
           <span className="italic">다음</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (onReflectionPage) {
+    const pageLines = reflectionPages[reflPage]
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+    return (
+      <div
+        className={`flex flex-1 flex-col ${settled ? "cursor-pointer" : ""}`}
+        onClick={
+          settled
+            ? () => {
+                setSettled(false);
+                setReflPage(reflPage + 1);
+              }
+            : undefined
+        }
+      >
+        <div className="flex-1 space-y-4">
+          <AutoFlowText
+            key={reflPage}
+            lines={pageLines}
+            onSettled={() => setSettled(true)}
+          />
+        </div>
+        <div className="mt-auto flex justify-end text-[16px] text-[#8b7050]">
+          <span
+            className={`italic transition-opacity ${settled ? "opacity-100" : "opacity-0"}`}
+          >
+            다음
+          </span>
         </div>
       </div>
     );

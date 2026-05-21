@@ -49,7 +49,6 @@ export function MagazinePosterSceneV1({
   const valueDef = session.valueDefinitions[session.topValue] ?? "";
   const identityTitle = extractIdentityTitle(session.identityName);
   const visionSummary = toAnchorSummary(session.visionLine, 84);
-  const firstStepSummary = toAnchorSummary(session.firstStep, 56);
   const supportSummary = toAnchorSummary(session.supportPerson, 44);
   const resourceSummary = toAnchorSummary(session.neededResource, 52);
 
@@ -137,14 +136,6 @@ export function MagazinePosterSceneV1({
                 style={{ fontFamily: "var(--font-ridi-batang), serif" }}
               >
                 {trimQuotes(visionSummary)}
-              </ClampText>
-            </PosterCard>
-          )}
-
-          {session.firstStep && (
-            <PosterCard label="My Next Step" tone="gold">
-              <ClampText lines={4} className="text-[16px] leading-relaxed">
-                {trimQuotes(firstStepSummary)}
               </ClampText>
             </PosterCard>
           )}

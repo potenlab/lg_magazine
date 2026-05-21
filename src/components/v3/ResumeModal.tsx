@@ -30,7 +30,7 @@ export function ResumeModal({
   const name = session.name || "이전 참가자";
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-      <div className="max-w-md rounded-md border border-[#d7bd83]/30 bg-[#f6efdf] p-6 text-[#3d2414] shadow-2xl">
+      <div className="max-w-md rounded-md border border-[#d7bd83]/30 bg-[#f6efdf] p-7 text-[#3d2414] shadow-2xl">
         <p className="font-serif text-lg italic">이전에 진행하시던 매거진이 있어요.</p>
         <p className="mt-2 text-sm leading-relaxed">
           {name}님의 비전 익스프레스가 <strong>{chapterLabel}</strong>에서 멈춰있어요.

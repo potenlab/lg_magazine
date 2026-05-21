@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import type { ChapterThread } from "@/lib/v3/session/adminView";
 
@@ -41,7 +42,7 @@ export function ChapterReviewOverlay({
       onClick={onClose}
     >
       <motion.div
-        className="relative flex max-h-[80vh] w-full max-w-[560px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf] px-7 pb-7 pt-[76px] shadow-2xl"
+        className="relative flex max-h-[80vh] w-full max-w-[560px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf] p-7 shadow-2xl"
         style={{ fontFamily: "var(--font-ridi-batang)" }}
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -88,7 +89,7 @@ export function ChapterReviewOverlay({
               return (
                 <div key={i} className={boxClass}>
                   <p className={labelClass}>{entry.label}</p>
-                  <p className={textClass}>{entry.text}</p>
+                  <div className={textClass}>{renderEntryRuns(entry.text ?? "")}</div>
                 </div>
               );
             })}
@@ -97,4 +98,35 @@ export function ChapterReviewOverlay({
       </motion.div>
     </motion.div>
   );
+}
+
+// strengthSynthesis 같은 result 텍스트는 `~소주제~` 라인이 섞여 있다.
+// 그 줄만 작은 이탤릭으로 렌더링하고 나머지는 그대로 줄바꿈을 살린다.
+function renderEntryRuns(text: string) {
+  const lines = text.split("\n");
+  const out: ReactNode[] = [];
+  let buffer: string[] = [];
+  const flush = () => {
+    if (buffer.length === 0) return;
+    out.push(<span key={out.length}>{buffer.join("\n")}</span>);
+    buffer = [];
+  };
+  lines.forEach((line, i) => {
+    const m = line.match(/^~(.+)~$/);
+    if (m) {
+      flush();
+      out.push(
+        <em
+          key={out.length}
+          className={`block text-[12px] italic tracking-wide text-[#8b7050] ${i === 0 ? "" : "mt-2"}`}
+        >
+          {m[1]}
+        </em>
+      );
+    } else {
+      buffer.push(line);
+    }
+  });
+  flush();
+  return out;
 }

@@ -96,7 +96,7 @@ body {
 
 ::selection {
   background: rgba(212, 180, 130, 0.3);
-  color: var(--color-cream-light);
+  color: inherit;
 }
 
 /* ═══════ Dialog Box (편집장 대화창) ═══════ */

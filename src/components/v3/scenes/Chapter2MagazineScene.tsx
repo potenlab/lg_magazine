@@ -34,6 +34,12 @@ const BEAT_LABELS = [
   { number: "04", category: "가치의 뿌리" },
 ];
 
+const IDENTITY_EXAMPLES = [
+  "호기심이 많고 꼭 검색해보고 이해해야만 하는 사람",
+  "복잡한 구조 속에서도 관계를 쉽게 파악하고, 누구나 쉽게 이해할 수 있게 설명해주는 걸 잘하는 사람",
+  "사람들을 좋아하고 서로 다른 색깔을 가진 사람들이 조화롭게 어우러지도록, 경험을 설계하는 걸 좋아하는 사람",
+];
+
 export function Chapter2MagazineScene({
   spec,
   onAdvance,
@@ -53,6 +59,7 @@ export function Chapter2MagazineScene({
   const [judging, setJudging] = useState(false);
   const [editorHint, setEditorHint] = useState<string | null>(null);
   const [completed, setCompleted] = useState<boolean>(Boolean(session.identityName));
+  const [examplesOpen, setExamplesOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -92,7 +99,7 @@ export function Chapter2MagazineScene({
   }, []);
 
   if (!loaded || !synthesis) {
-    return <NarrationBlock text="편집장이 네 가지 재료를 한자리에 모아 천천히 꿰어보고 있어요…" />;
+    return <NarrationBlock text="편집장이 이야기를 모아 천천히 꿰어보고 있어요…" />;
   }
 
   const parsed = parseBeats(synthesis, 4);
@@ -185,11 +192,11 @@ export function Chapter2MagazineScene({
         <p className="mb-6 text-center text-[16px] leading-[1.75] text-[#3d2414]">
           이제 {session.name}님의 차례예요.
           <br />
-          방금 함께 발견한 이 모습으로, {session.name}님이 어떤 사람인지 적어주세요.
+          함께 발견한 이 모습을 참고해서, 지금의 {session.name}님은 어떤 사람인지 적어주세요.
         </p>
 
         <div className="mb-6 flex flex-wrap items-baseline justify-center gap-x-2 text-center">
-          <span className="text-[18px] text-[#3d2414]">{session.name}님은</span>
+          <span className="text-[18px] text-[#3d2414]">나는</span>
           <span
             className={`inline-block min-w-[200px] border-b-2 border-dashed pb-1 text-[18px] font-semibold tracking-wide transition-colors ${
               completed
@@ -230,9 +237,17 @@ export function Chapter2MagazineScene({
                   if (canSubmit) void submit();
                 }
               }}
-              placeholder="예: '잇는 사람' / '흩어진 걸 하나로 모으는 사람'"
               className="w-full rounded-md border border-[#b99b6b]/50 bg-white/70 px-4 py-3 text-center text-[16px] text-[#3d2414] outline-none placeholder:text-[#a18965] focus:border-[#3d2414] disabled:opacity-50"
             />
+            <div className="mt-2 text-center">
+              <button
+                type="button"
+                onClick={() => setExamplesOpen(true)}
+                className="text-[14px] text-[#8a7a68] underline decoration-[#8a7a68]/40 underline-offset-[3px] transition hover:text-[#3d2414] hover:decoration-[#3d2414] md:text-[16px]"
+              >
+                다른 사람들은 자기를 어떻게 정의했을까요?
+              </button>
+            </div>
             {attempts > 0 && attempts < MAX_ATTEMPTS && (
               <p className="mt-1.5 text-right text-[12px] text-[#9b8768]/80">
                 남은 시도 {MAX_ATTEMPTS - attempts}회
@@ -240,6 +255,73 @@ export function Chapter2MagazineScene({
             )}
           </div>
         )}
+
+        {/* Examples modal — 인풋 아래 텍스트 버튼으로 열림. 다른 참가자의 정체성 문장
+            예시를 보여주는 read-only 참고용. 백드롭 또는 × 클릭으로 닫힘. */}
+        <AnimatePresence>
+          {examplesOpen && (
+            <motion.div
+              key="identity-examples-modal"
+              className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <button
+                type="button"
+                aria-label="닫기"
+                onClick={() => setExamplesOpen(false)}
+                className="absolute inset-0 cursor-default bg-black/55 backdrop-blur-sm"
+              />
+              <motion.div
+                role="dialog"
+                aria-modal="true"
+                aria-label="다른 사람들의 정체성 예시"
+                className="relative z-10 w-full max-w-[480px] rounded-md border border-[#d7bd83]/40 bg-[#f6efdf] p-7 shadow-2xl"
+                style={{ fontFamily: "var(--font-ridi-batang)" }}
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 8, opacity: 0 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[16px] uppercase tracking-[0.32em] text-[#7a5a3a]">
+                      From other passengers
+                    </p>
+                    <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414]">
+                      다른 사람들은 자기를 어떻게 정의했을까요?
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setExamplesOpen(false)}
+                    aria-label="닫기"
+                    className="-mr-1 -mt-1 rounded p-1 text-[18px] leading-none text-[#8a7a68] transition hover:text-[#3d2414]"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="mt-4 space-y-2.5">
+                  {IDENTITY_EXAMPLES.map((ex, i) => (
+                    <div
+                      key={i}
+                      className="block w-full rounded-md border border-[#8c785a]/25 bg-white/40 p-3 text-left"
+                    >
+                      <p className="text-[16px] leading-[1.55] text-[#5a4a38]">
+                        {i + 1}. {ex}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-center text-[16px] italic text-[#8a7a68]">
+                  참고용 예시입니다. 내 정의는 직접 입력해주세요.
+                </p>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence>
           {completed && (

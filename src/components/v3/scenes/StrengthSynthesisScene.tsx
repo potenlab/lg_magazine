@@ -74,7 +74,7 @@ export function StrengthSynthesisScene({
   };
 
   if (!loaded || !synthesis) {
-    return <NarrationBlock text="편집장이 네 가지 재료를 한자리에 모아 천천히 꿰어보고 있어요…" />;
+    return <NarrationBlock text="편집장이 이야기를 모아 천천히 꿰어보고 있어요…" />;
   }
 
   // Split LLM output into separate "beats" — each beat will land in its

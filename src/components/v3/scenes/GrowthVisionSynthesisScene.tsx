@@ -31,6 +31,12 @@ const BEAT_LABELS = [
   { number: "04", category: "종착지의 풍경" },
 ];
 
+const VISION_EXAMPLES = [
+  "막막함을 풀어주는 자리에서 자기다운 빛을 내는",
+  "복잡한 문제 앞에서 길을 짚고, 함께 가는 사람들에게 자리를 만들어 주는",
+  "낯선 곳에서도 자기 페이스로 배우며 다음 한 걸음을 짚어가는",
+];
+
 export function GrowthVisionSynthesisScene({
   spec,
   onAdvance,
@@ -50,6 +56,7 @@ export function GrowthVisionSynthesisScene({
   const [judging, setJudging] = useState(false);
   const [editorHint, setEditorHint] = useState<string | null>(null);
   const [completed, setCompleted] = useState<boolean>(Boolean(session.visionLine));
+  const [examplesOpen, setExamplesOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -194,9 +201,11 @@ export function GrowthVisionSynthesisScene({
         <p className="mb-2 text-center text-[16px] leading-[1.75] text-[#3d2414]">
           이제 {session.name}님의 차례예요.
           <br />
-          방금 정리한 흐름을 따라, {session.name}님이 어떤 방향으로 성장하고 싶은지 적어주세요.
+          {session.name}님은 앞으로 어떤 사람으로 성장하고 싶나요?
         </p>
-        <p className="mb-6 text-center text-[14px] italic text-[#8b7050]">
+        <p className="mb-6 text-center text-[14px] italic leading-[1.6] text-[#8b7050]">
+          주의: 현재의 내가 아니라, 앞으로 어떤 사람이 되고 싶은지를 작성해요.
+          <br />
           매거진 카드의 표현을 가져와도 좋고, 합치거나 다시 써도 좋아요.
         </p>
 
@@ -241,9 +250,17 @@ export function GrowthVisionSynthesisScene({
                   if (canSubmit) void submit();
                 }
               }}
-              placeholder="예: '막막함을 풀어주는 자리에서 자기다운 빛을 내는'"
               className="w-full rounded-md border border-[#b99b6b]/50 bg-white/70 px-4 py-3 text-center text-[16px] text-[#3d2414] outline-none placeholder:text-[#a18965] focus:border-[#3d2414] disabled:opacity-50"
             />
+            <div className="mt-2 text-center">
+              <button
+                type="button"
+                onClick={() => setExamplesOpen(true)}
+                className="text-[14px] text-[#8a7a68] underline decoration-[#8a7a68]/40 underline-offset-[3px] transition hover:text-[#3d2414] hover:decoration-[#3d2414] md:text-[16px]"
+              >
+                다른 사람들은 어떤 방향을 그렸을까요?
+              </button>
+            </div>
             {attempts > 0 && attempts < MAX_ATTEMPTS && (
               <p className="mt-1.5 text-right text-[12px] text-[#9b8768]/80">
                 남은 시도 {MAX_ATTEMPTS - attempts}회
@@ -251,6 +268,73 @@ export function GrowthVisionSynthesisScene({
             )}
           </div>
         )}
+
+        {/* Examples modal — 인풋 아래 텍스트 버튼으로 열림. Ch2 정체성 예시 모달과 동일한
+            디자인 패턴(승객명부의 "다른 승객들은 ..."와 매칭). 백드롭/× 클릭으로 닫힘. */}
+        <AnimatePresence>
+          {examplesOpen && (
+            <motion.div
+              key="vision-examples-modal"
+              className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <button
+                type="button"
+                aria-label="닫기"
+                onClick={() => setExamplesOpen(false)}
+                className="absolute inset-0 cursor-default bg-black/55 backdrop-blur-sm"
+              />
+              <motion.div
+                role="dialog"
+                aria-modal="true"
+                aria-label="다른 사람들의 성장 방향 예시"
+                className="relative z-10 w-full max-w-[480px] rounded-md border border-[#d7bd83]/40 bg-[#f6efdf] p-7 shadow-2xl"
+                style={{ fontFamily: "var(--font-ridi-batang)" }}
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 8, opacity: 0 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[16px] uppercase tracking-[0.32em] text-[#7a5a3a]">
+                      From other passengers
+                    </p>
+                    <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414]">
+                      다른 사람들은 어떤 방향을 그렸을까요?
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setExamplesOpen(false)}
+                    aria-label="닫기"
+                    className="-mr-1 -mt-1 rounded p-1 text-[18px] leading-none text-[#8a7a68] transition hover:text-[#3d2414]"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="mt-4 space-y-2.5">
+                  {VISION_EXAMPLES.map((ex, i) => (
+                    <div
+                      key={i}
+                      className="block w-full rounded-md border border-[#8c785a]/25 bg-white/40 p-3 text-left"
+                    >
+                      <p className="text-[16px] leading-[1.55] text-[#5a4a38]">
+                        {i + 1}. {ex}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-center text-[16px] italic text-[#8a7a68]">
+                  참고용 예시입니다. 내 방향은 직접 입력해주세요.
+                </p>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence>
           {completed && (

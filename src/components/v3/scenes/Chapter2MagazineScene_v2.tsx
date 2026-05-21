@@ -106,7 +106,7 @@ export function Chapter2MagazineSceneV2({
   }, []);
 
   if (!loaded || !synthesis) {
-    return <NarrationBlock text="편집장이 네 가지 재료를 한자리에 모아 천천히 꿰어보고 있어요…" />;
+    return <NarrationBlock text="편집장이 이야기를 모아 천천히 꿰어보고 있어요…" />;
   }
 
   // Split into 4 BEATs and parse [HEADLINE: ...] from each.

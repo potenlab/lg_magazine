@@ -13,7 +13,7 @@ export function ChapterHeader() {
   // dialog wrapper (z-20) for every scene — fixes "ch0부터 음량 컨트롤 클릭
   // 안 됨" where the dialog's z-20 wrapper would overlap the header.
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-[40] flex items-center justify-between px-8 py-5">
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-[40] flex items-center justify-between px-8 py-5">
       <div className="flex-1" />
 
       <Image

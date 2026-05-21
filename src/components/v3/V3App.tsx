@@ -470,7 +470,8 @@ function V3Inner() {
                     // overflow-y-auto + sticky 버튼 조합에서 하단이 잘리던 회귀.
                     // overflow-hidden으로 두고, 씬 내부에서 flex-1 스크롤 영역 +
                     // 고정 푸터(register/freetext와 동일 패턴)로 처리.
-                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[420px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
+                    // 한 호 요약을 한 눈에 보도록 dialog를 80vh로 고정.
+                    ? "relative mx-auto flex h-[80vh] max-h-[calc(100vh_-_140px)] w-full flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
                     : spec.kind === "editorCredits"
                     // 콘텐츠 짧은 final-stage 씬 — 콘텐츠 hug로 빈 양피지 회귀 방지.
                     ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[420px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"

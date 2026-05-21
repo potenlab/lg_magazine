@@ -597,7 +597,7 @@ export function IntroScene({
                         <button
                           type="button"
                           onClick={() => setGender("그")}
-                          className={`h-9 rounded-sm border px-2 text-[16px] transition ${
+                          className={`h-9 rounded-sm border px-2 text-[14px] transition ${
                             gender === "그"
                               ? "border-[#d4a54a] bg-[#efe2c4] text-[#3d2414]"
                               : "border-[#8c785a]/25 bg-[#f2ebdd]/35 text-[#8a6f5f]"
@@ -608,7 +608,7 @@ export function IntroScene({
                         <button
                           type="button"
                           onClick={() => setGender("그녀")}
-                          className={`h-9 rounded-sm border px-2 text-[16px] transition ${
+                          className={`h-9 rounded-sm border px-2 text-[14px] transition ${
                             gender === "그녀"
                               ? "border-[#d4a54a] bg-[#efe2c4] text-[#3d2414]"
                               : "border-[#8c785a]/25 bg-[#f2ebdd]/35 text-[#8a6f5f]"
@@ -630,7 +630,7 @@ export function IntroScene({
                             key={j}
                             type="button"
                             onClick={() => setJob(j)}
-                            className={`flex min-h-9 items-center justify-center rounded-sm border px-1.5 py-1.5 text-center text-[13px] leading-tight transition ${
+                            className={`flex min-h-9 items-center justify-center rounded-sm border px-1.5 py-1.5 text-center text-[14px] leading-tight transition ${
                               job === j
                                 ? "border-[#d4a54a] bg-[#efe2c4] text-[#3d2414]"
                                 : "border-[#8c785a]/25 bg-[#f2ebdd]/35 text-[#8a6f5f]"
@@ -697,7 +697,7 @@ export function IntroScene({
                   </h2>
                   <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                     <p className="text-[16px] font-semibold leading-[1.6] text-[#5a4a38]">
-                      이 열차에 오르기 전, 마음에 남아 있는 것이 있을까요?
+                      열차에 오르기 전, 지금 마음이 어떤지 궁금해요.
                     </p>
                     <textarea
                       value={freeText}
@@ -922,36 +922,23 @@ export function IntroScene({
 function Header({ small }: { small?: boolean }) {
   return (
     <motion.div
-      className="text-center"
+      className="flex justify-center"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3, duration: 0.8 }}
     >
-      <h1
-        style={{
-          fontFamily: "var(--font-title)",
-          fontStyle: "normal",
-          fontWeight: 700,
-          fontSize: small ? "clamp(1.1rem, 2.6vw, 1.6rem)" : "clamp(1.6rem, 4vw, 2.4rem)",
-          lineHeight: 1.5,
-          color: "rgba(220, 195, 145, 0.92)",
-          letterSpacing: "0.02em",
-        }}
-      >
-        Magazine STORY
-      </h1>
-      <p
-        className="mt-1 uppercase"
-        style={{
-          fontFamily: "var(--font-title)",
-          fontWeight: 400,
-          fontSize: small ? "clamp(12px, 1vw, 13px)" : "clamp(12px, 1.1vw, 14px)",
-          letterSpacing: "0.5em",
-          color: "rgba(200, 175, 130, 0.55)",
-        }}
-      >
-        Vision Express
-      </p>
+      <Image
+        src="/brand/magazine-story-logo.svg"
+        alt="Magazine STORY Vision Express"
+        width={410}
+        height={71}
+        priority
+        className={
+          small
+            ? "h-auto w-[clamp(180px,24vw,260px)]"
+            : "h-auto w-[clamp(260px,36vw,410px)]"
+        }
+      />
     </motion.div>
   );
 }

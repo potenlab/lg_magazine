@@ -260,20 +260,21 @@ export function ValueCardScene({
               세 단어를 모두 골랐어요
             </p>
             <div className="flex items-center justify-center gap-3">
+              {/* 다른 단어 고르기 — 선택 초기화 → popup 사라지고 다시 고를 수 있음 */}
+              <button
+                type="button"
+                onClick={resetPicks}
+                className="rounded-md border border-[#d4b88a]/40 px-6 py-3 text-[16px] italic text-[#d4b88a] transition hover:border-[#f5d97a] hover:text-[#f5d97a]"
+              >
+                다른 단어 고르기
+              </button>
               <StoryButtonV3
                 label={spec.buttonLabel ?? "전달하기"}
                 onClick={submit}
                 disabled={picked.length === 0}
                 ritual
+                variant="secondary"
               />
-              {/* 다른 단어 고르기 — 선택 초기화 → popup 사라지고 다시 고를 수 있음 */}
-              <button
-                type="button"
-                onClick={resetPicks}
-                className="rounded-md border border-[#d4b88a]/40 px-4 py-2 text-[16px] italic text-[#d4b88a] transition hover:border-[#f5d97a] hover:text-[#f5d97a]"
-              >
-                다른 단어 고르기
-              </button>
             </div>
           </motion.div>
         </motion.div>

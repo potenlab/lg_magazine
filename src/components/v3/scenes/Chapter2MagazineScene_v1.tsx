@@ -79,7 +79,7 @@ export function Chapter2MagazineSceneV1({
   }, []);
 
   if (!loaded || !synthesis) {
-    return <NarrationBlock text="편집장이 네 가지 재료를 한자리에 모아 천천히 꿰어보고 있어요…" />;
+    return <NarrationBlock text="편집장이 이야기를 모아 천천히 꿰어보고 있어요…" />;
   }
 
   // BEAT 4개를 \n 으로 split. LLM이 가끔 3개나 5개 줄 수도 있으므로 slice(0,4)+pad.

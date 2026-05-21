@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useContext, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -236,97 +236,47 @@ function PagePanel({ side, children }: { side: "left" | "right"; children: React
  * v1 디자인의 핵심 정보(가치/비전/한 걸음/곁의 사람/자원)를 한 페이지 매거진
  * 스프레드 형태로 재구성. 진짜 잡지의 "마지막 page — Editor's Cards" 느낌. */
 function CardsSpread({ session }: { session: V3Session }) {
-  const valueDef = session.valueDefinitions[session.topValue] ?? "";
   const identityTitle = extractIdentityTitle(session.identityName);
   const visionSummary = toAnchorSummary(session.visionLine, 84);
-  const firstStepSummary = toAnchorSummary(session.firstStep, 56);
-  const supportSummary = toAnchorSummary(session.supportPerson, 44);
-  const resourceSummary = toAnchorSummary(session.neededResource, 52);
 
   return (
     <article className="space-y-5">
-      {/* 표제 — Editor's Cards */}
+      {/* 표제 — Editor's Cards. 정체성 → 가치 → 4년 비전이 한 문장 흐름으로 이어진다. */}
       <header className="text-center">
         <p className="text-[12px] uppercase tracking-[0.42em] text-[#7a5a3a]">
           Editor&rsquo;s Cards
         </p>
-        {identityTitle && (
-          <h2
-            className="mt-2 text-[22px] font-medium leading-tight text-[#3d2414] md:text-[24px]"
-            style={{ fontFamily: "var(--font-ridi-batang), serif" }}
-          >
-            {trimQuotes(identityTitle)}
-          </h2>
-        )}
-        {session.topValue && (
-          <p className="mt-2 text-[14px] tracking-[0.16em] text-[#7a5a3a]">
-            {session.topValue}
-            {josa(session.topValue, "을/를")} 가장 소중히 여기는 {session.gender || "그"}
-          </p>
-        )}
-      </header>
 
-      <div className="my-2 mx-auto h-px w-16 bg-[#b99b6b]/55" />
-
-      {/* 카드 그리드 — v1과 동일 구조 */}
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {session.topValue && (
-          <PosterCard label="The Most Precious Value" tone="gold">
+        <div className="py-20">
+          {identityTitle && (
+            <h2
+              className="text-[22px] font-medium leading-[1.5] text-[#3d2414] md:text-[24px]"
+              style={{ fontFamily: "var(--font-ridi-batang), serif" }}
+            >
+              {trimQuotes(identityTitle)}
+            </h2>
+          )}
+          {(session.topValue || session.visionLine) && (
             <p
-              className="text-[16px] font-medium leading-tight"
+              className="mx-auto mt-5 max-w-[640px] text-[16px] leading-[1.85] text-[#3d2414]"
               style={{ fontFamily: "var(--font-ridi-batang), serif" }}
             >
-              &ldquo;{session.topValue}&rdquo;
+              {session.topValue && (
+                <>
+                  {session.topValue}
+                  {josa(session.topValue, "을/를")} 가장 소중히 여기는{" "}
+                  {session.gender || "그"}
+                  {session.visionLine ? "," : "."}
+                  <br />
+                </>
+              )}
+              {session.visionLine && (
+                <>{trimQuotes(visionSummary)} 길을 그리고 있다.</>
+              )}
             </p>
-            {valueDef && (
-              <ClampText
-                lines={4}
-                className="mt-2 text-[15px] italic leading-relaxed text-[#5a3d22]"
-              >
-                {trimQuotes(valueDef)}
-              </ClampText>
-            )}
-          </PosterCard>
-        )}
-
-        {session.visionLine && (
-          <PosterCard label="The 4-Year Vision">
-            <ClampText
-              lines={4}
-              className="text-[15px] leading-relaxed text-[#3d2414]"
-              style={{ fontFamily: "var(--font-ridi-batang), serif" }}
-            >
-              {trimQuotes(visionSummary)}
-            </ClampText>
-          </PosterCard>
-        )}
-
-        {session.firstStep && (
-          <PosterCard label="My Next Step" tone="gold">
-            <ClampText lines={4} className="text-[15px] leading-relaxed">
-              {trimQuotes(firstStepSummary)}
-            </ClampText>
-          </PosterCard>
-        )}
-
-        {session.supportPerson && (
-          <PosterCard label="My Allies">
-            <ClampText lines={4} className="text-[15px] leading-relaxed">
-              {trimQuotes(supportSummary)}
-            </ClampText>
-          </PosterCard>
-        )}
-
-        {session.neededResource && (
-          <div className="md:col-span-2">
-            <PosterCard label="Required Resources">
-              <ClampText lines={3} className="text-[15px] leading-relaxed">
-                {trimQuotes(resourceSummary)}
-              </ClampText>
-            </PosterCard>
-          </div>
-        )}
-      </section>
+          )}
+        </div>
+      </header>
 
       <section className="mt-4 border-t border-[#b99b6b]/35 pt-4 text-center">
         <p className="text-[12px] uppercase tracking-[0.4em] text-[#7a5a3a]">
@@ -342,56 +292,6 @@ function CardsSpread({ session }: { session: V3Session }) {
         </p>
       </section>
     </article>
-  );
-}
-
-// ── 보조 컴포넌트들 (v1에서 복사 — 디자인 일관성 유지) ─────────────────
-
-function PosterCard({
-  label,
-  tone = "plain",
-  children,
-}: {
-  label: string;
-  tone?: "plain" | "gold";
-  children: ReactNode;
-}) {
-  const accent =
-    tone === "gold"
-      ? "border-[#b99b6b]/55 bg-[#fbf5e6]"
-      : "border-[#b99b6b]/35 bg-white/35";
-  return (
-    <div className={`flex flex-col overflow-hidden rounded-sm border ${accent} px-4 py-3`}>
-      <p className="text-[11px] uppercase tracking-[0.28em] text-[#7a5a3a]">{label}</p>
-      <div className="mt-2 flex-1 overflow-hidden text-[#3d2414]">{children}</div>
-    </div>
-  );
-}
-
-function ClampText({
-  children,
-  lines,
-  className,
-  style,
-}: {
-  children: ReactNode;
-  lines: number;
-  className?: string;
-  style?: CSSProperties;
-}) {
-  return (
-    <p
-      className={className}
-      style={{
-        ...style,
-        display: "-webkit-box",
-        WebkitBoxOrient: "vertical",
-        WebkitLineClamp: lines,
-        overflow: "hidden",
-      }}
-    >
-      {children}
-    </p>
   );
 }
 

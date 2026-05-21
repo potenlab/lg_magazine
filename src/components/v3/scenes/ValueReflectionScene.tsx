@@ -10,12 +10,13 @@ import { renderTemplate } from "@/lib/v3/scenes/template";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
-// Mirrors Ch1KeywordScene's structure: narration beat → LLM-resolved
-// reflection beat. The reflection is generated from selectedValues +
-// valueDefinitions and cached on session.valueReflection so re-entries
-// don't re-fire the LLM.
+// 의미 입력 페이지 다음 흐름:
+//   1) intro      — "{name}님이 적어주신 내용을 모아보면" (일반 다이얼로그)
+//   2) narration  — "편집장이 적힌 의미들을 가만히 들여다본다." (이탤릭 나레이션)
+//   3) reflection — LLM 반향 (selectedValues + valueDefinitions 기반)
+// reflection은 session.valueReflection에 캐시돼 재진입 시 재호출되지 않는다.
 type Beat = "narration" | "intro" | "reflection";
-const BEAT_ORDER: Beat[] = ["narration", "intro", "reflection"];
+const BEAT_ORDER: Beat[] = ["intro", "narration", "reflection"];
 
 export function ValueReflectionScene({
   spec,
@@ -27,7 +28,7 @@ export function ValueReflectionScene({
   const { session, patch } = useV3Session();
   const [reflection, setReflection] = useState(session.valueReflection);
   const hasNarration = Boolean(spec.narration);
-  const [beat, setBeat] = useState<Beat>(hasNarration ? "narration" : "intro");
+  const [beat, setBeat] = useState<Beat>("intro");
   const { setStage } = useContext(DialogStageContext);
 
   const narration = spec.narration ? renderTemplate(spec.narration, session) : undefined;
@@ -57,15 +58,20 @@ export function ValueReflectionScene({
   }, [beat, setStage]);
 
   const advance = () => {
-    const idx = BEAT_ORDER.indexOf(beat);
-    if (idx < BEAT_ORDER.length - 1) {
+    let idx = BEAT_ORDER.indexOf(beat);
+    // narration 비트는 spec.narration이 있을 때만 보여준다 — 없으면 건너뛴다.
+    while (idx < BEAT_ORDER.length - 1) {
       const nextBeat = BEAT_ORDER[idx + 1];
+      if (nextBeat === "narration" && !hasNarration) {
+        idx++;
+        continue;
+      }
       if (nextBeat === "reflection" && !reflection) return;
       setBeat(nextBeat);
-    } else {
-      if (!reflection) return;
-      if (typeof spec.next === "string") onAdvance(spec.next);
+      return;
     }
+    if (!reflection) return;
+    if (typeof spec.next === "string") onAdvance(spec.next);
   };
 
   const canAdvance =

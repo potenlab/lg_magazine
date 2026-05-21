@@ -24,12 +24,12 @@ export function MagazinePDF({ data }: { data: MagazineData }) {
     <Document title={`STORY Vol. ${data.name}`} author="Magazine STORY 편집부">
       <Cover name={data.name} date={data.date} headline={data.coverHeadline} />
       <TOC />
-      <EditorIntro body={data.editorIntro} pageNum={3} />
-      <Chapter chapter={1} headline={data.chapters[1].headline} body={data.chapters[1].body} pullQuote={data.chapters[1].pullQuote} pageNum={4} />
-      <Chapter chapter={2} headline={data.chapters[2].headline} body={data.chapters[2].body} pullQuote={data.chapters[2].pullQuote} pageNum={5} />
-      <Chapter chapter={3} headline={data.chapters[3].headline} body={data.chapters[3].body} pullQuote={data.chapters[3].pullQuote} pageNum={6} />
-      <Chapter chapter={4} headline={data.chapters[4].headline} body={data.chapters[4].body} pullQuote={data.chapters[4].pullQuote} pageNum={7} />
-      <EditorOutro body={data.editorOutro} name={data.name} date={data.date} pageNum={8} />
+      <EditorIntro body={data.editorIntro} />
+      <Chapter chapter={1} headline={data.chapters[1].headline} body={data.chapters[1].body} pullQuote={data.chapters[1].pullQuote} />
+      <Chapter chapter={2} headline={data.chapters[2].headline} body={data.chapters[2].body} pullQuote={data.chapters[2].pullQuote} />
+      <Chapter chapter={3} headline={data.chapters[3].headline} body={data.chapters[3].body} pullQuote={data.chapters[3].pullQuote} />
+      <Chapter chapter={4} headline={data.chapters[4].headline} body={data.chapters[4].body} pullQuote={data.chapters[4].pullQuote} />
+      <EditorOutro body={data.editorOutro} name={data.name} date={data.date} />
     </Document>
   );
 }

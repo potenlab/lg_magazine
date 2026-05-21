@@ -6,7 +6,6 @@ interface Props {
   headline: string;
   body: string;
   pullQuote: string | null;
-  pageNum: number;
 }
 
 const KOR_TITLE: Record<1 | 2 | 3 | 4, string> = {
@@ -16,7 +15,7 @@ const KOR_TITLE: Record<1 | 2 | 3 | 4, string> = {
   4: "내일로 향하는 한 걸음",
 };
 
-export function Chapter({ chapter, headline, body, pullQuote, pageNum }: Props) {
+export function Chapter({ chapter, headline, body, pullQuote }: Props) {
   return (
     <Page size="A5" style={styles.page}>
       <Text style={styles.pageHeader}>Chapter {chapter}</Text>
@@ -30,7 +29,11 @@ export function Chapter({ chapter, headline, body, pullQuote, pageNum }: Props) 
           <Text>&#x201C;{pullQuote}&#x201D;</Text>
         </View>
       )}
-      <Text style={styles.pageFooter}>{pageNum}</Text>
+      <Text
+        style={styles.pageFooter}
+        render={({ pageNumber }) => `${pageNumber}`}
+        fixed
+      />
     </Page>
   );
 }

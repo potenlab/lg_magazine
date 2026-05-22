@@ -22,10 +22,10 @@ export async function exchangeCodeForUser(code: string, cfg: QriusConfig): Promi
     throw new Error(`Qrius userinfo failed: HTTP ${res.status}`);
   }
   const data = (await res.json()) as Partial<QriusUser>;
-  if (!data?.userid) {
+  if (typeof data?.userid !== "string") {
     throw new Error("Qrius userinfo response missing userid");
   }
-  return { userid: String(data.userid) };
+  return { userid: data.userid };
 }
 
 /**

@@ -9,6 +9,7 @@ import {
 } from "@/lib/qrius/config";
 import { exchangeCodeForUser } from "@/lib/qrius/client";
 import { buildSessionPayload, signSession } from "@/lib/qrius/session";
+import { redirectUrlForApp } from "@/lib/qrius/url";
 
 export const runtime = "nodejs";
 
@@ -20,7 +21,6 @@ export async function GET(request: Request) {
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const cookieStore = await cookies();
-  const secure = url.protocol === "https:";
 
   if (!code) {
     return NextResponse.json({ error: "missing_code" }, { status: 400 });
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
   cookieStore.set(QRIUS_SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure,
+    secure: cfg.secureCookies,
     path: "/",
     maxAge: SESSION_MAX_AGE_SECONDS,
   });
@@ -57,6 +57,5 @@ export async function GET(request: Request) {
   const redirectTo = cookieStore.get(QRIUS_REDIRECT_COOKIE)?.value ?? "/";
   cookieStore.delete(QRIUS_REDIRECT_COOKIE);
 
-  const safeRedirect = redirectTo.startsWith("/") ? redirectTo : "/";
-  return NextResponse.redirect(new URL(safeRedirect, url.origin));
+  return NextResponse.redirect(redirectUrlForApp(redirectTo, cfg));
 }

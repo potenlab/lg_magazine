@@ -12,6 +12,8 @@ export type QriusConfig = {
   authUrl: string | null;
   userinfoUrl: string | null;
   redirectUri: string;
+  publicOrigin: string;
+  secureCookies: boolean;
   sessionSecret: string;
 };
 
@@ -25,6 +27,12 @@ export function readQriusConfig(): QriusConfig {
   if (!redirectUri) {
     throw new Error("QRIUS_REDIRECT_URI not set");
   }
+  let redirectUrl: URL;
+  try {
+    redirectUrl = new URL(redirectUri);
+  } catch {
+    throw new Error("QRIUS_REDIRECT_URI must be an absolute URL");
+  }
   return {
     mock,
     mockUserid: process.env.QRIUS_MOCK_USERID ?? "dev-user",
@@ -33,6 +41,8 @@ export function readQriusConfig(): QriusConfig {
     // Issued by CNS only after the data scope is agreed — empty until then.
     userinfoUrl: process.env.QRIUS_USERINFO_URL ?? null,
     redirectUri,
+    publicOrigin: redirectUrl.origin,
+    secureCookies: redirectUrl.protocol === "https:",
     sessionSecret,
   };
 }

@@ -168,9 +168,9 @@ internal host. That can cause:
 - post-login redirects to target the **internal** host.
 
 **Fix:** forward `X-Forwarded-Proto: https` and `X-Forwarded-Host:
-mybook.lgacademy.com` from the proxy to the app. (A code-level hardening that
-derives `Secure`/origin from `QRIUS_REDIRECT_URI` instead of the request is
-recommended — ask the dev team to apply it before go-live.)
+mybook.lgacademy.com` from the proxy to the app. The app also derives cookie
+`Secure` behavior and post-login redirect origins from `QRIUS_REDIRECT_URI`, so
+the auth flow does not depend on the internal upstream request URL.
 
 ---
 

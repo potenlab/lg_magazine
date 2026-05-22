@@ -54,7 +54,7 @@ export async function verifySession(token: string, secret: string): Promise<Qriu
     );
     if (!ok) return null;
     const payload = JSON.parse(new TextDecoder().decode(b64urlDecode(body))) as QriusSessionPayload;
-    if (!payload.userid || typeof payload.exp !== "number") return null;
+    if (typeof payload.userid !== "string" || typeof payload.exp !== "number") return null;
     if (payload.exp < Math.floor(Date.now() / 1000)) return null;
     return payload;
   } catch {

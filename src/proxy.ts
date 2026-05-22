@@ -5,9 +5,13 @@ import { verifySession } from "@/lib/qrius/session";
 
 // Next.js 16: this file replaces `middleware.ts`. It gates the WHOLE app —
 // every page and API route requires a valid Qrius session. The only paths
-// left open are the Qrius auth endpoints themselves and Next.js internals.
+// left open are the Qrius auth endpoints themselves, Next.js internals, and
+// public/ static assets. The trailing `.*\.[\w]+$` clause excludes any path
+// with a file extension (/vision_express, /brand, /fonts, …); without it the
+// image optimizer's unauthenticated internal fetch gets 307'd to login and
+// images break — even for logged-in users.
 export const config = {
-  matcher: ["/((?!api/auth/qrius|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api/auth/qrius|_next/static|_next/image|favicon.ico|.*\\.[\\w]+$).*)"],
 };
 
 export async function proxy(request: NextRequest) {

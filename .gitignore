@@ -42,7 +42,6 @@ yarn-error.log*
 
 # Original PNG/JPG before WebP conversion — kept locally as source but
 # not tracked in git (WebP versions are committed and used by code).
-/public/vision_express/v3/owl/*.png
 /public/vision_express/common/*.png
 /public/vision_express/common/*.jpg
 /public/vision_express/common/background_backup/

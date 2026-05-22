@@ -117,15 +117,17 @@ function V3Inner() {
   const [introProgressVisible, setIntroProgressVisible] = useState(false);
 
   // Preload all owl images once on mount so pose changes don't flash empty.
-  // Now that WebP shrinks each owl from ~14MB to ~85KB, loading all 16 in
-  // parallel costs only ~1.3MB total — well worth the no-flash UX.
+  // Must go through the Next image optimizer (/_next/image): production's
+  // reverse proxy returns 400 for direct requests to /public assets, so a
+  // raw `new Image().src` would fail there. w=2048 matches the 2x srcset
+  // entry OwlStage's <Image> emits, so this warms the real browser cache.
   useEffect(() => {
     const seen = new Set<string>();
     for (const src of Object.values(personaConcept.characterImages)) {
       if (seen.has(src)) continue;
       seen.add(src);
       const img = new Image();
-      img.src = src;
+      img.src = `/_next/image?url=${encodeURIComponent(src)}&w=2048&q=75`;
     }
   }, []);
   // Current dialog stage — scene components set this to "narration" when they

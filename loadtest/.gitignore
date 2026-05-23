@@ -1,0 +1,6 @@
+# Track only the final report. Everything else in this directory is either a
+# regenerable test artifact OR sensitive (cookies.json holds live production
+# session tokens when the load-test scripts are run).
+*
+!.gitignore
+!final-report.pdf

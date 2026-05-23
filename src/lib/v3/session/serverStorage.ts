@@ -42,6 +42,13 @@ interface V3SessionRow {
   completed_at: string | null;
 }
 
+/** True when both Supabase env vars are present. Route handlers should check
+ * this first and silently no-op when false, so deployments that don't use
+ * Supabase don't spam logs with errors on every fire-and-forget client save. */
+export function isSupabaseConfigured(): boolean {
+  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
 function getConfig() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;

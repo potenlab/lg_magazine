@@ -74,7 +74,7 @@ export const stubLLM: LLMContract = {
   async synthesizeStrength({ name, strengthCommonAsk, othersDescription, selectedValues }) {
     // Deterministic fallback — produces 4 headlined BEAT cards when LLM offline.
     // Format mirrors real LLM output: "[HEADLINE: ...] body\n[HEADLINE: ...] body..."
-    // 톤: declarative executive coach (당신은 ~한 사람입니다). 헤지(...처럼 보여요) 금지.
+    // 톤: 엘아울의 ~어요체 (~인 것 같아요 / ~네요 / ~이에요). 단정 ~입니다체 회피.
     // 추상 표현(결/수렴/행위의 형) 금지. **bold** 강조 1~2회.
     const askPhrase = strengthCommonAsk?.trim() || "어떻게 풀어야 할지 모르는 막막함";
     const others = othersDescription?.trim();
@@ -86,40 +86,40 @@ export const stubLLM: LLMContract = {
 
     const beat1 =
       `[HEADLINE: 직접 판을 짜고 결과를 만드는 사람] ` +
-      `${namePrefix}이 들려준 두 장면은 장소도 상황도 달랐지만, 행동의 패턴은 정확히 같았습니다. ` +
+      `${namePrefix}이 들려준 두 장면은 장소도 상황도 달랐지만, 행동의 패턴은 정확히 같았어요. ` +
       `남이 닦아놓은 길을 따라가는 대신 **직접 경로를 설계하고, 그 위에서 끝내 성과를 만들어내는 것**. ` +
-      `${namePrefix}은 어떤 자리에서도 자기 손으로 직접 판을 짜야 직성이 풀리는 사람입니다. ` +
-      `이 행동 방식이 두 이야기를 한 사람의 정체성으로 묶어주고 있습니다.`;
+      `${namePrefix}은 어떤 자리에서도 자기 손으로 직접 판을 짜야 직성이 풀리는 사람인 것 같아요. ` +
+      `이 행동 방식이 두 이야기를 한 사람의 정체성으로 묶어주고 있는 것 같아요.`;
 
     const beat2 =
       `[HEADLINE: 막막함을 풀어내는 자석] ` +
-      `주변 사람들이 유독 ${namePrefix}을 찾아온 이유를 보면, 그들이 가져온 일은 늘 ${askPhrase}이었습니다. ` +
-      `직함이 무엇이든, ${namePrefix}의 존재 자체가 **막막함을 풀어내는 자석**이 되어 사람들을 끌어당기고 있습니다. ` +
-      `${namePrefix}이 들려준 두 장면에서도 같은 자세가 흘러나왔다는 것은 우연이 아닙니다. ` +
-      `이것은 직업이 아니라 정체성의 영역에서 작동하는 힘입니다.`;
+      `주변 사람들이 유독 ${namePrefix}을 찾아온 이유를 보면, 그들이 가져온 일은 늘 ${askPhrase}이었어요. ` +
+      `직함이 무엇이든, ${namePrefix}의 존재 자체가 **막막함을 풀어내는 자석**이 되어 사람들을 끌어당기고 있는 것 같아요. ` +
+      `${namePrefix}이 들려준 두 장면에서도 같은 자세가 흘러나왔다는 건 우연이 아닌 것 같아요. ` +
+      `이건 직업이 아니라 정체성의 영역에서 작동하는 힘인 것 같아요.`;
 
     const beat3 = othersQuote
       ? `[HEADLINE: 안과 밖이 같은 곳을 가리킬 때] ` +
-        `가까운 누군가는 ${namePrefix}을 두고 ${othersQuote} 라고 말했습니다. ` +
-        `밖에서 보는 시선과 안에서 ${namePrefix}이 스스로 들려준 모습이 정확히 한 지점에서 만납니다. ` +
-        `이 일치는 단순한 우연이 아니라, **흔들리지 않는 정체성의 증거**입니다. ` +
-        `${namePrefix}의 모습은 보는 사람마다 다르게 해석되지 않는 명확한 윤곽을 가지고 있습니다.`
+        `가까운 누군가는 ${namePrefix}을 두고 ${othersQuote} 라고 말했어요. ` +
+        `밖에서 보는 시선과 안에서 ${namePrefix}이 스스로 들려준 모습이 정확히 한 지점에서 만나네요. ` +
+        `이 일치는 단순한 우연이 아니라, **흔들리지 않는 정체성의 증거**인 것 같아요. ` +
+        `${namePrefix}의 모습은 보는 사람마다 다르게 해석되지 않는 명확한 윤곽을 가지고 있는 것 같아요.`
       : `[HEADLINE: 안에서 밖으로 일관된 사람] ` +
-        `${namePrefix}이 스스로에 대해 들려준 이야기는, 가까운 사람들의 시선 속 모습과 정확히 같은 곳을 가리킵니다. ` +
-        `이 일치는 **${namePrefix}의 정체성이 흔들리지 않는다는 가장 강력한 증거**입니다. ` +
-        `밖에서도, 안에서도, 같은 사람으로 살아가고 있다는 뜻입니다. ` +
-        `이런 일관성은 신뢰의 토대가 됩니다.`;
+        `${namePrefix}이 스스로에 대해 들려준 이야기는, 가까운 사람들의 시선 속 모습과 정확히 같은 곳을 가리키는 것 같아요. ` +
+        `이 일치는 **${namePrefix}의 정체성이 흔들리지 않는다는 가장 강력한 증거**인 것 같아요. ` +
+        `밖에서도, 안에서도, 같은 사람으로 살아가고 계시다는 뜻이네요. ` +
+        `이런 일관성이 신뢰의 토대가 되는 것 같아요.`;
 
     const beat4 = valueList
       ? `[HEADLINE: ${namePrefix}을 움직이는 단단한 축] ` +
-        `오늘 ${namePrefix}이 고른 ${valueList}이라는 단어들은 단순한 가치 카드가 아닙니다. ` +
-        `${namePrefix}이 왜 그토록 직접 판을 짜려 했는지, 왜 다른 사람의 막막함 앞에서 발을 떼지 않았는지를 설명해주는 **행동의 이유**입니다. ` +
-        `이 가치들이 든든한 주춧돌이 되어주기에, ${namePrefix}의 여정은 거친 파도를 만나도 흔들리지 않습니다. ` +
-        `매거진 네 페이지는 결국 한 사람의 이야기로 모입니다.`
+        `오늘 ${namePrefix}이 고른 ${valueList}이라는 단어들은 단순한 가치 카드가 아닌 것 같아요. ` +
+        `${namePrefix}이 왜 그토록 직접 판을 짜려 했는지, 왜 다른 사람의 막막함 앞에서 발을 떼지 않았는지를 설명해주는 **행동의 이유**인 것 같아요. ` +
+        `이 가치들이 든든한 주춧돌이 되어주니, ${namePrefix}의 여정은 거친 파도를 만나도 흔들리지 않을 거예요. ` +
+        `매거진 네 페이지는 결국 한 사람의 이야기로 모여요.`
       : `[HEADLINE: ${namePrefix}의 행동 뒤에 자리한 이유] ` +
-        `${namePrefix}이 고른 가치 카드들은 단순한 단어가 아니라 **${namePrefix}이 매 순간 그렇게 살아온 이유**입니다. ` +
-        `이 가치들이 든든한 주춧돌이 되어주기에, ${namePrefix}의 여정은 거친 파도를 만나도 흔들리지 않습니다. ` +
-        `매거진 네 페이지는 결국 한 사람의 이야기로 모입니다.`;
+        `${namePrefix}이 고른 가치 카드들은 단순한 단어가 아니라 **${namePrefix}이 매 순간 그렇게 살아온 이유**인 것 같아요. ` +
+        `이 가치들이 든든한 주춧돌이 되어주니, ${namePrefix}의 여정은 거친 파도를 만나도 흔들리지 않을 거예요. ` +
+        `매거진 네 페이지는 결국 한 사람의 이야기로 모여요.`;
 
     return { synthesis: [beat1, beat2, beat3, beat4].join("\n") };
   },
@@ -162,58 +162,58 @@ export const stubLLM: LLMContract = {
     const attrSnippet = attr ? `'${snip(attr, 28)}'` : `${namePrefix}의 끌림`;
     const whySnippet = why ? snip(why, 50) : "그 길로 끌리는 이유";
     const dirInject = dir
-      ? `${namePrefix}이 고른 다음 역의 방향은 '${dir}'을 향하고 있습니다.`
-      : `${namePrefix}이 고른 다음 역의 방향이 이미 그쪽을 가리키고 있습니다.`;
+      ? `${namePrefix}이 고른 다음 역의 방향은 '${dir}'을 향하고 있는 것 같아요.`
+      : `${namePrefix}이 고른 다음 역의 방향이 이미 그쪽을 가리키고 있는 것 같아요.`;
     const beat1 =
       `[HEADLINE: 열망이 이미 가리키는 방향] ` +
-      `${namePrefix}이 지금 마음에 품고 있는 것은 ${attrSnippet}입니다. ` +
-      `${whySnippet}이 그 끌림의 뿌리이고, 단순한 호기심이 아니라 **이미 안에서 자라난 부름**입니다. ` +
+      `${namePrefix}이 지금 마음에 품고 있는 건 ${attrSnippet}이에요. ` +
+      `${whySnippet}이 그 끌림의 뿌리이고, 단순한 호기심이 아니라 **이미 안에서 자라난 부름**인 것 같아요. ` +
       `${dirInject} ` +
-      `열망과 방향이 한 곳에서 만난다는 것은, 이미 다음 페이지가 펼쳐지기 시작했다는 신호입니다.`;
+      `열망과 방향이 한 곳에서 만난다는 건, 이미 다음 페이지가 펼쳐지기 시작했다는 신호인 것 같아요.`;
 
     // BEAT 2 — 이미 시작된 움직임 : alreadyDoing + currentTool
     const doingSnippet = doing ? snip(doing, 60) : "이미 행동으로 옮기고 있는 작은 시도들";
     const curInject = curTools.length >= 2
-      ? `이 움직임을 떠받치는 도구는 이미 ${namePrefix} 손에 익은 '${curTools[0]}'·'${curTools[1]}'입니다.`
+      ? `이 움직임을 떠받치는 도구는 이미 ${namePrefix} 손에 익은 '${curTools[0]}'·'${curTools[1]}'인 것 같아요.`
       : curTools.length === 1
-        ? `이 움직임을 떠받치는 도구는 이미 ${namePrefix} 손에 익은 '${curTools[0]}'입니다.`
-        : `이 움직임을 떠받치는 도구는 이미 ${namePrefix}의 손에 익어 있습니다.`;
+        ? `이 움직임을 떠받치는 도구는 이미 ${namePrefix} 손에 익은 '${curTools[0]}'인 것 같아요.`
+        : `이 움직임을 떠받치는 도구가 이미 ${namePrefix}의 손에 익어 있는 것 같아요.`;
     const beat2 =
       `[HEADLINE: 이미 시작된 항해] ` +
-      `${namePrefix}은 말로만 그치지 않고 이미 ${doingSnippet}을 하고 있습니다. ` +
-      `생각하는 사람과 움직이는 사람의 차이는 한 끗인데, ${namePrefix}은 **이미 움직이는 쪽**에 서 있습니다. ` +
+      `${namePrefix}은 말로만 그치지 않고 이미 ${doingSnippet}을 하고 계시네요. ` +
+      `생각하는 사람과 움직이는 사람의 차이는 한 끗인데, ${namePrefix}은 **이미 움직이는 쪽**에 서 계신 것 같아요. ` +
       `${curInject} ` +
-      `남이 시작해 주기를 기다리지 않는 사람의 모습이 이 페이지에 그려집니다.`;
+      `남이 시작해 주기를 기다리지 않는 사람의 모습이 이 페이지에 그려져요.`;
 
     // BEAT 3 — 안개를 걷어낼 도구 : obstacles + growthTool
     const obsSnippet = obs ? snip(obs, 50) : `${namePrefix}을 머뭇거리게 하는 그 안개`;
     const growInject = growTools.length >= 2
-      ? `이 안개를 걷어낼 무기로 ${namePrefix}이 본능적으로 고른 건 '${growTools[0]}'·'${growTools[1]}'입니다.`
+      ? `이 안개를 걷어낼 무기로 ${namePrefix}이 본능적으로 고른 건 '${growTools[0]}'·'${growTools[1]}'인 것 같아요.`
       : growTools.length === 1
-        ? `이 안개를 걷어낼 무기로 ${namePrefix}이 본능적으로 고른 건 '${growTools[0]}'입니다.`
-        : `이 안개를 걷어낼 무기를 ${namePrefix}은 이미 알고 있습니다.`;
+        ? `이 안개를 걷어낼 무기로 ${namePrefix}이 본능적으로 고른 건 '${growTools[0]}'인 것 같아요.`
+        : `이 안개를 걷어낼 무기를 ${namePrefix}은 이미 알고 계신 것 같아요.`;
     const beat3 =
       `[HEADLINE: 안개를 걷어낼 한 자루의 무기] ` +
-      `${namePrefix}을 멈춰 세우는 것은 ${obsSnippet}입니다. ` +
-      `이 안개는 외부에서 온 것이 아니라, 한 단계 더 나아가려는 사람만이 마주하는 안개입니다. ` +
+      `${namePrefix}을 멈춰 세우는 건 ${obsSnippet}인 것 같아요. ` +
+      `이 안개는 외부에서 온 게 아니라, 한 단계 더 나아가려는 사람만이 마주하는 안개네요. ` +
       `${growInject} ` +
-      `이 무기를 손에 쥐었을 때, **안개는 걷히고 그 너머의 풍경이 열릴 것입니다**.`;
+      `이 무기를 손에 쥐었을 때, **안개는 걷히고 그 너머의 풍경이 열릴 거예요**.`;
 
     // BEAT 4 — 종착지의 풍경 : contribution + (Ch2 echo)
     const contrSnippet = contr ? `'${snip(contr, 36)}'` : `${namePrefix}이 남기고 싶다고 말한 영향력`;
     const echoCh2 = id && top
-      ? `${namePrefix}을 움직이는 '${top}'이 이 종착지의 이유이고, '${id}'이라는 정체성이 이 풍경의 주인공입니다. `
+      ? `${namePrefix}을 움직이는 '${top}'이 이 종착지의 이유이고, '${id}'이라는 정체성이 이 풍경의 주인공인 것 같아요. `
       : id
-        ? `'${id}'이라는 정체성이 이 풍경의 주인공입니다. `
+        ? `'${id}'이라는 정체성이 이 풍경의 주인공인 것 같아요. `
         : top
-          ? `${namePrefix}을 움직이는 '${top}'이 이 종착지의 이유입니다. `
+          ? `${namePrefix}을 움직이는 '${top}'이 이 종착지의 이유인 것 같아요. `
           : "";
     const beat4 =
       `[HEADLINE: ${namePrefix}이 남기고 싶은 풍경] ` +
-      `${namePrefix}이 닿고 싶다고 말한 풍경은 ${contrSnippet}입니다. ` +
-      `이것은 단순한 목표가 아니라 **${namePrefix}이 살아 있었음을 증명할 유산**의 모습입니다. ` +
+      `${namePrefix}이 닿고 싶다고 말한 풍경은 ${contrSnippet}이에요. ` +
+      `이건 단순한 목표가 아니라 **${namePrefix}이 살아 있었음을 증명할 유산**의 모습인 것 같아요. ` +
       `${echoCh2}` +
-      `매거진 세 페이지의 끌림과 움직임과 도구는 모두 이 풍경으로 모입니다. ${namePrefix}의 항해는 이미 출발했고, 종착지는 이미 보입니다.`;
+      `매거진 세 페이지의 끌림과 움직임과 도구는 모두 이 풍경으로 모여요. ${namePrefix}의 항해는 이미 출발했고, 종착지가 이미 보이네요.`;
 
     return { synthesis: [beat1, beat2, beat3, beat4].join("\n") };
   },

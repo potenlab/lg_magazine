@@ -21,6 +21,10 @@ import {
 } from "@/lib/v3/llm/prompts";
 
 export const runtime = "nodejs";
+// Anthropic Sonnet 4.5의 synthesis 호출은 2200 토큰 출력으로 보통 15~25초.
+// Vercel 기본(Hobby 10초)이면 504 → realLLM의 stub fallback이 떠 매거진이
+// 일반적 템플릿으로만 나오는 회귀의 원인. Pro 플랜에선 60초까지 연장 가능.
+export const maxDuration = 60;
 
 type Task =
   | "judgeBranch"

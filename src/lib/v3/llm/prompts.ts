@@ -493,7 +493,7 @@ const REFLECT_NEGATIVE_GUARD = `※ 답변이 "없어요 / 모르겠어요 / 딱
 - 문장 1: "아직 떠오르지 않으셨군요" / "지금은 잘 모르겠다고 느끼시는군요"처럼 그 상태를 그대로, 부담 없이 받아주는 한 줄.
 - 문장 2: 압박·응원 없이 "그것도 괜찮아요, 천천히 떠올려봐도 돼요" 결의 가벼운 한 줄.`;
 
-function reflectShortStyleGuide(chapter: 1 | 2 | 3 | 4, topic?: string): string {
+function reflectShortStyleGuide(chapter: 1 | 2 | 3 | 4, name: string, topic?: string): string {
   // ── Chapter 4 — three distinct question types. Chapter alone can't tell
   // them apart, so branch on `topic` (the followup's parentSaveTo). ──
   if (chapter === 4) {
@@ -582,7 +582,7 @@ ${REFLECT_GLOBAL_RULES}`;
 
 [문장 2 — 가능성 인정]
 그 미래 안에 흐르는 본인다움을 짧게 짚는 한 줄.
-- 형식 예시: "거기에는 {name}님이 [구체적 모습/태도]로 살아가는 결이 보여요."
+- 형식 예시: "거기에는 ${name}님이 [구체적 모습/태도]로 살아가는 결이 보여요."
 - 거창한 은유·재정의 금지 — 답변 속 장면에 머무르며 인정
 - 30~55자
 
@@ -618,7 +618,7 @@ ${REFLECT_GLOBAL_RULES}`;
 
 [문장 2 — 짧은 인정]
 그 순간에 깃든 태도·결을 한 줄로 인정.
-- 형식 예시: "그 순간에는 {name}님이 [구체적 모습/태도]로 계셨던 것 같아요."
+- 형식 예시: "그 순간에는 ${name}님이 [구체적 모습/태도]로 계셨던 것 같아요."
 - 거창한 은유·재정의 금지 — 답변 속 장면에 머무르며 인정
 - 30~55자
 
@@ -634,7 +634,7 @@ export async function v3ReflectShort(input: {
   topic?: string;
 }): Promise<string> {
   const chapter = input.chapter ?? 1;
-  const styleGuide = reflectShortStyleGuide(chapter, input.topic);
+  const styleGuide = reflectShortStyleGuide(chapter, input.name, input.topic);
   const user = `${input.name}님이 방금 들려준 답변입니다.
 
 [답변]
@@ -666,7 +666,7 @@ ${input.answer}
 - 의미·내용은 90% 이상 그대로 보존 — 새로운 정보 추가·삭제 금지
 - 구어체 군더더기만 정리: "그냥", "되게", "막", "약간", "음", 중복된 어미·말끝 흐림 등
 - 첫 어구와 끝 어미만 자연스럽게 다듬기 (예: "~좋았어" → "~좋았던 거예요" / "~좋았던 부분이에요")
-- {name}님이 본인의 말로 한 호흡에 다시 들려주는 톤
+- ${input.name}님이 본인의 말로 한 호흡에 다시 들려주는 톤
 - 원문이 여러 문장이면 문장 수도 거의 유지
 - 따옴표·해설 없이 본문만 출력`;
   const r = await ask(user, 320);

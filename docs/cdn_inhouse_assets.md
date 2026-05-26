@@ -222,6 +222,7 @@ location ^~ /_next/static/ {
     expires 1y;
     try_files $uri =404;                   # do NOT fall through to Node
     gzip_static on;                        # serve .gz sibling if present
+    brotli_static on;                      # serve .br sibling if present (needs nginx-extras)
 }
 
 # Media: webp / mp3 / svg under /public/vision_express/. Filenames are stable
@@ -239,7 +240,7 @@ location ^~ /vision_express/ {
     output_buffers 2 1m;
 }
 
-# Brand SVGs — tiny, change rarely.
+# Brand SVGs — tiny, change rarely. SVG benefits from gzip/brotli.
 location ^~ /brand/ {
     alias /var/www/lg-magazine/public/brand/;
     access_log off;
@@ -247,6 +248,8 @@ location ^~ /brand/ {
     add_header X-Asset-Source "nginx-disk" always;
     expires 7d;
     try_files $uri =404;
+    gzip_static on;                        # serve .gz sibling if present
+    brotli_static on;                      # serve .br sibling if present (needs nginx-extras)
 }
 
 # Fonts — large, immutable filename. Cache aggressively + CORS for Next/font.
@@ -321,6 +324,9 @@ docker compose build
 
 echo "==> extract assets to /var/www/lg-magazine"
 ./scripts/extract-assets.sh
+
+echo "==> pre-compress static text assets (gzip + brotli)"
+./scripts/precompress-assets.sh   # creates .gz / .br siblings in /var/www/lg-magazine
 
 echo "==> rolling restart of 3 replicas"
 docker compose up -d

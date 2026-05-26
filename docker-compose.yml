@@ -3,8 +3,10 @@ services:
     build:
       context: .
     image: lg-magazine:latest
+    # 3 replicas, each binding one host port in the 3002-3004 range.
+    # nginx load-balances across all three.
     ports:
-      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-3002}:3000"
+      - "127.0.0.1:3002-3004:3000"
     env_file:
       - path: .env
         required: false
@@ -13,3 +15,8 @@ services:
       PORT: 3000
       HOSTNAME: 0.0.0.0
     restart: unless-stopped
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 2g

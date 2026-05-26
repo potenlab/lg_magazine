@@ -31,4 +31,9 @@ USER nextjs
 
 EXPOSE 3000
 
+# Liveness probe: /api/auth/qrius/me is un-gated and returns JSON fast (200 when
+# authenticated, 401 when not). Any status < 500 means the process is serving.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
+  CMD node -e "fetch('http://127.0.0.1:3000/api/auth/qrius/me').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"
+
 CMD ["node", "server.js"]

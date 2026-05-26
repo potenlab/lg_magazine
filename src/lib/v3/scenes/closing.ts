@@ -7,7 +7,7 @@ export const CLOSING_SCENES: SceneSpec[] = [
     kind: "ritual",
     owl: "noteHanding",
     timeOfDay: "dawnFirstLight",
-    bgImage: "/vision_express/common/morning-room.webp",
+    bgImage: "/vision_express/common/morning-room.avif",
     // 도착 알림 딩동 효과음 (subway-station-chime)
     bgm: "freesound_community-subway-station-chime-100558.mp3",
     pageSize: 2,
@@ -28,7 +28,7 @@ export const CLOSING_SCENES: SceneSpec[] = [
     kind: "magazineHandoff",
     owl: "handing",
     timeOfDay: "dawnFirstLight",
-    bgImage: "/vision_express/common/morning-room.webp",
+    bgImage: "/vision_express/common/morning-room.avif",
     lines: [
       "Magazine STORY · Vol. {name}",
       "한 호가 다 적혔어요. 곧 전해드릴게요.",
@@ -47,7 +47,7 @@ export const CLOSING_SCENES: SceneSpec[] = [
     owl: "handing",
     hideOwl: true,
     timeOfDay: "dawnFirstLight",
-    bgImage: "/vision_express/common/morning-room.webp",
+    bgImage: "/vision_express/common/morning-room.avif",
     hideSpeakerLabel: true,
     buttonLabel: "이 호를 닫을게요",
     next: "C-3",
@@ -63,7 +63,7 @@ export const CLOSING_SCENES: SceneSpec[] = [
     owl: "handing",
     hideOwl: true,
     timeOfDay: "dawnFirstLight",
-    bgImage: "/vision_express/common/morning-room.webp",
+    bgImage: "/vision_express/common/morning-room.avif",
     hideSpeakerLabel: true,
     next: "C-3",
   },
@@ -73,7 +73,7 @@ export const CLOSING_SCENES: SceneSpec[] = [
     kind: "owlNarration",
     owl: "laughing",
     timeOfDay: "dawnFirstLight",
-    bgImage: "/vision_express/common/morning-room.webp",
+    bgImage: "/vision_express/common/morning-room.avif",
     lines: [
       "그동안 {name}님의 이야기를 들려주셔서, 정말 고맙습니다.",
       "부디 빛나시기를.",
@@ -88,7 +88,7 @@ export const CLOSING_SCENES: SceneSpec[] = [
     hideOwl: true,
     hideSpeakerLabel: true,
     timeOfDay: "dawnFirstLight",
-    bgImage: "/vision_express/common/arriving-train.webp",
+    bgImage: "/vision_express/common/arriving-train.avif",
     // 역 플랫폼 ambience (사람/새 소리). loop 가능 — ONE_SHOT_BGMS 아님.
     bgm: "freesound_community-train_station_outdoor_platform_birds_people-30576.mp3",
     narration: "비전 익스프레스가 종착역에 도착했습니다.",

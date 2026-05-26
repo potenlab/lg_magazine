@@ -16,15 +16,15 @@ type Phase = "envelope" | "letter" | "register" | "freetext" | "cover";
 
 // New v3 image set (2026-05-06): editor's desk for envelope/letter, station
 // interior for the form pages, arriving train for the cover reveal.
-const INTRO_BG = "/vision_express/common/table.webp";
-const BG_STATION = "/vision_express/common/inside-station.webp";
-const BG_TRAIN = "/vision_express/common/arriving-train.webp";
+const INTRO_BG = "/vision_express/common/table.avif";
+const BG_STATION = "/vision_express/common/inside-station.avif";
+const BG_TRAIN = "/vision_express/common/arriving-train.avif";
 
 // Envelope + letter PNGs are shared with v1 (still in /common/). Letter
 // paper bumped to ver2 (2026-05-15) so the 3-page click-through reads on
 // the new editor-table letterhead.
 const INVITE_LETTER = personaConcept.commonImages.inviteLetter;
-const LETTER_UNFOLD = "/vision_express/common/letter_ver2.webp";
+const LETTER_UNFOLD = "/vision_express/common/letter_ver2.avif";
 const VISION_TICKET = personaConcept.commonImages.visionTicket;
 
 const JOB_OPTIONS = [

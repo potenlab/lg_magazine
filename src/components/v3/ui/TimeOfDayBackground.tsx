@@ -9,26 +9,26 @@ const COMMON = "/vision_express/common";
 // Time-based fallback. Now uses chapter master images since the old
 // dawn-room/night-room etc. were moved to background_backup.
 const BG_BY_TIME: Record<TimeOfDay, string> = {
-  preBoard:        `${COMMON}/inside-station.webp`,
-  sunset:          `${COMMON}/Chapter_01.webp`,
-  dusk:            `${COMMON}/Chapter_01.webp`,
-  starsRising:     `${COMMON}/Chapter_02.webp`,
-  starsFull:       `${COMMON}/Chapter03.webp`,
-  midnight:        `${COMMON}/Chapter03.webp`,
-  dawnPink:        `${COMMON}/chapter04.webp`,
-  dawnFirstLight:  `${COMMON}/chapter05.webp`,
+  preBoard:        `${COMMON}/inside-station.avif`,
+  sunset:          `${COMMON}/Chapter_01.avif`,
+  dusk:            `${COMMON}/Chapter_01.avif`,
+  starsRising:     `${COMMON}/Chapter_02.avif`,
+  starsFull:       `${COMMON}/Chapter03.avif`,
+  midnight:        `${COMMON}/Chapter03.avif`,
+  dawnPink:        `${COMMON}/chapter04.avif`,
+  dawnFirstLight:  `${COMMON}/chapter05.avif`,
 };
 
 // Per-chapter master background. Used when a scene doesn't override bgImage.
 // Files live in /public/vision_express/common/ — note mixed Chapter_/chapter
 // naming preserved from the source asset filenames.
 const BG_BY_CHAPTER: Record<number, string> = {
-  1: `${COMMON}/Chapter_01.webp`,
+  1: `${COMMON}/Chapter_01.avif`,
   // ch2 기본 배경 — 객실 램프가 켜진 (Chapter02-3) 이미지로 통일.
   // 사용자가 1-6b에서 램프를 켠 이후부터 ch2 전체가 같은 조명 분위기여야 자연스럽다.
-  2: `${COMMON}/Chapter02-3.webp`,
-  3: `${COMMON}/Chapter03.webp`,
-  4: `${COMMON}/chapter04.webp`,
+  2: `${COMMON}/Chapter02-3.avif`,
+  3: `${COMMON}/Chapter03.avif`,
+  4: `${COMMON}/chapter04.avif`,
 };
 
 // Subtle color tint per time-of-day, layered on top of the bg for crossfade.

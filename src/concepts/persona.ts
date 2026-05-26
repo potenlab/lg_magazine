@@ -1,11 +1,6 @@
 import type { Concept } from "./types";
 
 const CMN = "/vision_express/common";
-const CH1 = "/vision_express/chapter01";
-const CH2 = "/vision_express/chapter02";
-const CH3 = "/vision_express/chapter03";
-const CH4 = "/vision_express/chapter04";
-const CH5 = "/vision_express/chapter05";
 const OWL = "/vision_express/v3/owl";
 
 export const personaConcept: Concept = {
@@ -31,23 +26,23 @@ export const personaConcept: Concept = {
     sideGlance: `${OWL}/l-owl-13.png`,
   },
   backgrounds: {
-    ch1: `${CH1}/bg_01_more.png`,
-    ch2: `${CH2}/bg_02_more.png`,
-    ch3: `${CH3}/bg_03_more.png`,
-    ch4: `${CH4}/bg_04_more.png`,
-    ch5: `${CH5}/bg_05_more.png`,
+    ch1: `${CMN}/Chapter_01.webp`,
+    ch2: `${CMN}/Chapter02-3.webp`,
+    ch3: `${CMN}/Chapter03.webp`,
+    ch4: `${CMN}/chapter04.webp`,
+    ch5: `${CMN}/chapter05.webp`,
   },
   commonImages: {
     dialogShort: `${CMN}/dialoge.webp`,
     dialogLong: `${CMN}/dialoge_long.webp`,
     finishChapter: `${CMN}/finish_chapter.webp`,
-    sunset: `${CH1}/01_ordinary_background5.webp`,
-    memory: `${CH1}/01_ordinary_background10.webp`,
-    ch1Arrival: `${CH2}/02_Brand Identity_start.webp`,
-    ch2Arrival: `${CMN}/03_Brand Vision 00.webp`,
-    ch3Arrival: `${CMN}/04_Target Customer 00.webp`,
-    ch4Arrival: `${CMN}/05_Action Plan 00.webp`,
-    ch2Start: `${CH2}/02_Brand Identity_start.webp`,
+    sunset: `${CMN}/Chapter_01.webp`,
+    memory: `${CMN}/Chapter_01-2.webp`,
+    ch1Arrival: `${CMN}/Chapter02-1.webp`,
+    ch2Arrival: `${CMN}/Chapter03-1.webp`,
+    ch3Arrival: `${CMN}/chapter04-1.webp`,
+    ch4Arrival: `${CMN}/chapter05.webp`,
+    ch2Start: `${CMN}/Chapter02-1.webp`,
 
     introBackground: `${CMN}/background.webp`,
     inviteLetter: `${CMN}/invite_letter.webp`,
@@ -57,6 +52,6 @@ export const personaConcept: Concept = {
     bgTrain: `${CMN}/bg_train.webp`,
     nameTicket: `${CMN}/name_ticket.webp`,
     visionTicket: `${CMN}/vision_ticket_new.webp`,
-    brandingBookEffect: "/vision_express/brandingbook_effect.png",
+    brandingBookEffect: `${CMN}/finish_chapter.webp`,
   },
 };

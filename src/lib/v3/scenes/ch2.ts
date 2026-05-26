@@ -58,7 +58,7 @@ export const CH2_SCENES: SceneSpec[] = [
     chapter: 2,
     kind: "valueCards",
     timeOfDay: "starsRising",
-    bgImage: "/vision_express/common/Chapter02-1.webp",
+    bgImage: "/vision_express/common/Chapter02-1.jpg",
     owl: "listening",
     hideSpeakerLabel: true,
     // bgm 제거 — ch2 기본값(기차 소리)이 그대로 깔리도록
@@ -371,7 +371,7 @@ export const CH2_SCENES: SceneSpec[] = [
     // 내레이션이 "별이 하나둘 떠오르기 *시작*한다" 이므로 starsRising 으로
     // 통일. 별이 가득 차는 starsFull 분위기는 Ch3 진입(3-card)부터.
     timeOfDay: "starsRising",
-    bgImage: "/vision_express/common/Chapter02-3.webp",
+    bgImage: "/vision_express/common/Chapter02-3.jpg",
     narration: "창밖에 별이 하나둘 떠오르기 시작한다. 편집장이 잠시 그 빛들을 바라본다.",
     lines: [
       "잠시 함께 바라볼까요.",

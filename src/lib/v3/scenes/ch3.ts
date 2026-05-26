@@ -2,9 +2,9 @@ import { INTERVIEW_OWL_POOL, type SceneSpec } from "./types";
 import { RECEIVE_OPENERS, EMPATH_OPENERS } from "./openers";
 
 // BG_NIGHT만 별 보는 풍경(Chapter03-1)을 유지하고, 나머지는 Chapter03 메인으로 통일.
-const BG_NIGHT = "/vision_express/common/Chapter03-1.webp";
-const BG_FOG = "/vision_express/common/Chapter03.webp";
-const BG_ROOM = "/vision_express/common/Chapter03.webp";
+const BG_NIGHT = "/vision_express/common/Chapter03-1.jpg";
+const BG_FOG = "/vision_express/common/Chapter03.jpg";
+const BG_ROOM = "/vision_express/common/Chapter03.jpg";
 
 export const CH3_SCENES: SceneSpec[] = [
   // ── 챕터 카드 ──────────────────────────────────────────────

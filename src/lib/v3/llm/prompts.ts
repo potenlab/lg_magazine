@@ -632,12 +632,34 @@ ${REFLECT_NEGATIVE_GUARD}
 ${REFLECT_GLOBAL_RULES}`;
 }
 
+// 자모·단일문자 연타("ㅇㅇㅇㅇ…", "ㅋㅋㅋ…", "aaaa…") 같은 명백한 비답변.
+// 답변이 짧다고 다 막진 않고 (짧은 진심 답변도 있어서), 문자 다양성이
+// 거의 0이거나 자모만으로 이뤄진 케이스만 잡는다.
+function looksLikeSpam(text: string): boolean {
+  const s = text.replace(/\s+/g, "");
+  if (s.length < 3) return false;
+  // 같은 문자만 반복 (ㅇㅇㅇ, ㅋㅋㅋ, aaaa)
+  if (new Set(s).size === 1) return true;
+  // 한글 자모만 (음절 가-힣이 없음) — "ㅇㅋㅇㅋ", "ㅎㅇㅎㅇ" 같은 자모 spam
+  const hasSyllable = /[가-힣]/.test(s);
+  const onlyJamo = /^[ㄱ-ㅎㅏ-ㅣ]+$/.test(s);
+  if (!hasSyllable && onlyJamo && s.length >= 4) return true;
+  // 문자 다양성 극단적으로 낮음 (10자 이상에서 unique 비율 < 0.2)
+  if (s.length >= 10 && new Set(s).size / s.length < 0.2) return true;
+  return false;
+}
+
 export async function v3ReflectShort(input: {
   answer: string;
   name: string;
   chapter?: 1 | 2 | 3 | 4;
   topic?: string;
 }): Promise<string> {
+  // 자모·단일문자 연타는 LLM에 그대로 보내면 "아, 'ㅇㅇㅇㅇ'라는 답변을 주셨군요"
+  // 식으로 답변을 인용해 비웃는 듯한 출력이 나옴. 그 전에 부드러운 안내로 차단.
+  if (looksLikeSpam(input.answer)) {
+    return `아직 또렷한 장면이 떠오르지 않으셨나봐요.\n\n괜찮아요 — 천천히 다시 떠올려봐도 돼요.`;
+  }
   const chapter = input.chapter ?? 1;
   const styleGuide = reflectShortStyleGuide(chapter, input.name, input.topic);
   const user = `${input.name}님이 방금 들려준 답변입니다.

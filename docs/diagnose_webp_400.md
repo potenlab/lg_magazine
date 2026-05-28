@@ -14,8 +14,7 @@ for each possible cause.
 > result tells you which fix applies in §4.
 >
 > **Companion docs:**
-> [cdn_inhouse_assets.md](cdn_inhouse_assets.md) ·
-> [deploy_asset_diet.md](deploy_asset_diet.md).
+> [production_deployment.md](production_deployment.md).
 
 ---
 
@@ -132,7 +131,7 @@ sudo nginx -T 2>/dev/null | grep -A 10 "vision_express"
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-The block should be the standard one from [cdn_inhouse_assets.md §4.2](cdn_inhouse_assets.md):
+The block should be the standard one from [production_deployment.md §3b](production_deployment.md):
 
 ```nginx
 location ^~ /vision_express/ {
@@ -143,7 +142,7 @@ location ^~ /vision_express/ {
 ```
 
 If the `location` block is missing or `alias` is wrong, restore from
-[cdn_inhouse_assets.md §4.2](cdn_inhouse_assets.md) and reload.
+[production_deployment.md §3b](production_deployment.md) and reload.
 
 ### 4.C — Upstream WAF / firewall is blocking the path
 
@@ -199,7 +198,7 @@ done
 
 Once all webp paths return 200, the deployment is verified healthy. The
 1,000-VU stress test can now be re-run (see
-[deploy_asset_diet.md §6](deploy_asset_diet.md)).
+[production_deployment.md §1](production_deployment.md) (deploy/extract step)).
 
 ---
 

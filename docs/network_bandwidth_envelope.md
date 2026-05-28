@@ -12,9 +12,7 @@ and what will you do so it does not impact Qrius and the other DMZ tenants?"*
 > next training event.
 >
 > **Companion docs:**
-> [scaling_plan_3_replicas.md](scaling_plan_3_replicas.md) ·
-> [cdn_inhouse_assets.md](cdn_inhouse_assets.md) ·
-> [finish_1000_users_rollout.md](finish_1000_users_rollout.md) ·
+> [production_deployment.md](production_deployment.md) ·
 > load-test data in [../loadtest/](../loadtest/).
 
 ---
@@ -112,7 +110,7 @@ Set `Cache-Control: public, max-age=31536000, immutable` on `_next/static/*` and
 - **Real-world impact at LG 인화원:** training participants typically open the
   app multiple times during a session. After the first cold load, every
   subsequent open costs only the small dynamic HTML + API JSON (~50 KB).
-- **Implementation:** [docs/cdn_inhouse_assets.md](cdn_inhouse_assets.md) — no
+- **Implementation:** [production_deployment.md §3](production_deployment.md) — no
   app code change; only an nginx configuration block on the same VM.
 
 ### 5.2 Compress JS/CSS/SVG on the wire (gzip + brotli)
@@ -122,7 +120,7 @@ through nginx.
 
 - **Effect:** ~70% reduction in JS/CSS bytes leaving the pipe.
 - Per-cold-visit drop: ~1.5 MB → ~0.5 MB for the Next.js bundle.
-- **Implementation:** see [docs/cdn_inhouse_assets.md §8.1, §8.2](cdn_inhouse_assets.md).
+- **Implementation:** see [production_deployment.md §3c](production_deployment.md) (gzip/brotli tuning).
 
 ### 5.3 Asset diet — re-encode the heavy media
 
@@ -211,9 +209,7 @@ the single highest-leverage mitigation available.
   pipe + Kim Seok's bottleneck concern — full text in Appendix A below.
 - k6 load-test data: [../loadtest/summary-step-100.json](../loadtest/) through
   [../loadtest/summary-step-1000.json](../loadtest/).
-- In-house CDN runbook: [cdn_inhouse_assets.md](cdn_inhouse_assets.md).
-- 3-replica scaling plan: [scaling_plan_3_replicas.md](scaling_plan_3_replicas.md).
-- Rollout plan: [finish_1000_users_rollout.md](finish_1000_users_rollout.md).
+- Deploy / scaling / nginx / WAF / rollout runbook: [production_deployment.md](production_deployment.md).
 
 ---
 

@@ -15,8 +15,7 @@ users via a new path, without depending on LG IT to lift the WAF rule.
 >
 > **Companion docs:**
 > [diagnose_webp_400.md](diagnose_webp_400.md) (the upstream diagnosis) ·
-> [cdn_inhouse_assets.md](cdn_inhouse_assets.md) ·
-> [deploy_asset_diet.md](deploy_asset_diet.md).
+> [production_deployment.md](production_deployment.md).
 
 ---
 
@@ -50,7 +49,7 @@ curl -sI https://mybook.lgacademy.com/vision_express/bg/Chapter_01-2.webp \
 **Why this works:** the WAF rule blocks the URL pattern `/vision_express/common/`.
 The same files served under `/vision_express/bg/` (a symlink) pass through
 nginx normally. nginx follows symlinks transparently; the in-house CDN
-`location ^~ /vision_express/` block in [cdn_inhouse_assets.md](cdn_inhouse_assets.md)
+`location ^~ /vision_express/` block in [production_deployment.md §3b](production_deployment.md)
 already covers this path.
 
 **Risk if wrong:** if the WAF rule is content-based (matches on webp magic
@@ -160,7 +159,7 @@ returns 400, the WAF rule is broader than expected — go to §6.
 
 To make the new path part of the documented CDN config (so future deploys do
 not lose it), add an explicit `location` block to the server block in
-[cdn_inhouse_assets.md §4.2](cdn_inhouse_assets.md). This is optional because
+[production_deployment.md §3b](production_deployment.md). This is optional because
 the existing `^~ /vision_express/` prefix already covers `/bg/`, but documenting
 it prevents confusion later.
 
@@ -247,7 +246,7 @@ gh pr create --base main --fill
 ### 5.4 Deploy
 
 After the PR merges, run the existing deploy flow from
-[deploy_asset_diet.md](deploy_asset_diet.md) §3–§6.
+[production_deployment.md §1](production_deployment.md) (build → extract → precompress → restart → nginx reload).
 
 ---
 

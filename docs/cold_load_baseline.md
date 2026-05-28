@@ -139,6 +139,38 @@ the k6 test. Update only when the app's asset set changes.
 | `/vision_express/floraphonic-handle-paper-foley-1-172688.mp3` | Audio (MP3) | 22,221 |
 | **Audio subtotal** | | **2,814,395** |
 
+#### After audio defer + shrink (Task 2, 2026-05-28)
+
+**Deferred off the cold-load critical path.** Verified by code inspection:
+
+- **SFX** (`src/lib/v3/audio.ts`): `Audio` elements are constructed lazily inside
+  `get()`, which only runs on a `playOnce`/`startLoop` call (i.e. a gesture/scene
+  event), never at module import. `preload` was changed `"auto"` → `"none"`, so even
+  after a clip is instantiated the browser does not download bytes until `.play()`.
+- **BGM** (`src/components/v3/context/BGMContext.tsx`): the provider creates an
+  `Audio()` with **no `src`** on mount (downloads nothing) and returns early while
+  `currentBGM` is `undefined`. A `src` is only assigned once a scene supplies a track
+  (chapter ≥ 2), and `preload="none"` defers that download to `.play()` — which is
+  gated behind the autoplay-unblocking user gesture. So the 2.7 MB train BGM is **not**
+  fetched on landing.
+
+Conclusion: audio should **not** count toward eager cold-load weight. The 2.81 MB
+"representative" audio row above is a worst-case per-visit figure for a user who
+plays through chapter 2+, not a first-paint cost.
+
+**Re-encoded the two heavy ambient tracks to mono 96 kbps** (`ffmpeg -ac 1 -b:a 96k
+-map_metadata -1`); durations and filenames unchanged so all `src` paths still resolve:
+
+| Asset | Before (bytes) | After (bytes) | Δ |
+|---|---:|---:|---:|
+| `kokoreli777-inside-old-train-169418.mp3` (train BGM, stereo 184k → mono 96k) | 2,792,174 | 1,457,677 | −47.8% |
+| `freesound_community-train_station_outdoor_platform_birds_people-30576.mp3` (platform ambience, stereo 160k → mono 96k) | 765,600 | 460,269 | −39.9% |
+
+Skipped: `writing-with-pen-loud.mp3` (already mono 64k — re-encoding to 96k would
+enlarge it) and all <300 KB UI SFX (negligible gain). The orphaned
+`freesound_community-writing-with-pen-35109.mp3` (687 KB) is not referenced by any
+`src` and was left untouched.
+
 ---
 
 ## Total Real Cold-Load Weight

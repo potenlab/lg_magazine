@@ -279,3 +279,98 @@ The old test's 126 Mbps at 100 VUs was primarily the NotoSerifKR phantom
    update the audio section.
 4. Font filenames in Section 2 are illustrative — `setup()` discovers them dynamically
    and they do not need manual updating.
+
+---
+
+## Final result (post-effort, 2026-05-28)
+
+**Measurement method:** CAPTURED live, not just computed. A clean production build
+(`bun run build`, Turbopack/Next 16.2.3) was served from this repo's standalone output
+on a free port (`node .next/standalone/server.js`, `PORT=3100`) with `QRIUS_MOCK=1` to
+mint a session past the Qrius SSO gate. The served document was confirmed to be THIS app
+(`<title>Magazine STORY · Vision Express</title>`, subset next/font preload links present)
+and NOT the unrelated marketing site that occupies `localhost:3000`. Network bytes below
+are real transfer sizes from the browser Resource Timing API (served with brotli/gzip where
+the asset compresses; woff2/jpeg/png/mp3 are already-compressed binaries served raw).
+
+### What the strategy moved off the first-paint window
+
+The effort did **not** chase a single "total bytes" number — the lever is *what competes
+during the first-paint burst*. Three large byte sources were smeared into the session:
+
+| Moved off first paint | Bytes | Now fetched |
+|---|---:|---|
+| NanumSeongSirCe font (subset woff2, `preload:false`) | 2.47 MB | only when the IntroScene invite-letter renders (after envelope open) |
+| Owl persona frames (12, via `/_next/image`) | ~0.75 MB optimized¹ | `requestIdleCallback` (3 s cap) / 1.5 s `setTimeout` fallback — verified firing at ~950 ms, *after* the load event (822 ms) |
+| Audio (train BGM + SFX, `preload="none"`) | 0 on cold load | on the user gesture that triggers `.play()` |
+
+¹ The 3.65 MB owl figure in Section 3 is the *source PNG* weight; the `/_next/image`
+optimizer re-encodes them to ~783 KB total at `w=2048&q=75` on the wire. Either way they
+are no longer on the first-paint path.
+
+### Captured eager first-paint set
+
+| Asset class | Wire bytes (as served) |
+|---|---:|
+| HTML document | 7,978 |
+| JS (9 chunks in initial HTML) | 741,759 |
+| CSS (1) | 11,480 |
+| Fonts — Pretendard + RIDIBatang subset woff2 (the only two `rel=preload`) | 2,160,268 |
+| Logo SVG | 11,926 |
+| First background `table.jpg` (intro, `priority`) | 56,574 |
+| **EAGER FIRST-PAINT TOTAL** | **2,989,985 B ≈ 2.85 MB** |
+
+Live verification of the four constraints, all PASS:
+- (a) Fonts referenced are the **subset woff2** (`PretendardVariable_subset`,
+  `RIDIBatang_subset`) — zero `NotoSerifKR` / `Noto*` references in the document.
+- (b) Only **Pretendard + RIDIBatang** carry `rel=preload`; **NanumSeongSirCe is NOT
+  preloaded** (confirmed absent from `<head>` preloads).
+- (c) **No `.mp3`** requested on initial load (0 media requests until a play gesture).
+- (d) **No `.webp`/`.avif`** by URL (WAF constraint intact); the 12 owl requests all route
+  through `/_next/image` and fire post-load on idle, not synchronously on mount.
+
+### Before / after
+
+| Metric | Baseline (pre-effort) | After effort |
+|---|---:|---:|
+| Total cold-load weight (all assets, incl. fonts/owls/audio) | ~14.7 MB | ~12.2 MB total session¹ |
+| **Eager first-paint weight** (competes during first paint) | ~14.7 MB² | **~2.85 MB (captured)** |
+
+¹ Total session weight drops via the font diet (−2.53 MB), audio re-encode (−1.6 MB), and
+background recompression (−241 KB); see Sections 2–3.
+² The old baseline did not separate eager from deferred — fonts (incl. the 4.8 MB
+NanumSeongSirCe TTF), owls, and audio were all treated as cold-load weight. The whole point
+of this effort is that the new ~2.85 MB is the *only* set racing for first paint; the rest is
+now deferred into the session.
+
+### 1000-user bandwidth math (eager first-paint only)
+
+Assumptions unchanged: flash-crowd worst case, all 1,000 users arrive at once; fair-share
+≈ 130 Mbps of the 500 Mbps DMZ pipe.
+
+```
+Eager bytes        = 2,989,985 B × 1,000 users = 2,989,985,000 B = 23,919,880,000 bits
+Drain at 130 Mbps  = 23,919,880,000 ÷ 130,000,000 ≈ 184 s  (~3.1 min)
+Drain at full 500  = 23,919,880,000 ÷ 500,000,000 ≈ 48 s
+```
+
+vs the old eager baseline (~14.7 MB → 117.5 Gbit → **~904 s / ~15 min** at 130 Mbps). The
+first-paint contention window for a 1,000-user flash crowd shrinks **~5x** (~15 min → ~3 min),
+and the deferred bytes (owls/Nanum/audio) now smear across the session instead of piling onto
+the opening burst. Realistic ramped arrivals stay comfortably within budget.
+
+### Verdict
+
+Sound and ready to deploy. The dominant remaining eager cost is the 2.16 MB of preloaded
+Korean fonts (Pretendard + RIDIBatang), which is the floor for tofu-safe full-Hangul coverage.
+Remaining **optional** levers (not done, left to the user's judgement):
+
+- Set **RIDIBatang `preload:false`** too (−0.39 MB eager). It is a serif used in body/headers
+  shortly after paint, so this trades a brief FOUT/swap for fewer first-paint bytes.
+- Subset fonts to **KS X 1001 (2,350 common syllables)** instead of the full 11,172-syllable
+  Hangul block — a much larger font cut, but rare/archaic syllables (and some LLM-generated
+  text) could render as tofu. Higher risk; needs product sign-off.
+- Lazy-load / route-split the **V3App bundle further** if first-paint JS becomes a concern.
+- The orphaned `freesound_community-writing-with-pen-35109.mp3` (687 KB) and dead JPEGs
+  (`vision_ticket.jpg`, `Chapter02-2.jpg`) can be deleted to trim repo/deploy size (no runtime
+  effect — not referenced).

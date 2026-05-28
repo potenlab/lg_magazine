@@ -157,7 +157,19 @@ export function setup() {
       dynamicChunks = [...new Set(
         dynFound.map((m) => "/_next/" + m.replace(/["']/g, ""))
       )].filter((url) => !headAssets.includes(url));
+    } else {
+      console.warn(
+        "[setup] WARNING: page-route chunk was fetched but yielded no static/chunks/*.js matches — " +
+        "the ~1.8 MB V3App dynamic bundle will be MISSING from this test. " +
+        "Cold-load weight is understated. Inspect the page-route chunk content and update the regex."
+      );
     }
+  } else {
+    console.warn(
+      "[setup] WARNING: page-route chunk not found via '.cf.' heuristic — " +
+      "the ~1.8 MB V3App bundle will be MISSING from this test. " +
+      "Cold-load weight is understated. Inspect the built index.html and update the heuristic."
+    );
   }
 
   const allChunks = [...headAssets, ...dynamicChunks];

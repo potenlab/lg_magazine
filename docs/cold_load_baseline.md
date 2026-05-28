@@ -59,6 +59,8 @@ page-route chunk. **Do not hardcode these URLs** — they are stale after each b
 
 ¹ Not present in initial HTML; loaded via `dynamic(ssr:false)` when V3App hydrates.
 
+> **Note:** sub-300-byte runtime shims (e.g. `0fsi8lw5utejl.js`, 282 B — Turbopack `warnOnce`) are excluded from this table as negligible.
+
 ### 2. Fonts — preloaded from `<head>` via `next/font`
 
 Emitted to `/_next/static/media/` with content-hashed filenames. Discovered

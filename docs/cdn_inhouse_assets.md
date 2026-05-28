@@ -52,10 +52,11 @@ heavy media:
 
 | Path | Size | Type |
 |---|---:|---|
-| [../public/fonts/](../public/) | ~55 MB | woff2 / ttf |
-| [../public/vision_express/](../public/) | ~27 MB | webp + mp3 |
-| [../public/brand/](../public/) | ~32 KB | svg |
-| `.next/static/**` | ~varies | content-hashed JS / CSS |
+| `/_next/static/media/*` (emitted by `next/font`) | ~4.5 MB | subset woff2 (Pretendard, RIDIBatang, NanumSeongSirCe) |
+| [../public/fonts/v3/](../public/) | ~55 MB | ttf / woff2 — **react-pdf export only, not the web page** |
+| [../public/vision_express/](../public/) | ~12 MB | jpg + mp3 (no webp/avif — WAF-blocked by URL extension) |
+| [../public/brand/](../public/) | ~56 KB | svg |
+| `.next/static/**` | ~varies | content-hashed JS / CSS + subset font media |
 
 Today **the Next.js Node process serves all of this** — the same single-threaded
 process that also runs SSR, middleware (`proxy.ts`), and `/api/*`. Static-byte
@@ -225,8 +226,9 @@ location ^~ /_next/static/ {
     brotli_static on;                      # serve .br sibling if present (needs nginx-extras)
 }
 
-# Media: webp / mp3 / svg under /public/vision_express/. Filenames are stable
+# Media: jpg / mp3 under /public/vision_express/. Filenames are stable
 # but not content-hashed — use 30d cache, rename-on-change discipline.
+# (webp/avif are NOT used here — LG WAF returns HTTP 400 on those URL extensions.)
 location ^~ /vision_express/ {
     alias /var/www/lg-magazine/public/vision_express/;
     access_log off;
@@ -369,7 +371,7 @@ docker compose build
 # 3. Run the extract — populates /var/www/lg-magazine.
 ./scripts/extract-assets.sh
 #    GATE: last lines print directory size for public + _next/static (non-zero).
-#          /var/www/lg-magazine/public/vision_express must contain webp files.
+#          /var/www/lg-magazine/public/vision_express must contain .jpg and .mp3 files.
 
 # 4. Apply the nginx changes from Section 4.2, then:
 nginx -t
@@ -418,8 +420,8 @@ After Section 5:
 **Browser-side check (1 minute):**
 
 1. Open the site in an incognito window, DevTools → Network.
-2. Reload. Confirm `vision_express/*.webp`, `_next/static/*.js`, and
-   `fonts/*.woff2` all show `(disk cache)` on the **second** reload.
+2. Reload. Confirm `vision_express/*.jpg`, `_next/static/*.js`, and
+   `_next/static/media/*.woff2` all show `(disk cache)` on the **second** reload.
 3. Their `Response Headers` panel must contain `X-Asset-Source: nginx-disk`.
 
 ---
@@ -499,6 +501,19 @@ This is **strictly optional**. Do not add it before measuring need.
 
 ## 9. Notes
 
+- **Post-diet font layout (asset-diet-and-compression branch).** The three web
+  fonts (Pretendard, RIDIBatang, NanumSeongSirCe) are now subset woff2 files
+  loaded via `next/font/local`. At build time Next.js emits them to
+  `/_next/static/media/*.subset.woff2` — **not** under `/fonts/`. They are
+  therefore covered by the `location ^~ /_next/static/` block (immutable,
+  max-age=1y) and do NOT need the `/fonts/` block. The `/fonts/v3/*.ttf` files
+  (~55 MB, still on disk) are used exclusively by the react-pdf export path;
+  they are downloaded on demand by browsers doing a PDF export, not on page
+  load. The `/fonts/` nginx block remains correct and harmless for that use case.
+- **`/vision_express/` is jpg + mp3 only.** All `.webp` chapter backgrounds were
+  converted to `.jpg` (commit `ac9c70d`). LG's WAF returns HTTP 400 on `.webp`
+  and `.avif` URLs. There are no webp/avif files in this directory; do not
+  expect or test for them.
 - **Same files, two readers.** The container's `public/` and the host's
   `/var/www/lg-magazine/public/` are intentionally separate copies. Bind-mounting
   the container path to the host is **not** recommended — it couples nginx's
@@ -516,8 +531,10 @@ This is **strictly optional**. Do not add it before measuring need.
   extract script — never to remove `try_files`, which would silently fall
   through to Node and mask the bug.
 - **Disk usage budget.** `/var/www/lg-magazine` holds one copy of `public/`
-  (~82 MB) + `_next/static/` (~tens of MB per build). Negligible on the
-  production VM but worth noting.
+  (~72 MB — dominated by `/fonts/v3` ttf pairs for react-pdf; vision_express
+  is ~12 MB post-diet) + `_next/static/` (~tens of MB per build, includes
+  ~4.5 MB subset woff2 under `media/`). Negligible on the production VM but
+  worth noting.
 - **No DNS change. No external dependency.** The site stays
   `mybook.lgacademy.com` resolving to the same VM. LG corporate network
   inspects the same TLS handshake it always has.

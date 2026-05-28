@@ -74,6 +74,31 @@ Fonts are binary and already compressed — served raw (no nginx gzip benefit).
 | `/_next/static/media/RIDIBatang-s.p.0oil4glx.v94v.woff2` | Font (woff2) | 457,732 |
 | **Fonts subtotal** | | **7,282,308** |
 
+#### After font diet (Task 1, 2026-05-28)
+
+All three web fonts were subset to the **full Hangul Syllables block (U+AC00–U+D7A3,
+11,172 modern syllables)** plus Latin (U+0000–00FF), Hangul Jamo (U+1100–11FF) +
+Compatibility Jamo (U+3130–318F), general/CJK punctuation (U+2000–206F, U+3000–303F),
+currency (U+20A0–20BF), geometric shapes (U+2500–25FF), and fullwidth forms
+(U+FF00–FFEF). This drops hanja, CJK extensions, and unused symbol/feature tables
+while keeping **every** modern Korean syllable, so dynamic LLM-generated Korean text
+cannot render as tofu. The variable Pretendard `wght` axis (45–930) is preserved.
+NanumSeongSirCe was also converted TTF→woff2. Subset outputs are version-controlled
+in `public/fonts/subset/` and loaded by `src/app/layout.tsx`. NanumSeongSirCe is now
+`preload: false` (only used in the IntroScene letterhead, not on first paint).
+
+| Asset | Class | Before (bytes) | After (bytes) | Δ |
+|---|---|---:|---:|---:|
+| NanumSeongSirCe (TTF→woff2 subset) | Font (woff2) | 4,766,888 | 2,594,848 | −45.6% |
+| PretendardVariable (variable subset) | Font (woff2) | 2,057,688 | 1,765,300 | −14.2% |
+| RIDIBatang (subset) | Font (woff2) | 457,732 | 394,368 | −13.8% |
+| **Fonts subtotal** | | **7,282,308** | **4,754,516** | **−34.7% (−2.53 MB)** |
+
+This lowers total cold-load weight from ~14.7 MB to ~12.2 MB. The remaining font
+weight is dominated by the 11,172-glyph Hangul block, which cannot be reduced further
+without risking tofu on arbitrary runtime Korean text. Note NanumSeongSirCe's 2.5 MB is
+no longer preloaded, so it does not compete on the first-paint critical path.
+
 ### 3. Static public assets — hardcoded in `COLD_LOAD_ASSETS`
 
 These paths are stable across builds (not content-hashed) and are hardcoded in

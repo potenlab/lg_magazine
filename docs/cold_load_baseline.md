@@ -1,0 +1,177 @@
+# Cold-Load Baseline — Magazine STORY / Vision Express
+
+**Established:** 2026-05-28  
+**Build used:** Turbopack / Next.js 16.2.3, branch `asset-diet-and-compression`  
+**Purpose:** Reference manifest for the 1,000-user load capacity effort. All future
+optimisation work measures against the totals in this document.
+
+---
+
+## Why the Old k6 Number Was a Phantom
+
+The previous `COLD_LOAD_ASSETS` list in `loadtest/realistic-stress-test.js` included:
+
+```
+/fonts/v3/NotoSerifKR-Regular.woff2   ← 13.4 MB
+/fonts/v3/NotoSerifKR-Medium.woff2    ← 13.4 MB
+/fonts/v3/Pretendard-Regular.woff2    ←  748 KB  (wrong path)
+/fonts/v3/Pretendard-Bold.woff2       ←  773 KB  (wrong path)
+```
+
+These files live in `public/fonts/v3/` and are referenced **only** in
+`src/lib/v3/pdf/fonts.ts` for server-side react-pdf document rendering. A browser
+visiting the magazine page never requests them. The two NotoSerifKR woff2 files
+alone total **≈ 26.8 MB per cold visit** — more than the entire real cold-load
+payload. On top of that, the actual fonts the page loads are emitted by `next/font`
+to `/_next/static/media/` with content-hashed filenames, which the old test never
+fetched at all.
+
+Result: at 100 VUs the old test reported **126 Mbps sustained** — a measurement
+of non-existent traffic. The real honest number is documented below.
+
+---
+
+## Corrected Cold-Load Asset Manifest
+
+Assets are grouped by how they are fetched. Sizes are **raw (uncompressed)**
+unless the asset is served compressed by nginx (`gzip_static` / `brotli_static`),
+in which case both raw and gzip-9 sizes are shown.
+
+### 1. JS / CSS chunks — discovered dynamically by `setup()`
+
+Fetched immediately when the browser processes the landing HTML. Content-hashed
+filenames change on every `bun run build`; `setup()` discovers them by parsing
+the HTML and (for the dynamic V3App bundle) doing a second-pass scan of the
+page-route chunk. **Do not hardcode these URLs** — they are stale after each build.
+
+| Asset | Class | Raw (bytes) | Gzip-9 (bytes) |
+|---|---|---:|---:|
+| `/_next/static/chunks/0vdl30fil_0l~.js` ¹ | JS (V3App bundle) | 1,830,350 | 588,344 |
+| `/_next/static/chunks/0yoi6g0rt32bk.js` | JS (react-dom etc.) | 227,314 | 70,808 |
+| `/_next/static/chunks/0drmebz6v4i8_.js` | JS (framework) | 194,884 | 48,539 |
+| `/_next/static/chunks/03~yq9q893hmn.js` | JS (polyfills/nomodule) | 112,594 | 39,373 |
+| `/_next/static/chunks/0d3tkj33oycf2.js` | JS (shared) | 57,741 | 13,743 |
+| `/_next/static/chunks/0jst5_~zv2qq0.css` | CSS (global) | 54,876 | 11,116 |
+| `/_next/static/chunks/0khp-2t88oexr.js` | JS (route prefetch) | 22,934 | 7,615 |
+| `/_next/static/chunks/turbopack-0v_x-b34oa4on.js` | JS (turbopack runtime) | 10,547 | 4,140 |
+| `/_next/static/chunks/0b2ae.cf.gt_6.js` | JS (/ page route) | 6,751 | 2,548 |
+| **JS/CSS subtotal** | | **2,517,991** | **786,226** |
+
+¹ Not present in initial HTML; loaded via `dynamic(ssr:false)` when V3App hydrates.
+
+### 2. Fonts — preloaded from `<head>` via `next/font`
+
+Emitted to `/_next/static/media/` with content-hashed filenames. Discovered
+dynamically by `setup()` via the HTML `<link rel="preload" as="font">` tags.
+Fonts are binary and already compressed — served raw (no nginx gzip benefit).
+
+| Asset | Class | Raw (bytes) |
+|---|---|---:|
+| `/_next/static/media/NanumSeongSirCe-s.p.07l4w_3jte.-8.ttf` | Font (TTF) | 4,766,888 |
+| `/_next/static/media/PretendardVariable-s.p.0a.~5ku~863u1.woff2` | Font (woff2) | 2,057,688 |
+| `/_next/static/media/RIDIBatang-s.p.0oil4glx.v94v.woff2` | Font (woff2) | 457,732 |
+| **Fonts subtotal** | | **7,282,308** |
+
+### 3. Static public assets — hardcoded in `COLD_LOAD_ASSETS`
+
+These paths are stable across builds (not content-hashed) and are hardcoded in
+the k6 test. Update only when the app's asset set changes.
+
+#### Logo
+| Asset | Class | Raw (bytes) | Gzip-9 (bytes) |
+|---|---|---:|---:|
+| `/brand/magazine-story-logo.svg` | SVG | 30,897 | 11,685 |
+
+#### Intro-phase images (loaded `priority=true` in IntroScene.tsx at first render)
+| Asset | Class | Raw (bytes) |
+|---|---|---:|
+| `/vision_express/common/table.jpg` | Image (JPEG) | 131,357 |
+| `/vision_express/common/invite_letter.jpg` | Image (JPEG) | 12,648 |
+
+#### Owl persona frames (all 12 poses preloaded eagerly in V3App.tsx `useEffect`)
+| Asset | Class | Raw (bytes) |
+|---|---|---:|
+| `/vision_express/v3/owl/l-owl-02.png` | Image (PNG) | 317,236 |
+| `/vision_express/v3/owl/l-owl-03.png` | Image (PNG) | 301,070 |
+| `/vision_express/v3/owl/l-owl-04.png` | Image (PNG) | 284,389 |
+| `/vision_express/v3/owl/l-owl-05.png` | Image (PNG) | 283,968 |
+| `/vision_express/v3/owl/l-owl-06.png` | Image (PNG) | 295,027 |
+| `/vision_express/v3/owl/l-owl-09.png` | Image (PNG) | 353,649 |
+| `/vision_express/v3/owl/l-owl-10.png` | Image (PNG) | 313,190 |
+| `/vision_express/v3/owl/l-owl-11.png` | Image (PNG) | 278,831 |
+| `/vision_express/v3/owl/l-owl-12.png` | Image (PNG) | 306,200 |
+| `/vision_express/v3/owl/l-owl-13.png` | Image (PNG) | 313,260 |
+| `/vision_express/v3/owl/l-owl-14.png` | Image (PNG) | 309,813 |
+| `/vision_express/v3/owl/l-owl-15.png` | Image (PNG) | 294,541 |
+| **Owl subtotal** | | **3,651,174** |
+
+#### Audio (lazy — loaded on first user gesture, representative of one cold visit)
+| Asset | Class | Raw (bytes) |
+|---|---|---:|
+| `/vision_express/kokoreli777-inside-old-train-169418.mp3` | Audio (MP3) | 2,792,174 |
+| `/vision_express/floraphonic-handle-paper-foley-1-172688.mp3` | Audio (MP3) | 22,221 |
+| **Audio subtotal** | | **2,814,395** |
+
+---
+
+## Total Real Cold-Load Weight
+
+| Category | Raw bytes | Served bytes (gzip where applicable) |
+|---|---:|---:|
+| JS + CSS chunks | 2,517,991 | 786,226 |
+| Fonts | 7,282,308 | 7,282,308 (binary, no gzip) |
+| Logo SVG | 30,897 | 11,685 |
+| Intro images | 143,005 | 143,005 (JPEG, no gzip) |
+| Owl images (12) | 3,651,174 | 3,651,174 (PNG, no gzip) |
+| Audio (representative) | 2,814,395 | 2,814,395 (MP3, no gzip) |
+| **TOTAL** | **16,439,770** | **14,688,793** |
+
+**~14.7 MB served per cold visit** (raw on wire, before TCP/TLS overhead).
+
+---
+
+## Bandwidth Math at 1,000 Simultaneous Cold Visitors
+
+Assumptions:
+- All 1,000 users arrive concurrently and start downloading immediately.
+- Fair-share bandwidth: 500 Mbps DMZ pipe ÷ ~4 co-tenants ≈ **130 Mbps** available.
+- No CDN; all bytes served directly from the app server.
+
+```
+Simultaneous load  = 14,688,793 bytes × 1,000 users
+                   = 14,688,793,000 bytes total on wire
+                   = 117,510,344,000 bits
+
+Time to drain at 130 Mbps = 117,510,344,000 ÷ 130,000,000
+                           ≈ 904 seconds  (~15 minutes)
+```
+
+In other words, **at full concurrency the 130 Mbps pipe takes ~15 minutes to
+serve all 1,000 cold visitors**. In a realistic ramp scenario (users spread over
+a 15–30 minute window) the sustained load is ~8–15 Mbps — well within budget.
+The risk is a flash-crowd spike (all 1,000 hitting within seconds): that would
+saturate the pipe and cause timeouts for everyone.
+
+### Old vs New test weight comparison
+
+| Metric | Old (phantom) test | New (honest) test |
+|---|---:|---:|
+| NotoSerifKR fonts included | 26,816,716 B (fake) | 0 B (correctly absent) |
+| Real font bytes | 0 B (missing) | 7,282,308 B |
+| Total cold-load weight | ~42 MB (phantom) | ~14.7 MB (real) |
+| 100-VU sustained bandwidth | 126 Mbps (reported) | ~30–35 Mbps (expected) |
+
+The old test's 126 Mbps at 100 VUs was primarily the NotoSerifKR phantom
+(26 MB × 100 VUs = 2.6 GB data sent, saturating the pipe with non-existent browser traffic).
+
+---
+
+## How to Keep This Baseline Current
+
+1. After each `bun run build`, run `k6 run --vus 1 --iterations 1 loadtest/realistic-stress-test.js`
+   locally and check the `setup` log line to confirm chunk discovery is working.
+2. If owl images are resized or replaced, update the owl entries and subtotals above.
+3. If a new audio file is added to the intro scene, add it to `COLD_LOAD_ASSETS` and
+   update the audio section.
+4. Font filenames in Section 2 are illustrative — `setup()` discovers them dynamically
+   and they do not need manual updating.

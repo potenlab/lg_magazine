@@ -115,7 +115,24 @@ the k6 test. Update only when the app's asset set changes.
 | `/vision_express/common/table.jpg` | Image (JPEG) | 131,357 |
 | `/vision_express/common/invite_letter.jpg` | Image (JPEG) | 12,648 |
 
-#### Owl persona frames (all 12 poses preloaded eagerly in V3App.tsx `useEffect`)
+#### Owl persona frames (12 unique poses) — DEFERRED off the first-paint window (Task 3, 2026-05-28)
+**No longer eager.** The `useEffect` in `V3App.tsx` that warmed all 12 unique owl
+frames *on mount* now defers the whole batch to `requestIdleCallback` (with a 3 s
+timeout cap, and a 1.5 s `setTimeout` fallback for browsers without it). The intro
+scene (envelope/letter/register/freetext/cover) renders the letter/envelope/station/
+train images only — `OwlStage` first appears once a magazine chapter scene mounts
+(ch0–ch4 + closing), never during the intro — so the owl frames are **not** needed
+for first paint. Deferring the batch removes ~3.65 MB from the critical first-paint
+contention burst (HTML + JS + fonts + first background) and smears it just after load,
+while still warming the cache before any owl scene appears, so pose changes still
+don't flash empty. The preload keeps going through the Next image optimizer
+(`/_next/image?url=...&w=2048&q=75`, the 2x srcset entry `OwlStage` emits) and keeps
+the dedup `Set`.
+
+Conclusion: owl frames should **not** count toward eager cold-load weight. The 3.65 MB
+subtotal below is a per-visit figure for a user who reaches the magazine chapters,
+fetched on idle shortly after load — not a first-paint cost.
+
 | Asset | Class | Raw (bytes) |
 |---|---|---:|
 | `/vision_express/v3/owl/l-owl-02.png` | Image (PNG) | 317,236 |
@@ -170,6 +187,34 @@ Skipped: `writing-with-pen-loud.mp3` (already mono 64k — re-encoding to 96k wo
 enlarge it) and all <300 KB UI SFX (negligible gain). The orphaned
 `freesound_community-writing-with-pen-35109.mp3` (687 KB) is not referenced by any
 `src` and was left untouched.
+
+#### After chapter-background recompression (Task 3, 2026-05-28)
+
+The chapter-background JPEGs in `public/vision_express/common/` are **not** on the
+first-paint path (they load as the participant reaches each chapter), but shrinking
+them lowers total session egress and repeat-visit cost through the same constrained
+pipe. The 7 referenced files > ~150 KB were re-encoded **in place** to progressive
+JPEG, quality 72 (`djpeg | cjpeg -quality 72 -progressive` — mozjpeg). Filenames are
+unchanged so all `src` refs still resolve. No webp/avif (WAF-blocked). Owl PNGs were
+left untouched (they re-encode through the image optimizer anyway, and quality matters
+for character art). Visually spot-checked the dark starfield (`Chapter03-1`), train
+cabin (`chapter05`), and the gold-linework ticket — no banding/artifacts at display size.
+
+| Asset | Before (bytes) | After (bytes) | Δ |
+|---|---:|---:|---:|
+| `Chapter_01-2.jpg` | 828,502 | 757,539 | −8.6% |
+| `chapter05.jpg` | 243,451 | 200,534 | −17.6% |
+| `departing-train.jpg` | 235,890 | 206,113 | −12.6% |
+| `arriving-train.jpg` | 220,558 | 203,868 | −7.6% |
+| `morning-room.jpg` | 201,106 | 174,775 | −13.1% |
+| `Chapter03-1.jpg` | 168,978 | 133,055 | −21.3% |
+| `Chapter03.jpg` | 165,223 | 141,099 | −14.6% |
+| **Subtotal** | **2,063,708** | **1,816,983** | **−12.0% (−246,725 B / ~241 KB)** |
+
+Skipped two >150 KB files that are **not referenced** anywhere in `src/` — dead assets,
+so recompressing them yields no session-egress benefit: `vision_ticket.jpg` (314 KB; the
+in-use ticket is `vision_ticket_new.jpg`, 93 KB) and `Chapter02-2.jpg` (180 KB). All other
+common JPEGs are < ~150 KB and were left as-is.
 
 ---
 

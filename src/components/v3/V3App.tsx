@@ -116,19 +116,43 @@ function V3Inner() {
   }, [prevStack]);
   const [introProgressVisible, setIntroProgressVisible] = useState(false);
 
-  // Preload all owl images once on mount so pose changes don't flash empty.
+  // Preload all owl images so pose changes don't flash empty — but DEFERRED to
+  // browser idle so the ~3.65 MB of owl frames don't compete with the critical
+  // first-paint burst (HTML, JS bundle, fonts, first background) under load.
+  // The intro scene (envelope/letter/register/freetext/cover) never renders the
+  // owl — OwlStage only appears once magazine chapter scenes mount — so the owl
+  // frames are not needed for first paint. requestIdleCallback fires shortly
+  // after load, warming the cache well before any owl scene appears; a setTimeout
+  // fallback covers browsers (e.g. Safari) without requestIdleCallback.
   // Must go through the Next image optimizer (/_next/image): production's
   // reverse proxy returns 400 for direct requests to /public assets, so a
   // raw `new Image().src` would fail there. w=2048 matches the 2x srcset
   // entry OwlStage's <Image> emits, so this warms the real browser cache.
   useEffect(() => {
-    const seen = new Set<string>();
-    for (const src of Object.values(personaConcept.characterImages)) {
-      if (seen.has(src)) continue;
-      seen.add(src);
-      const img = new Image();
-      img.src = `/_next/image?url=${encodeURIComponent(src)}&w=2048&q=75`;
+    const warmOwlFrames = () => {
+      const seen = new Set<string>();
+      for (const src of Object.values(personaConcept.characterImages)) {
+        if (seen.has(src)) continue;
+        seen.add(src);
+        const img = new Image();
+        img.src = `/_next/image?url=${encodeURIComponent(src)}&w=2048&q=75`;
+      }
+    };
+    const ric = (window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    }).requestIdleCallback;
+    if (typeof ric === "function") {
+      // timeout caps the wait so frames still warm promptly even on a busy main
+      // thread (idle callback would otherwise be starved indefinitely).
+      const handle = ric(warmOwlFrames, { timeout: 3000 });
+      return () => {
+        (window as Window & { cancelIdleCallback?: (h: number) => void })
+          .cancelIdleCallback?.(handle);
+      };
     }
+    const t = setTimeout(warmOwlFrames, 1500);
+    return () => clearTimeout(t);
   }, []);
   // Current dialog stage — scene components set this to "narration" when they
   // render only a stage-direction; the dialog wrapper shrinks accordingly.

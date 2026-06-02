@@ -60,6 +60,7 @@ export function Chapter2MagazineSceneV1({
             .map((word) => ({ word, meaning: session.valueDefinitions[word] ?? "" }))
             .filter((v) => v.word.trim().length > 0),
           strengthCommonAsk: session.strengthCommonAsk,
+          helpRequests: session.helpRequests,
           othersDescription: session.othersDescription,
         });
         if (cancelled) return;

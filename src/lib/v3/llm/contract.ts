@@ -71,6 +71,7 @@ export interface LLMContract {
     commonPattern: string;
     selectedValues: { word: string; meaning: string }[];
     strengthCommonAsk: string;
+    helpRequests: string;
     othersDescription: string;
   }): Promise<{ synthesis: string }>;
 

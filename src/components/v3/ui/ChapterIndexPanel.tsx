@@ -43,7 +43,7 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`pointer-events-auto fixed left-4 top-4 z-[57] rounded-md border border-[#d7bd83]/40 bg-[#160d08]/70 px-3 py-1.5 text-[16px] tracking-wide text-[#e9d5a8] backdrop-blur transition hover:bg-[#160d08]/90 ${hint === "record" ? "corner-hint-pulse" : ""}`}
+        className={`pointer-events-auto fixed left-4 top-4 z-[57] rounded-md border border-white bg-black/85 px-3 py-1.5 text-[16px] tracking-wide text-white backdrop-blur transition hover:bg-black ${hint === "record" ? "corner-hint-pulse" : ""}`}
         style={{ fontFamily: "var(--font-ridi-batang)" }}
         aria-label="챕터 기록"
       >

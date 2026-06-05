@@ -106,19 +106,22 @@ export function CardChoiceScene({
         )}
       </div>
 
-      {/* 이전 / 선택하기 — 다른 question/followup 씬과 동일 패턴으로 absolute
-          앵커. 이전: bottom-6 left-6 (텍스트 nav), 선택하기: bottom-6 right-6
-          StoryButtonV3. 대화창 wrapper 의 pb-[92px] 가 이 버튼 공간을 비워둠. */}
-      {onPrev && canGoBack && (
-        <button
-          type="button"
-          onClick={onPrev}
-          className="absolute bottom-6 left-6 z-10 flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
-        >
-          이전
-        </button>
-      )}
-      <div className="absolute bottom-6 right-6 z-10 flex items-center">
+      {/* Footer — wrapper 가 overflow-y-auto 라 absolute bottom 은 스크롤 콘텐츠
+          끝에 붙음. sticky bottom-0 + 음수 마진(-mx-6 -mb-6, mt-2)으로 viewport
+          하단에 고정해 스크롤 위로 떠 있게. wrapper 의 pb-[92px] 가 sticky
+          footer 가 콘텐츠 마지막 줄을 가리지 않도록 여백을 미리 잡아둠. */}
+      <div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-2 flex items-center justify-between gap-3 border-t border-[#d7bd83]/30 bg-[#f6efdf]/95 px-6 py-3 backdrop-blur">
+        {onPrev && canGoBack ? (
+          <button
+            type="button"
+            onClick={onPrev}
+            className="flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
+          >
+            이전
+          </button>
+        ) : (
+          <span />
+        )}
         <StoryButtonV3
           label={spec.buttonLabel ?? "선택하기"}
           onClick={confirm}

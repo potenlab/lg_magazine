@@ -93,21 +93,24 @@ export function ToolSelectScene({
         </>
       )}
 
-      {/* 이전 / 건네기 — 다른 question/followup 씬과 동일 패턴. dialog wrapper
-          의 pb-[92px] 가 이 버튼 공간을 비워둠. 스크롤 콘텐츠가 버튼 아래로
-          깔리지 않음. */}
-      {onPrev && canGoBack && (
-        <button
-          type="button"
-          onClick={onPrev}
-          className={`absolute bottom-6 left-6 z-10 flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition-opacity duration-500 hover:text-[#3d2414] ${settled ? "opacity-100" : "pointer-events-none opacity-0"}`}
-        >
-          이전
-        </button>
-      )}
+      {/* Footer — dialog wrapper(overflow-y-auto, p-6) 안에서 sticky bottom-0
+          으로 viewport 하단 고정. 음수 마진(-mx-6 -mb-6)으로 wrapper 의
+          p-6 패딩 가장자리까지 background 가 닿게 해서 스크롤 콘텐츠 위로
+          살짝 떠 있는 느낌. */}
       <div
-        className={`absolute bottom-6 right-6 z-10 flex items-center transition-opacity duration-500 ${settled ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        className={`sticky bottom-0 z-10 -mx-6 -mb-6 mt-2 flex items-center justify-between gap-3 border-t border-[#d7bd83]/30 bg-[#f6efdf]/95 px-6 py-3 backdrop-blur transition-opacity duration-500 ${settled ? "opacity-100" : "pointer-events-none opacity-0"}`}
       >
+        {onPrev && canGoBack ? (
+          <button
+            type="button"
+            onClick={onPrev}
+            className="flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
+          >
+            이전
+          </button>
+        ) : (
+          <span />
+        )}
         <StoryButtonV3
           label={spec.buttonLabel ?? "건네기"}
           onClick={submit}

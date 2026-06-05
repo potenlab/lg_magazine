@@ -72,13 +72,10 @@ export function AmbienceScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
           aria-label="장면 진행"
         />
         {/* Phase 0 는 dialog 가 완전히 hidden 이라 어디를 눌러야 진행되는지
-            인지가 어렵다는 피드백 → 가운데 살짝 떠 있는 클릭 가이드 + 우하단
-            "다음" 보강 (밝기/굵기 ↑, 부드러운 호흡 애니메이션). */}
-        <div className="ambience-click-hint pointer-events-none fixed left-1/2 top-[52%] z-40 -translate-x-1/2 -translate-y-1/2 select-none text-center text-[18px] italic text-[#f5ead6] drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)]">
+            인지가 어렵다는 피드백 → 화면 정중앙에 클릭 가이드 한 줄만 노출
+            (밝기/굵기 ↑, 부드러운 호흡 애니메이션). */}
+        <div className="ambience-click-hint pointer-events-none fixed left-1/2 top-1/2 z-40 -translate-x-1/2 -translate-y-1/2 select-none text-center text-[18px] italic text-[#f5ead6] drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)]">
           화면을 눌러 다음으로
-        </div>
-        <div className="ambience-click-hint pointer-events-none fixed bottom-12 right-12 z-40 select-none text-[18px] italic text-[#f5ead6] drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)]">
-          다음 ›
         </div>
       </>,
       document.body,

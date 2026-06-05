@@ -40,10 +40,8 @@ const IDENTITY_EXAMPLES = [
   "복잡한 구조 속에서도 관계를 쉽게 파악하고, 누구나 쉽게 이해할 수 있게 설명해주는 걸 잘하는 사람",
   "사람들을 좋아하고 서로 다른 색깔을 가진 사람들이 조화롭게 어우러지도록, 경험을 설계하는 걸 좋아하는 사람",
   "막막한 일 앞에서 길을 찾아내고, 끝까지 손에 쥐고 마무리하는 사람",
-  "데이터 너머의 맥락까지 읽어내고, 그 안에서 조용히 결정을 바꾸는 사람",
   "처음 만나는 사람과도 안전한 공기를 만들어, 진짜 이야기가 흘러나오게 하는 사람",
   "팀이 흩어져 있을 때 묵묵히 다리를 놓고, 같이 가는 방향을 다시 비추는 사람",
-  "남이 외면한 작은 디테일에 손이 가는, 정직한 솜씨를 가진 사람",
 ];
 
 export function Chapter2MagazineScene({
@@ -286,16 +284,16 @@ export function Chapter2MagazineScene({
                 role="dialog"
                 aria-modal="true"
                 aria-label="다른 사람들의 정체성 예시"
-                className="relative z-10 w-full max-w-[480px] rounded-md border border-[#d7bd83]/40 bg-[#f6efdf] p-7 shadow-2xl"
+                className="relative z-10 flex max-h-[80vh] w-full max-w-[480px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/40 bg-[#f6efdf] shadow-2xl"
                 style={{ fontFamily: "var(--font-ridi-batang)" }}
                 initial={{ y: 16, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 8, opacity: 0 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="shrink-0 flex items-start justify-between gap-3 px-6 pt-6">
                   <div>
-                    <p className="text-[16px] uppercase tracking-[0.32em] text-[#7a5a3a]">
+                    <p className="text-[14px] uppercase tracking-[0.32em] text-[#7a5a3a]">
                       From other passengers
                     </p>
                     <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414]">
@@ -311,19 +309,21 @@ export function Chapter2MagazineScene({
                     ×
                   </button>
                 </div>
-                <div className="mt-4 space-y-2.5">
-                  {IDENTITY_EXAMPLES.map((ex, i) => (
-                    <div
-                      key={i}
-                      className="block w-full rounded-md border border-[#8c785a]/25 bg-white/40 p-3 text-left"
-                    >
-                      <p className="text-[16px] leading-[1.55] text-[#5a4a38]">
-                        {i + 1}. {ex}
-                      </p>
-                    </div>
-                  ))}
+                <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+                  <div className="space-y-2.5">
+                    {IDENTITY_EXAMPLES.map((ex, i) => (
+                      <div
+                        key={i}
+                        className="block w-full rounded-md border border-[#8c785a]/25 bg-white/40 p-3 text-left"
+                      >
+                        <p className="text-[16px] leading-[1.55] text-[#5a4a38]">
+                          {i + 1}. {ex}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <p className="mt-4 text-center text-[16px] italic text-[#8a7a68]">
+                <p className="shrink-0 px-6 pb-5 text-center text-[16px] italic text-[#8a7a68]">
                   참고용 예시입니다. 내 정의는 직접 입력해주세요.
                 </p>
               </motion.div>

@@ -125,11 +125,6 @@ const FREETEXT_EXAMPLES: FreeTextExample[] = [
     quote:
       "주변에서 '너답다'고 자주 듣는 말과, 내가 스스로 정의한 나 사이에 어디서 어긋나는지 정리해보고 싶어요.",
   },
-  {
-    label: "조직에서의 다음 챕터",
-    quote:
-      "지금 자리에서 할 만큼 했다는 느낌인데, 다음 챕터를 어떤 무게로 열어야 할지가 안 잡혀요. 차분히 한 번 짚어보고 싶어요.",
-  },
 ];
 
 function splitHighlight(text: string, highlights?: [number, number][]) {
@@ -769,19 +764,19 @@ export function IntroScene({
                     role="dialog"
                     aria-modal="true"
                     aria-label="다른 승객들의 예시"
-                    className="relative z-10 w-full max-w-[480px] rounded-md border border-[#d7bd83]/40 bg-[#f6efdf] p-5 shadow-2xl md:p-6"
+                    className="relative z-10 flex max-h-[80vh] w-full max-w-[480px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/40 bg-[#f6efdf] shadow-2xl"
                     style={{ fontFamily: "var(--font-ridi-batang)" }}
                     initial={{ y: 16, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 8, opacity: 0 }}
                     transition={{ duration: 0.22, ease: "easeOut" }}
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="shrink-0 flex items-start justify-between gap-3 px-6 pt-6">
                       <div>
-                        <p className="text-[16px] uppercase tracking-[0.32em] text-[#7a5a3a]">
+                        <p className="text-[14px] uppercase tracking-[0.32em] text-[#7a5a3a]">
                           From other passengers
                         </p>
-                        <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414] md:text-[16px]">
+                        <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414]">
                           다른 승객들은 주로 어떤 생각을 가졌을까요?
                         </h2>
                       </div>
@@ -794,22 +789,24 @@ export function IntroScene({
                         ×
                       </button>
                     </div>
-                    <div className="mt-4 space-y-2.5">
-                      {FREETEXT_EXAMPLES.map((ex, i) => (
-                        <div
-                          key={i}
-                          className="block w-full rounded-md border border-[#8c785a]/25 bg-white/40 p-3 text-left"
-                        >
-                          <p className="text-[16px] font-medium text-[#5a4a38] md:text-[16px]">
-                            {i + 1}. {ex.label}
-                          </p>
-                          <p className="mt-1 text-[16px] leading-[1.55] text-[#8a7a68] md:text-[16px]">
-                            &ldquo;{ex.quote}&rdquo;
-                          </p>
-                        </div>
-                      ))}
+                    <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+                      <div className="space-y-2.5">
+                        {FREETEXT_EXAMPLES.map((ex, i) => (
+                          <div
+                            key={i}
+                            className="block w-full rounded-md border border-[#8c785a]/25 bg-white/40 p-3 text-left"
+                          >
+                            <p className="text-[16px] font-medium text-[#5a4a38]">
+                              {i + 1}. {ex.label}
+                            </p>
+                            <p className="mt-1 text-[16px] leading-[1.55] text-[#8a7a68]">
+                              &ldquo;{ex.quote}&rdquo;
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <p className="mt-4 text-center text-[16px] italic text-[#8a7a68]">
+                    <p className="shrink-0 px-6 pb-5 text-center text-[16px] italic text-[#8a7a68]">
                       참고용 예시입니다. 내 기록은 직접 입력해주세요.
                     </p>
                   </motion.div>

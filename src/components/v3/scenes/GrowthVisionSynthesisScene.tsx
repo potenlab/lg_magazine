@@ -36,7 +36,6 @@ const VISION_EXAMPLES = [
   "복잡한 문제 앞에서 길을 짚고, 함께 가는 사람들에게 자리를 만들어 주는",
   "낯선 곳에서도 자기 페이스로 배우며 다음 한 걸음을 짚어가는",
   "흩어진 정보 사이에서 맥락을 잇고, 그 다리를 후배에게 건네주는",
-  "작은 결정을 데이터로 뒷받침하며, 조용히 판을 바꿔놓는",
   "내가 짠 판 위에서 후배가 자기 결정을 내릴 수 있게, 무대를 만들어 주는",
   "한 번의 시도가 어떤 흔적을 남기는지 끝까지 지켜보는, 단단한 직업인이 되는",
 ];
@@ -295,16 +294,16 @@ export function GrowthVisionSynthesisScene({
                 role="dialog"
                 aria-modal="true"
                 aria-label="다른 사람들의 성장 방향 예시"
-                className="relative z-10 w-full max-w-[480px] rounded-md border border-[#d7bd83]/40 bg-[#f6efdf] p-7 shadow-2xl"
+                className="relative z-10 flex max-h-[80vh] w-full max-w-[480px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/40 bg-[#f6efdf] shadow-2xl"
                 style={{ fontFamily: "var(--font-ridi-batang)" }}
                 initial={{ y: 16, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 8, opacity: 0 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="shrink-0 flex items-start justify-between gap-3 px-6 pt-6">
                   <div>
-                    <p className="text-[16px] uppercase tracking-[0.32em] text-[#7a5a3a]">
+                    <p className="text-[14px] uppercase tracking-[0.32em] text-[#7a5a3a]">
                       From other passengers
                     </p>
                     <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414]">
@@ -320,19 +319,21 @@ export function GrowthVisionSynthesisScene({
                     ×
                   </button>
                 </div>
-                <div className="mt-4 space-y-2.5">
-                  {VISION_EXAMPLES.map((ex, i) => (
-                    <div
-                      key={i}
-                      className="block w-full rounded-md border border-[#8c785a]/25 bg-white/40 p-3 text-left"
-                    >
-                      <p className="text-[16px] leading-[1.55] text-[#5a4a38]">
-                        {i + 1}. {ex}
-                      </p>
-                    </div>
-                  ))}
+                <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+                  <div className="space-y-2.5">
+                    {VISION_EXAMPLES.map((ex, i) => (
+                      <div
+                        key={i}
+                        className="block w-full rounded-md border border-[#8c785a]/25 bg-white/40 p-3 text-left"
+                      >
+                        <p className="text-[16px] leading-[1.55] text-[#5a4a38]">
+                          {i + 1}. {ex}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <p className="mt-4 text-center text-[16px] italic text-[#8a7a68]">
+                <p className="shrink-0 px-6 pb-5 text-center text-[16px] italic text-[#8a7a68]">
                   참고용 예시입니다. 내 방향은 직접 입력해주세요.
                 </p>
               </motion.div>

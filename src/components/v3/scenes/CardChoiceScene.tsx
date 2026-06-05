@@ -107,8 +107,10 @@ export function CardChoiceScene({
         </div>
       )}
 
-      {/* 하단 — 이전/선택하기 (정적, 항상 보임) */}
-      <div className="shrink-0 mt-3 flex items-center justify-between gap-3">
+      {/* 하단 — 이전/선택하기 (정적, 항상 대화창 바닥에 고정).
+          mt-auto 로 짧은 콘텐츠일 때 빈 공간을 위쪽이 아니라 footer 위로 몰아
+          buttons 가 늘 같은 위치에 보이게. */}
+      <div className="shrink-0 mt-auto pt-3 flex items-center justify-between gap-3">
         {onPrev && canGoBack ? (
           <button
             type="button"

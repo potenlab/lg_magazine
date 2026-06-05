@@ -18,7 +18,7 @@ import type { Chapter } from "@/lib/v3/scenes/types";
  * per-scene "이전" button (prevStack in V3App) is untouched and separate.
  */
 export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter }) {
-  const { session } = useV3Session();
+  const { session, patch } = useV3Session();
   const [open, setOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const { hint } = useCornerHint();
@@ -105,6 +105,11 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
           <ChapterReviewOverlay
             thread={threads[selectedIndex]}
             onClose={() => setSelectedIndex(null)}
+            onEdit={(fieldKey, next) => {
+              // patch 는 한 필드만 받아도 V3SessionContext 가 머지 처리. 키가
+              // V3Session 의 string 필드일 때만 fieldKey 가 붙기 때문에 캐스팅 안전.
+              patch({ [fieldKey]: next } as Partial<typeof session>);
+            }}
           />
         )}
       </AnimatePresence>

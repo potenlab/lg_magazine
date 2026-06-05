@@ -45,6 +45,11 @@ const CLIP_COOLDOWN_MS: Partial<Record<AudioName, number>> = {
   paper: 80,
 };
 
+// 클립별 기본 볼륨 오버라이드 (0~1). 미지정 시 DEFAULT_SFX_VOL 사용.
+const CLIP_VOLUME: Partial<Record<AudioName, number>> = {
+  card: 1.0, // 배경 기차 소리 위에서도 또렷이 들리도록 max
+};
+
 function get(name: AudioName): HTMLAudioElement | null {
   if (typeof window === "undefined") return null;
   if (!elements[name]) {
@@ -73,7 +78,7 @@ export function setGlobalVolume(multiplier: number): void {
   }
 }
 
-export function playOnce(name: AudioName, volume = DEFAULT_SFX_VOL): void {
+export function playOnce(name: AudioName, volume = CLIP_VOLUME[name] ?? DEFAULT_SFX_VOL): void {
   const el = get(name);
   if (!el) return;
   // 글로벌 볼륨이 0이면 (음소거) 재생 자체를 스킵

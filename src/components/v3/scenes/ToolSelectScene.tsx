@@ -98,7 +98,7 @@ export function ToolSelectScene({
           p-6 패딩 가장자리까지 background 가 닿게 해서 스크롤 콘텐츠 위로
           살짝 떠 있는 느낌. */}
       <div
-        className={`sticky bottom-0 z-10 -mx-6 -mb-6 mt-2 flex items-center justify-between gap-3 border-t border-[#d7bd83]/30 bg-[#f6efdf]/95 px-6 py-3 backdrop-blur transition-opacity duration-500 ${settled ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        className={`sticky bottom-0 z-10 -mx-6 -mb-6 flex items-center justify-between gap-3 rounded-b-md bg-[#f6efdf]/90 px-6 py-3 transition-opacity duration-500 ${settled ? "opacity-100" : "pointer-events-none opacity-0"}`}
       >
         {onPrev && canGoBack ? (
           <button

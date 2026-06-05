@@ -110,7 +110,7 @@ export function CardChoiceScene({
           끝에 붙음. sticky bottom-0 + 음수 마진(-mx-6 -mb-6, mt-2)으로 viewport
           하단에 고정해 스크롤 위로 떠 있게. wrapper 의 pb-[92px] 가 sticky
           footer 가 콘텐츠 마지막 줄을 가리지 않도록 여백을 미리 잡아둠. */}
-      <div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-2 flex items-center justify-between gap-3 border-t border-[#d7bd83]/30 bg-[#f6efdf]/95 px-6 py-3 backdrop-blur">
+      <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex items-center justify-between gap-3 rounded-b-md bg-[#f6efdf]/90 px-6 py-3">
         {onPrev && canGoBack ? (
           <button
             type="button"

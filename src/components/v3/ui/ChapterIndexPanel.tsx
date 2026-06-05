@@ -71,7 +71,7 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
               exit={{ x: -300 }}
               transition={{ duration: 0.28, ease: "easeOut" }}
             >
-              <p className="mb-3 px-2 text-[14px] font-semibold uppercase tracking-[0.22em] text-[#9b8768]">
+              <p className="mb-3 px-2 text-[14px] font-semibold uppercase tracking-[0.1em] text-[#9b8768]">
                 챕터 기록
               </p>
               {threads.map((thread, i) => {
@@ -87,7 +87,7 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
                       isFuture ? "cursor-default opacity-35" : "hover:bg-[#f6efdf]/10"
                     }`}
                   >
-                    <span className="text-[14px] uppercase tracking-[0.16em] text-[#9b8768]">
+                    <span className="text-[14px] uppercase tracking-[0.08em] text-[#9b8768]">
                       {thread.chapter}
                       {isCurrent ? " · 진행 중" : ""}
                     </span>

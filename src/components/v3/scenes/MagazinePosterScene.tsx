@@ -138,12 +138,12 @@ export function MagazinePosterScene({
     <div id="magazine-spread-root" className="relative flex min-h-0 flex-1 flex-col overflow-y-auto">
       {/* ── 매거진 마스트헤드 (모든 spread 공통) ─────────────────────── */}
       <header className="mb-4 shrink-0 text-center">
-        <p className="text-[11px] tracking-[0.42em] text-[#7a5a3a]">
+        <p className="text-[11px] tracking-[0.2em] text-[#7a5a3a]">
           MAGAZINE STORY · VOL. {session.name.toUpperCase() || "?"}
         </p>
         <div className="mt-2 flex items-center justify-center gap-3">
           <div className="h-px w-8 bg-[#b99b6b]/55" />
-          <span className="text-[12px] tracking-[0.3em] text-[#9a7b4c]">{pageIndicator}</span>
+          <span className="text-[12px] tracking-[0.14em] text-[#9a7b4c]">{pageIndicator}</span>
           <div className="h-px w-8 bg-[#b99b6b]/55" />
         </div>
       </header>
@@ -243,7 +243,7 @@ function CardsSpread({ session }: { session: V3Session }) {
     <article className="space-y-5">
       {/* 표제 — Editor's Cards. 정체성 → 가치 → 4년 비전이 한 문장 흐름으로 이어진다. */}
       <header className="text-center">
-        <p className="text-[12px] uppercase tracking-[0.42em] text-[#7a5a3a]">
+        <p className="text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
           Editor&rsquo;s Cards
         </p>
 
@@ -279,7 +279,7 @@ function CardsSpread({ session }: { session: V3Session }) {
       </header>
 
       <section className="mt-4 border-t border-[#b99b6b]/35 pt-4 text-center">
-        <p className="text-[12px] uppercase tracking-[0.4em] text-[#7a5a3a]">
+        <p className="text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
           Editor&rsquo;s Note
         </p>
         <p

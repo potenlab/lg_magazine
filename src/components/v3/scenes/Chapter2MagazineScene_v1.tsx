@@ -144,7 +144,7 @@ export function Chapter2MagazineSceneV1({
             initial={{ opacity: 0, scale: 1.5, rotate: -16 }}
             animate={{ opacity: 1, scale: 1, rotate: -8 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            className="pointer-events-none absolute right-1 top-0 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.18em] text-[#a13c2a]/90"
+            className="pointer-events-none absolute right-1 top-0 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.08em] text-[#a13c2a]/90"
           >
             CHAPTER 2 · 완성
           </motion.div>
@@ -153,7 +153,7 @@ export function Chapter2MagazineSceneV1({
 
       {/* ── 헤더 ─────────────────────────────────────────── */}
       <header className="mb-3 text-center">
-        <p className="text-[11px] tracking-[0.32em] text-[#9b8768]">STORY · MAGAZINE</p>
+        <p className="text-[11px] tracking-[0.08em] text-[#9b8768]">STORY · MAGAZINE</p>
         <h1 className="mt-1 text-[18px] font-semibold tracking-wide text-[#3d2414]">
           Chapter 2 · 발견
         </h1>
@@ -174,7 +174,7 @@ export function Chapter2MagazineSceneV1({
       {/* ── Fold ─────────────────────────────────────── */}
       <div className="my-5 flex items-center justify-center gap-3" aria-hidden="true">
         <div className="h-px flex-1 bg-[#b99b6b]/40" />
-        <span className="text-[12px] tracking-[0.3em] text-[#9b8768]">✦</span>
+        <span className="text-[12px] tracking-[0.14em] text-[#9b8768]">✦</span>
         <div className="h-px flex-1 bg-[#b99b6b]/40" />
       </div>
 
@@ -187,7 +187,7 @@ export function Chapter2MagazineSceneV1({
 
       {/* ── 헤드라인 (빈 줄 — 입력으로 채워짐) ────────────── */}
       <section className="mt-7 border-t border-[#b99b6b]/30 pt-6">
-        <p className="mb-3 text-center text-[11px] tracking-[0.32em] text-[#9b8768]">
+        <p className="mb-3 text-center text-[11px] tracking-[0.08em] text-[#9b8768]">
           당신은 어떤 사람입니까?
         </p>
         <div className="mb-5 flex flex-wrap items-baseline justify-center gap-x-2 text-center">
@@ -301,7 +301,7 @@ function MagazineCard({ label, body, delay }: { label: string; body: string; del
       transition={{ delay, duration: 0.5, ease: "easeOut" }}
       className="rounded-md border border-[#b99b6b]/40 bg-white/55 px-5 py-4"
     >
-      <p className="text-[12px] uppercase tracking-[0.24em] text-[#9b8768]">{label}</p>
+      <p className="text-[12px] uppercase tracking-[0.12em] text-[#9b8768]">{label}</p>
       <p className="mt-2 text-[15px] leading-[1.75] text-[#3d2414]">
         <EditorialInline text={body} />
       </p>

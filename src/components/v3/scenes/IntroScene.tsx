@@ -773,7 +773,7 @@ export function IntroScene({
                   >
                     <div className="shrink-0 flex items-start justify-between gap-3 px-6 pt-6">
                       <div>
-                        <p className="text-[14px] uppercase tracking-[0.32em] text-[#7a5a3a]">
+                        <p className="text-[14px] uppercase tracking-[0.08em] text-[#7a5a3a]">
                           From other passengers
                         </p>
                         <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414]">

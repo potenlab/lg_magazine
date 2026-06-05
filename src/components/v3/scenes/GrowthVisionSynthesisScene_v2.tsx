@@ -228,7 +228,7 @@ export function GrowthVisionSynthesisSceneV2({
             initial={{ opacity: 0, scale: 1.5, rotate: -16 }}
             animate={{ opacity: 1, scale: 1, rotate: -8 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            className="pointer-events-none absolute right-1 top-0 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.18em] text-[#a13c2a]/90"
+            className="pointer-events-none absolute right-1 top-0 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.08em] text-[#a13c2a]/90"
           >
             CHAPTER 3 · 완성
           </motion.div>
@@ -236,7 +236,7 @@ export function GrowthVisionSynthesisSceneV2({
       </AnimatePresence>
 
       <header className="mb-3 shrink-0 text-center">
-        <p className="text-[11px] tracking-[0.42em] text-[#7a5a3a]">
+        <p className="text-[11px] tracking-[0.2em] text-[#7a5a3a]">
           STORY · MAGAZINE · CHAPTER 3
         </p>
         <h1 className="mt-1 text-[18px] font-semibold tracking-wide text-[#3d2414]">
@@ -244,7 +244,7 @@ export function GrowthVisionSynthesisSceneV2({
         </h1>
         <div className="mt-2 flex items-center justify-center gap-3">
           <div className="h-px w-8 bg-[#b99b6b]/55" />
-          <span className="text-[12px] tracking-[0.3em] text-[#9a7b4c]">{pageIndicator}</span>
+          <span className="text-[12px] tracking-[0.14em] text-[#9a7b4c]">{pageIndicator}</span>
           <div className="h-px w-8 bg-[#b99b6b]/55" />
         </div>
       </header>
@@ -361,7 +361,7 @@ function VisionInputPage({
 }) {
   return (
     <section className="mx-auto max-w-[640px] py-2">
-      <p className="mb-5 text-center text-[12px] uppercase tracking-[0.42em] text-[#7a5a3a]">
+      <p className="mb-5 text-center text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
         Editor&rsquo;s Question
       </p>
       <h2

@@ -94,13 +94,13 @@ export function EditorCreditsScene({
             {spec.narration}
           </motion.p>
         )}
-        <p className="text-[16px] uppercase tracking-[0.42em] text-[#7a5a3a]">
+        <p className="text-[16px] uppercase tracking-[0.2em] text-[#7a5a3a]">
           From the Editor
         </p>
         <div className="flex items-center gap-3">
           <div className="h-px w-8 bg-[#b99b6b]/55" />
           <span
-            className="text-[16px] tracking-[0.28em] text-[#7a5a3a]"
+            className="text-[16px] tracking-[0.14em] text-[#7a5a3a]"
             style={{ fontFamily: "var(--font-ridi-batang), serif" }}
           >
             Editor&rsquo;s Note
@@ -131,7 +131,7 @@ export function EditorCreditsScene({
             className="flex flex-col items-center gap-3"
           >
             <div className="h-px w-12 bg-[#b99b6b]/55" />
-            <p className="text-[16px] uppercase tracking-[0.4em] text-[#7a5a3a]">
+            <p className="text-[16px] uppercase tracking-[0.2em] text-[#7a5a3a]">
               Magazine STORY · Vol. {session.name}
             </p>
             <p

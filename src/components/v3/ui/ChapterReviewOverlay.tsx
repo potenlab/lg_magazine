@@ -57,7 +57,7 @@ export function ChapterReviewOverlay({
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <p className="text-[16px] font-semibold uppercase tracking-[0.22em] text-[#9b8768]">
+            <p className="text-[16px] font-semibold uppercase tracking-[0.1em] text-[#9b8768]">
               {thread.chapter}
             </p>
             <h3 className="mt-1 text-[18px] font-semibold text-[#3d2414]">{thread.title}</h3>
@@ -86,7 +86,7 @@ export function ChapterReviewOverlay({
                 ? "rounded-md border border-[#d7bd83]/40 bg-[#ede1c6]/40 px-4 py-3"
                 : "rounded-md border border-[#b99b6b]/30 bg-white/55 px-4 py-3";
               const labelClass = isQuestion
-                ? "text-[11px] uppercase tracking-[0.18em] text-[#9b8768]"
+                ? "text-[11px] uppercase tracking-[0.08em] text-[#9b8768]"
                 : "text-[16px] tracking-wide text-[#8b7050]";
               const textClass = isQuestion
                 ? "mt-1 whitespace-pre-wrap text-[16px] italic leading-[1.6] text-[#6b5337]"

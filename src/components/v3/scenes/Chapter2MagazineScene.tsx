@@ -164,7 +164,7 @@ export function Chapter2MagazineScene({
             initial={{ opacity: 0, scale: 1.5, rotate: -16 }}
             animate={{ opacity: 1, scale: 1, rotate: -8 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            className="pointer-events-none absolute right-1 top-0 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.18em] text-[#a13c2a]/90"
+            className="pointer-events-none absolute right-1 top-0 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.08em] text-[#a13c2a]/90"
           >
             CHAPTER 2 · 완성
           </motion.div>
@@ -173,11 +173,11 @@ export function Chapter2MagazineScene({
 
       {/* 마스트헤드 */}
       <header className="mb-4 shrink-0 text-center">
-        <p className="text-[11px] tracking-[0.42em] text-[#7a5a3a]">STORY · MAGAZINE · CHAPTER 2</p>
+        <p className="text-[11px] tracking-[0.2em] text-[#7a5a3a]">STORY · MAGAZINE · CHAPTER 2</p>
         <h1 className="mt-1 text-[18px] font-semibold tracking-wide text-[#3d2414]">발견</h1>
         <div className="mt-2 flex items-center justify-center gap-3">
           <div className="h-px w-8 bg-[#b99b6b]/55" />
-          <span className="text-[12px] tracking-[0.3em] text-[#9a7b4c]">EDITOR&rsquo;S SUMMARY</span>
+          <span className="text-[12px] tracking-[0.14em] text-[#9a7b4c]">EDITOR&rsquo;S SUMMARY</span>
           <div className="h-px w-8 bg-[#b99b6b]/55" />
         </div>
       </header>
@@ -191,7 +191,7 @@ export function Chapter2MagazineScene({
 
       {/* 정체성 입력 */}
       <section className="mt-7 border-t border-[#b99b6b]/30 pt-6">
-        <p className="mb-3 text-center text-[12px] uppercase tracking-[0.42em] text-[#7a5a3a]">
+        <p className="mb-3 text-center text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
           Editor&rsquo;s Question
         </p>
         {/* 터세한 "님은 어떤 사람입니까?" 대신 엘아울의 따뜻한 원래 멘트(구 2-8). */}
@@ -293,7 +293,7 @@ export function Chapter2MagazineScene({
               >
                 <div className="shrink-0 flex items-start justify-between gap-3 px-6 pt-6">
                   <div>
-                    <p className="text-[14px] uppercase tracking-[0.32em] text-[#7a5a3a]">
+                    <p className="text-[14px] uppercase tracking-[0.08em] text-[#7a5a3a]">
                       From other passengers
                     </p>
                     <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414]">
@@ -373,7 +373,7 @@ function BeatCard({ beat, delay }: { beat: Beat; delay: number }) {
       transition={{ delay, duration: 0.5, ease: "easeOut" }}
       className="rounded-md border border-[#b99b6b]/40 bg-white/55 px-4 py-4"
     >
-      <p className="text-[11px] uppercase tracking-[0.22em] text-[#9b8768]">
+      <p className="text-[11px] uppercase tracking-[0.1em] text-[#9b8768]">
         {beat.number} · {beat.category}
       </p>
       {beat.headline ? (

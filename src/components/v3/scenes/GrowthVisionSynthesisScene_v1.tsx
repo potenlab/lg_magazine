@@ -115,7 +115,7 @@ export function GrowthVisionSynthesisSceneV1({
             transition={{ delay: 0.18 * i, duration: 0.55, ease: "easeOut" }}
             className="rounded-md border border-[#b99b6b]/40 bg-white/55 px-4 py-3"
           >
-            <p className="text-[11px] uppercase tracking-[0.22em] text-[#9b8768]">
+            <p className="text-[11px] uppercase tracking-[0.1em] text-[#9b8768]">
               {CARD_LABELS[i] ?? `BEAT ${i + 1}`}
             </p>
             <p className="mt-1.5 text-[14px] leading-[1.6] text-[#3d2414]">

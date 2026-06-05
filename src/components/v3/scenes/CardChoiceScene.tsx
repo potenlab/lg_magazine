@@ -3,6 +3,7 @@
 import { useContext, useEffect, useState } from "react";
 import { AutoFlowText } from "@/components/v3/ui/AutoFlowText";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
+import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { DialogStageContext } from "@/components/v3/V3App";
@@ -105,29 +106,25 @@ export function CardChoiceScene({
         )}
       </div>
 
-      {/* Footer — 이전 + 선택하기 in same row. sticky so it stays visible
-          on short screens; transparent (no border / bg) so it doesn't paint
-          a distracting band over the parchment dialog. */}
-      <div className="sticky bottom-0 z-10 -mx-7 -mb-7 mt-1 flex items-center justify-between px-7 py-3">
-        {onPrev && canGoBack ? (
-          <button
-            type="button"
-            onClick={onPrev}
-            className="flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
-          >
-            이전
-          </button>
-        ) : (
-          <span />
-        )}
+      {/* 이전 / 선택하기 — 다른 question/followup 씬과 동일 패턴으로 absolute
+          앵커. 이전: bottom-6 left-6 (텍스트 nav), 선택하기: bottom-6 right-6
+          StoryButtonV3. 대화창 wrapper 의 pb-[92px] 가 이 버튼 공간을 비워둠. */}
+      {onPrev && canGoBack && (
         <button
           type="button"
+          onClick={onPrev}
+          className="absolute bottom-6 left-6 z-10 flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
+        >
+          이전
+        </button>
+      )}
+      <div className="absolute bottom-6 right-6 z-10 flex items-center">
+        <StoryButtonV3
+          label={spec.buttonLabel ?? "선택하기"}
           onClick={confirm}
           disabled={selected === null}
-          className="rounded-md bg-[#3d2414] px-6 py-3 text-[16px] text-[#f5ead6] transition hover:bg-[#5a3520] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#3d2414]"
-        >
-          {spec.buttonLabel ?? "선택하기"}
-        </button>
+          ritual
+        />
       </div>
     </div>
   );

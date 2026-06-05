@@ -500,11 +500,10 @@ function V3Inner() {
                     // default FULL_HEIGHT — recordPage / toolSelect / visionSelect / magazinePosterV1
                     : "relative mx-auto flex h-[calc(100vh_-_200px)] min-h-[300px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl"
                   : spec.kind === "cardChoice" && stage === "content"
-                    // cardChoice keeps the same bottom-anchored position +
-                    // 1156px width as other dialogs, but drops the min-height
-                    // so the dialog hugs the 3-choice content instead of
-                    // forcing 480px of empty space + losing scroll.
-                    ? "relative mx-auto flex max-h-[calc(100vh_-_220px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
+                    // [2026-06-06] question/followup INPUT_KINDS 패턴과 통일.
+                    // 이전엔 sticky footer + p-7 가 다른 씬과 따로 놀았음. 이젠
+                    // min-h-[320px] + pb-[92px] (absolute 버튼용 공간) 동일 톤.
+                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[320px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-[92px] shadow-2xl text-[16px]"
                     : INPUT_KINDS.has(spec.kind) && stage === "content"
                       // [2026-06-05] AC 풍 압축 — px/pt 28→22, pb 108→92 (버튼 공간만 남김).
                       ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[320px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-[92px] shadow-2xl text-[16px]"

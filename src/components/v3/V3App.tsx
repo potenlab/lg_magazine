@@ -443,13 +443,16 @@ function V3Inner() {
               {spec.speakerLabel ?? "편집장 | 엘 아울"}
             </p>
           )}
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
               key={motionKey}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.45, ease: "easeInOut" }}
+              // 진입은 약간 빨리, 퇴장은 더 짧게 — mode="popLayout" 으로 두 씬이
+              // 같은 자리에서 잠깐 겹친 채 크로스페이드. mode="wait" 때 생기던
+              // "양쪽 다 사라진 빈 화면" 딜레이가 사라짐.
+              transition={{ opacity: { duration: 0.32, ease: "easeInOut" } }}
               className={
                 stage === "hidden"
                   // Cinematic ambience first-beat — dialog wrapper fully hidden.

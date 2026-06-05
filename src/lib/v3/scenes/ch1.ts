@@ -262,6 +262,7 @@ export const CH1_SCENES: SceneSpec[] = [
     chapter: 1,
     kind: "ambience",
     owl: "closingBook",
+    hideOwl: true,
     timeOfDay: "starsRising",
     bgImage: "/vision_express/common/Chapter02-1.webp",
     narration: "창밖이 어둑해진다.",

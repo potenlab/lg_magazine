@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { AutoFlowText } from "@/components/v3/ui/AutoFlowText";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { PaginatedNarration } from "@/components/v3/ui/PaginatedNarration";
@@ -109,20 +110,29 @@ export function QuestionScene({
           <AutoFlowText lines={lines} onSettled={() => setInputReady(true)} />
         )}
         {editorNoteReady && spec.editorNote && (
-          <p
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
             className="border-l-2 border-[#b99b6b]/50 pl-3 text-[16px] italic leading-[1.6] text-[#8b7050]"
             style={{ fontFamily: "var(--font-ridi-batang)" }}
           >
             편집장의 한마디 — {renderTemplate(spec.editorNote, session)}
-          </p>
+          </motion.p>
         )}
         {inputVisible && (
-          <HintInput
-            value={value}
-            onChange={setValue}
-            placeholder={spec.placeholder ? renderTemplate(spec.placeholder, session) : undefined}
-            hint={spec.inputHint ? renderTemplate(spec.inputHint, session) : undefined}
-          />
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+          >
+            <HintInput
+              value={value}
+              onChange={setValue}
+              placeholder={spec.placeholder ? renderTemplate(spec.placeholder, session) : undefined}
+              hint={spec.inputHint ? renderTemplate(spec.inputHint, session) : undefined}
+            />
+          </motion.div>
         )}
       </div>
       {/* Absolute-anchored to dialog bottom-right (mirrors the "이전" button

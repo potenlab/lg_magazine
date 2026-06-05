@@ -365,10 +365,10 @@ function V3Inner() {
           <section className="relative w-full max-w-[800px] flex-1 flex flex-col">
             <motion.div
               key={motionKey}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.32 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.45, ease: "easeInOut" }}
               className="relative flex flex-1 flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl"
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             >
@@ -446,10 +446,10 @@ function V3Inner() {
           <AnimatePresence mode="wait">
             <motion.div
               key={motionKey}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.32 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.45, ease: "easeInOut" }}
               className={
                 stage === "hidden"
                   // Cinematic ambience first-beat — dialog wrapper fully hidden.

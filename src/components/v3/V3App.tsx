@@ -443,15 +443,15 @@ function V3Inner() {
               {spec.speakerLabel ?? "편집장 | 엘 아울"}
             </p>
           )}
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={motionKey}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, transition: { duration: 0.32, ease: "easeOut" } }}
-              // mode='popLayout' 은 exit 요소를 position:absolute 로 빼서 좌상단
-              // 으로 튀는 문제 발생 → mode='wait' 로 복귀. exit duration 을 0.08s
-              // 로 짧게 깎아 '양쪽 다 사라진 빈 화면' 딜레이는 거의 안 느껴짐.
-              exit={{ opacity: 0, transition: { duration: 0.08, ease: "easeIn" } }}
+          {/* AnimatePresence + motion.div 페이드를 모두 제거.
+              씬마다 dialog 박스 크기/위치/배경이 크게 달라서 어떤 방식의
+              크로스페이드를 시도해도 "박스가 늘어난다 / 좌상단으로 튄다 /
+              빈 화면 딜레이가 보인다" 중 하나가 발생. 가장 안정적인 선택은
+              그냥 즉시 스왑. key 만 살려두면 React 가 깔끔하게 unmount/mount.
+              씬 내부의 콘텐츠(라인, 카드, 입력)는 각자 fade-in 애니메이션을
+              이미 갖고 있으므로 외곽 박스만 snap. */}
+          <div key={motionKey}>
+            <div
               className={
                 stage === "hidden"
                   // Cinematic ambience first-beat — dialog wrapper fully hidden.
@@ -533,8 +533,8 @@ function V3Inner() {
                   이전
                 </button>
               )}
-            </motion.div>
-          </AnimatePresence>
+            </div>
+          </div>
         </section>
       </div>
 

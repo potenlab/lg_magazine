@@ -11,14 +11,15 @@ const CHAPTER_LABEL: Record<string, string> = {
   C: "Closing",
 };
 
-const TOTAL_CHAPTERS = 5;
+const TOTAL_CHAPTERS = 4;
 
 export function ProgressRail({ progress, chapter }: { progress: number; chapter: Chapter }) {
   const clamped = Math.max(0, Math.min(1, progress));
   const label = CHAPTER_LABEL[String(chapter)] ?? "";
-  // Step 1..5 (Closing is step 5 too — final).
+  // 채워진 별 = 챕터 숫자 그대로 (Ch1→1, Ch2→2, Ch3→3, Ch4→4). Ch0(intro)→0,
+  // 'C'(Closing)→4. ChapterCardScene 의 중앙 별 표시와 동일 공식.
   const step =
-    chapter === "C" ? TOTAL_CHAPTERS : typeof chapter === "number" ? Math.max(1, chapter + 1) : 1;
+    chapter === "C" ? TOTAL_CHAPTERS : typeof chapter === "number" ? Math.max(0, chapter) : 0;
   return (
     <>
       <div

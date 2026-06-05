@@ -18,13 +18,12 @@ export function ChapterCardScene({
   onAdvance: (n: SceneId) => void;
 }) {
   const title = CHAPTER_TITLE[String(spec.chapter)] ?? "";
-  // ProgressRail(하단)의 채워진 별 개수와 동일 공식 사용 — step = chapter+1.
-  // (이전엔 spec.chapter 그대로 써서 항상 1개씩 어긋났음.)
+  // 중앙 별 개수 = 챕터 숫자 (Ch1→1, Ch2→2, Ch3→3, Ch4→4). 'C'(Closing) 는 4.
   const starCount =
     spec.chapter === "C"
-      ? 5
+      ? 4
       : typeof spec.chapter === "number"
-        ? Math.max(1, spec.chapter + 1)
+        ? Math.max(1, spec.chapter)
         : 1;
   const advance = () => {
     if (typeof spec.next === "string") onAdvance(spec.next);

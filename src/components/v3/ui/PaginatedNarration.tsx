@@ -165,11 +165,11 @@ export function PaginatedNarration({
         // Absolute-anchored to the dialog's bottom-right (positions itself
         // against the nearest positioned ancestor — i.e. the V3App dialog
         // motion.div which is `relative`). Matches the 이전 button's
-        // `absolute bottom-7 left-7` baseline so the two sit at the same
+        // `absolute bottom-6 left-6` baseline so the two sit at the same
         // height. Previously this used `mt-auto`, which got pushed UP
         // whenever a sibling (e.g. RitualScene's primary action button)
         // reserved space at the dialog bottom.
-        <div className="absolute bottom-7 right-7 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
+        <div className="absolute bottom-6 right-6 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
           <span
             className={`italic transition-opacity ${settled ? "opacity-100" : "opacity-0"}`}
           >

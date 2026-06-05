@@ -126,11 +126,11 @@ export function QuestionScene({
         )}
       </div>
       {/* Absolute-anchored to dialog bottom-right (mirrors the "이전" button
-          which sits absolute bottom-7 left-7). Keeps button position fixed
+          which sits absolute bottom-6 left-6). Keeps button position fixed
           regardless of content height so short questions don't leave a big
           empty gap between the input and the action button. */}
       <div
-        className={`absolute bottom-7 right-7 z-10 flex h-[44px] items-center transition-opacity duration-500 ${
+        className={`absolute bottom-6 right-6 z-10 flex h-[44px] items-center transition-opacity duration-500 ${
           inputVisible ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
@@ -146,7 +146,7 @@ export function QuestionScene({
           <button
             type="button"
             onClick={() => setShowReview(true)}
-            className="absolute right-7 top-7 text-[16px] italic text-[#8b7050] underline decoration-dotted underline-offset-[3px] transition hover:text-[#3d2414]"
+            className="absolute right-6 top-6 text-[16px] italic text-[#8b7050] underline decoration-dotted underline-offset-[3px] transition hover:text-[#3d2414]"
           >
             내 답변 다시 보기
           </button>

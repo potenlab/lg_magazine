@@ -107,7 +107,7 @@ export function AmbienceScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
           <div className="flex-1">
             <NarrationBlock text={narration} />
           </div>
-          <div className="absolute bottom-7 right-7 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
+          <div className="absolute bottom-6 right-6 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
             <span className="italic">다음</span>
           </div>
         </div>
@@ -126,7 +126,7 @@ export function AmbienceScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
         <div className="flex-1">
           <NarrationBlock text={narration} />
         </div>
-        <div className="absolute bottom-7 right-7 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
+        <div className="absolute bottom-6 right-6 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
           <span className="italic">다음</span>
         </div>
       </div>

@@ -70,7 +70,7 @@ export function OwlReflectScene({
           full button. owlReflect is a narration beat with no commitment,
           so the lightweight italic nav reads more naturally than a
           primary action button. Absolute-anchored to mirror 이전. */}
-      <div className="absolute bottom-7 right-7 z-10 flex h-[44px] items-center">
+      <div className="absolute bottom-6 right-6 z-10 flex h-[44px] items-center">
         <NavText label={spec.buttonLabel ?? "다음"} onClick={advance} />
       </div>
     </div>

@@ -365,10 +365,10 @@ function FollowupBody({
         )}
       </div>
       {/* Absolute-anchored to dialog bottom-right — mirrors the "이전" button
-          (absolute bottom-7 left-7) so the action button stays at a fixed
+          (absolute bottom-6 left-6) so the action button stays at a fixed
           position regardless of how much content is above. */}
       <div
-        className={`absolute bottom-7 right-7 z-10 flex h-[44px] items-center transition-opacity duration-500 ${
+        className={`absolute bottom-6 right-6 z-10 flex h-[44px] items-center transition-opacity duration-500 ${
           settled ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >

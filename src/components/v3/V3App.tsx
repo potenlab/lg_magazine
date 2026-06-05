@@ -497,8 +497,10 @@ function V3Inner() {
                     : spec.kind === "editorCredits"
                     // 콘텐츠 짧은 final-stage 씬 — 콘텐츠 hug로 빈 양피지 회귀 방지.
                     ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[420px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
-                    // default FULL_HEIGHT — recordPage / toolSelect / visionSelect / magazinePosterV1
-                    : "relative mx-auto flex h-[calc(100vh_-_200px)] min-h-[300px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl"
+                    // default FULL_HEIGHT — recordPage / toolSelect / visionSelect / magazinePosterV1.
+                    // pb-[92px] 로 absolute bottom-6 버튼(이전/건네기) 공간 비움
+                    // (toolSelect 등에서 콘텐츠가 버튼 아래로 깔리지 않게).
+                    : "relative mx-auto flex h-[calc(100vh_-_200px)] min-h-[300px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-[92px] shadow-2xl"
                   : spec.kind === "cardChoice" && stage === "content"
                     // [2026-06-06] question/followup INPUT_KINDS 패턴과 통일.
                     // 이전엔 sticky footer + p-7 가 다른 씬과 따로 놀았음. 이젠

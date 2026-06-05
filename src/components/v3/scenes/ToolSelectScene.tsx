@@ -93,24 +93,21 @@ export function ToolSelectScene({
         </>
       )}
 
-      {/* Footer — 이전 + 건네기 in same row. Transparent (no border / bg)
-          so it doesn't paint a distracting band over the parchment dialog. */}
+      {/* 이전 / 건네기 — 다른 question/followup 씬과 동일 패턴. dialog wrapper
+          의 pb-[92px] 가 이 버튼 공간을 비워둠. 스크롤 콘텐츠가 버튼 아래로
+          깔리지 않음. */}
+      {onPrev && canGoBack && (
+        <button
+          type="button"
+          onClick={onPrev}
+          className={`absolute bottom-6 left-6 z-10 flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition-opacity duration-500 hover:text-[#3d2414] ${settled ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        >
+          이전
+        </button>
+      )}
       <div
-        className={`sticky bottom-0 z-10 -mx-7 -mb-7 mt-1 flex items-center justify-between px-7 py-3 transition-opacity duration-500 ${
-          settled ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
+        className={`absolute bottom-6 right-6 z-10 flex items-center transition-opacity duration-500 ${settled ? "opacity-100" : "pointer-events-none opacity-0"}`}
       >
-        {onPrev && canGoBack ? (
-          <button
-            type="button"
-            onClick={onPrev}
-            className="flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
-          >
-            이전
-          </button>
-        ) : (
-          <span />
-        )}
         <StoryButtonV3
           label={spec.buttonLabel ?? "건네기"}
           onClick={submit}

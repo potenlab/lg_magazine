@@ -14,12 +14,16 @@ export function ChapterReviewOverlay({
   thread,
   onClose,
   onEdit,
+  lockedFields,
 }: {
   thread: ChapterThread;
   onClose: () => void;
   /** 답변 인라인 편집을 허용하려면 전달. fieldKey 가 있는 answer entry 에만
    *  "수정" 어피던스가 붙고, 저장 시 이 콜백으로 patch 가 호출됨. */
   onEdit?: (fieldKey: keyof V3Session, next: string) => void;
+  /** 이 set 에 들어 있는 fieldKey 는 이미 LLM 반향이 만들어진 답변이라 잠금.
+   *  엔트리에 "수정" 대신 작은 안내 문구 표시. */
+  lockedFields?: Set<string>;
 }) {
   // Filter strategy:
   // 1) Drop any entry with no text.
@@ -91,8 +95,10 @@ export function ChapterReviewOverlay({
               const textClass = isQuestion
                 ? "mt-1 whitespace-pre-wrap text-[16px] italic leading-[1.6] text-[#6b5337]"
                 : "mt-1.5 whitespace-pre-wrap text-[16px] leading-[1.7] text-[#3d2414]";
+              const hasField = Boolean(entry.fieldKey);
+              const locked = hasField && Boolean(lockedFields?.has(entry.fieldKey!));
               const editable =
-                Boolean(onEdit) && entry.tone === "answer" && Boolean(entry.fieldKey);
+                Boolean(onEdit) && entry.tone === "answer" && hasField && !locked;
               return (
                 <EntryBox
                   key={i}
@@ -101,6 +107,7 @@ export function ChapterReviewOverlay({
                   labelClass={labelClass}
                   textClass={textClass}
                   editable={editable}
+                  locked={locked && entry.tone === "answer"}
                   onSave={
                     editable && entry.fieldKey
                       ? (next) => onEdit?.(entry.fieldKey!, next)
@@ -124,6 +131,7 @@ function EntryBox({
   labelClass,
   textClass,
   editable,
+  locked,
   onSave,
 }: {
   entry: { label: string; text?: string };
@@ -131,6 +139,7 @@ function EntryBox({
   labelClass: string;
   textClass: string;
   editable: boolean;
+  locked?: boolean;
   onSave?: (next: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -160,6 +169,14 @@ function EntryBox({
           >
             수정
           </button>
+        )}
+        {locked && !editing && (
+          <span
+            className="shrink-0 text-[11px] italic text-[#a18965]"
+            title="이 답변은 편집장의 반향이 이미 만들어진 뒤라 수정할 수 없어요."
+          >
+            반향 생성 후 잠김
+          </span>
         )}
       </div>
       {editing ? (

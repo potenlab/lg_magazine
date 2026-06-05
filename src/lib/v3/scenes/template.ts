@@ -68,13 +68,20 @@ export function extractIdentityTitle(s: string): string {
     .replace(/__/g, "")
     .trim();
   const bracket = cleaned.match(/^\s*\[([^\]]+)\]/);
-  if (bracket?.[1]) return bracket[1].trim();
-
-  const firstLine = cleaned.split(/\r?\n/).find((line) => line.trim().length > 0) ?? cleaned;
-  return firstLine
-    .replace(/^[\s"'`「」“”‘’\[]+/, "")
-    .replace(/[\s"'`「」“”‘’\].]+$/, "")
-    .trim();
+  const raw = bracket?.[1]
+    ? bracket[1].trim()
+    : (cleaned.split(/\r?\n/).find((line) => line.trim().length > 0) ?? cleaned)
+        .replace(/^[\s"'`「」“”‘’\[]+/, "")
+        .replace(/[\s"'`「」“”‘’\].]+$/, "")
+        .trim();
+  // Chapter 2 정체성 입력 UI 가 "나는 ___ 사람." 골격에서 가운데 빈칸만 받기 때문에
+  // session.identityName 에는 "사람"이 빠진 채 저장되는 경우가 많다. 결과지/매거진
+  // 인용은 "~하는 사람"까지 한 호흡으로 읽혀야 자연스러우므로, 관형형 연결어미
+  // (는/은/ㄴ/던 등)로 끝나면 " 사람"을 붙여 완결.
+  if (!raw) return raw;
+  if (/사람$/.test(raw)) return raw; // 이미 "사람"으로 끝남
+  if (/(는|은|던)$/.test(raw)) return `${raw} 사람`;
+  return raw;
 }
 
 export function toProgressiveVision(s: string): string {

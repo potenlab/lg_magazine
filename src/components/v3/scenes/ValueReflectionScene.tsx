@@ -6,6 +6,8 @@ import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useEditorWait } from "@/lib/v3/useEditorWait";
+import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { paginateMirror, splitReadableChunks } from "@/lib/v3/paginateMirror";
 import { DialogStageContext } from "@/components/v3/V3App";
@@ -25,6 +27,7 @@ export function ValueReflectionScene({
   onAdvance: (n: SceneId) => void;
 }) {
   const { session, patch } = useV3Session();
+  const waitMsg = useEditorWait();
   const [reflection, setReflection] = useState(session.valueReflection);
   const hasNarration = Boolean(spec.narration);
   const [beat, setBeat] = useState<Beat>(hasNarration ? "narration" : "reflection");
@@ -73,6 +76,7 @@ export function ValueReflectionScene({
     }
     if (typeof spec.next === "string") onAdvance(spec.next);
   };
+  useEnterToAdvance(advance, Boolean(reflection));
 
   const canAdvance =
     beat === "narration" || (beat === "reflection" && Boolean(reflection));
@@ -102,7 +106,7 @@ export function ValueReflectionScene({
               ))}
             </motion.div>
           ) : (
-            <NarrationBlock text="편집장이 적힌 의미들을 가만히 들여다본다…" />
+            <NarrationBlock text={waitMsg} />
           ))}
       </div>
 

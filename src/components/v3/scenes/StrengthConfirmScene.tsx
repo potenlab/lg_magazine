@@ -4,6 +4,8 @@ import { useContext, useEffect, useState } from "react";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useEditorWait } from "@/lib/v3/useEditorWait";
+import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
@@ -25,6 +27,7 @@ export function StrengthConfirmScene({
   onAdvance: (n: SceneId) => void;
 }) {
   const { session, patch } = useV3Session();
+  const waitMsg = useEditorWait();
   const [loaded, setLoaded] = useState(
     Boolean(session.strengthCommonAsk && session.strengthLinkedValue),
   );
@@ -71,9 +74,10 @@ export function StrengthConfirmScene({
     if (typeof spec.next === "string") onAdvance(spec.next);
     else if (typeof spec.next === "function") onAdvance(spec.next(session));
   };
+  useEnterToAdvance(advance, loaded);
 
   if (!loaded) {
-    return <NarrationBlock text="편집장이 답변을 가만히 들여다본다…" />;
+    return <NarrationBlock text={waitMsg} />;
   }
 
   if (!showLines && hasNarration && narration) {

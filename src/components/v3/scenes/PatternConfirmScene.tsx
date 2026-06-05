@@ -6,12 +6,14 @@ import { PaginatedNarration } from "@/components/v3/ui/PaginatedNarration";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useEditorWait } from "@/lib/v3/useEditorWait";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 export function PatternConfirmScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance: (n: SceneId) => void }) {
   const { session, patch } = useV3Session();
+  const waitMsg = useEditorWait();
   const [loaded, setLoaded] = useState(false);
   const [narrationDone, setNarrationDone] = useState(false);
 
@@ -70,7 +72,7 @@ export function PatternConfirmScene({ spec, onAdvance }: { spec: SceneSpec; onAd
   };
 
   if (!loaded) {
-    return <NarrationBlock text="편집장이 두 페이지를 가만히 들여다본다…" />;
+    return <NarrationBlock text={waitMsg} />;
   }
 
   if (!showLines && narration) {

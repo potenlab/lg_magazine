@@ -1278,7 +1278,7 @@ export async function v3WriteEditorNote(input: { session: V3Session; kind: "intr
 
 [형식 — 반드시 이 구조를 따르세요]
 - 첫 문장: "${session.name}님을 만났다." (※ 인트로 첫 문장에만 "님" 사용 OK)
-- 두 번째 문장: "${pron}는 LG에서 일하는 ${session.job}였다." (또는 자연스러운 변형)
+- 두 번째 문장: ${session.job ? `"${pron}는 ${session.job} 일을 하는 사람이었다." 또는 "${pron}는 ${session.job} 분야에서 일하고 있었다." 같은 자연스러운 변형. **"LG의 ${session.job}였다" 같은 어색한 소속격 문장은 금지** — 그 사람의 직무를 자연스러운 한국어 문장으로 풀어쓸 것.` : `${pron}가 어떤 자리에 있는 사람인지 짧게 짚는 한 문장.`}
 - 이번 호의 톤·방향을 살짝 암시하는 한 문장
 - 마지막 문장: "우리는 ${pron}의 이야기를 한 호의 매거진으로 담았다." (또는 자연스러운 변형)
 

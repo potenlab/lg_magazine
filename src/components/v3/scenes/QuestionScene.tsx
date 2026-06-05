@@ -9,6 +9,7 @@ import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { DialogStageContext } from "@/components/v3/V3App";
+import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
 import type { SceneSpec, SceneId, V3Session } from "@/lib/v3/scenes/types";
 
 const PAGINATE_THRESHOLD = 3;
@@ -31,6 +32,9 @@ export function QuestionScene({
   const narration = spec.narration ? renderTemplate(spec.narration, session) : undefined;
   const [showLines, setShowLines] = useState(!narration);
   const { setStage } = useContext(DialogStageContext);
+  // Question 씬은 (1) narration 단계 — Enter 로 lines 로 이동, (2) input 단계 —
+  // 입력창이 포커스를 갖는 동안은 hook 이 자체적으로 무시함.
+  useEnterToAdvance(() => setShowLines(true), !showLines && Boolean(narration));
   const ritual =
     !spec.buttonLabel ||
     spec.buttonLabel === "전달하기" ||

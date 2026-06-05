@@ -7,6 +7,7 @@ import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { useCornerHint } from "@/components/v3/context/CornerHintContext";
+import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 export function RitualScene({
@@ -35,6 +36,10 @@ export function RitualScene({
     if (typeof spec.next === "string") onAdvance(spec.next);
     else if (typeof spec.next === "function") onAdvance(spec.next(session));
   };
+  useEnterToAdvance(() => {
+    if (!showLines && narration) setShowLines(true);
+    else if (buttonReady || !lines.length) advance();
+  });
 
   if (!showLines && narration) {
     return (

@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { NavText } from "@/components/v3/ui/NavText";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useEditorWait } from "@/lib/v3/useEditorWait";
+import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 export function OwlReflectScene({
@@ -16,6 +18,7 @@ export function OwlReflectScene({
 }) {
   const { session } = useV3Session();
   const [text, setText] = useState<string | null>(null);
+  const waitMsg = useEditorWait();
 
   useEffect(() => {
     let cancelled = false;
@@ -44,9 +47,10 @@ export function OwlReflectScene({
     if (typeof spec.next === "string") onAdvance(spec.next);
     else if (typeof spec.next === "function") onAdvance(spec.next(session));
   };
+  useEnterToAdvance(advance, Boolean(text));
 
   if (!text) {
-    return <p className="italic text-[#8b7050]">편집장이 잠시 생각 중...</p>;
+    return <p className="italic text-[#8b7050]">{waitMsg}</p>;
   }
 
   return (

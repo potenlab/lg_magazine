@@ -6,6 +6,7 @@ import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useEditorWait } from "@/lib/v3/useEditorWait";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
@@ -23,6 +24,7 @@ export function GrowthVisionSynthesisSceneV1({
   onAdvance: (n: SceneId) => void;
 }) {
   const { session, patch } = useV3Session();
+  const waitMsg = useEditorWait();
   const [synthesis, setSynthesis] = useState<string>(session.growthVisionSynthesis);
   const [loaded, setLoaded] = useState<boolean>(Boolean(session.growthVisionSynthesis));
   const { setStage } = useContext(DialogStageContext);
@@ -81,7 +83,7 @@ export function GrowthVisionSynthesisSceneV1({
 
   if (!loaded || !synthesis) {
     return (
-      <NarrationBlock text="편집장이 그동안의 이야기를 한자리에 모아 매거진으로 엮고 있어요…" />
+      <NarrationBlock text={waitMsg} />
     );
   }
 

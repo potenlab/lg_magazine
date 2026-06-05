@@ -7,6 +7,7 @@ import { PaginatedNarration } from "@/components/v3/ui/PaginatedNarration";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { DialogStageContext } from "@/components/v3/V3App";
+import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 export function AmbienceScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance: (n: SceneId) => void }) {
@@ -47,6 +48,13 @@ export function AmbienceScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
     if (typeof spec.next === "string") onAdvance(spec.next);
     else if (typeof spec.next === "function") onAdvance(spec.next(session));
   };
+  // Enter 가 onClick 과 같은 효과를 내도록. phase 0/1 에서는 다음 phase 로,
+  // phase 2 (또는 hasLines 가 false 인 phase 1) 에서는 advance.
+  useEnterToAdvance(() => {
+    if (phase === 0) setPhase(1);
+    else if (phase === 1) (hasLines ? setPhase(2) : advance());
+    else advance();
+  });
 
   // Phase 0 — full-screen click overlay; dialog motion.div is hidden by stage="hidden".
   // IMPORTANT: rendered via createPortal to document.body to escape the framer-motion

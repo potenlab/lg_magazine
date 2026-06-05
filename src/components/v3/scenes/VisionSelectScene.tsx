@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useEditorWait } from "@/lib/v3/useEditorWait";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId, V3Session } from "@/lib/v3/scenes/types";
 
@@ -33,6 +34,7 @@ export function VisionSelectScene({
   onAdvance: (n: SceneId) => void;
 }) {
   const { session, patch } = useV3Session();
+  const waitMsg = useEditorWait();
   const { setStage } = useContext(DialogStageContext);
 
   const [directions, setDirections] = useState<string[] | null>(null);
@@ -107,7 +109,7 @@ export function VisionSelectScene({
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-[16px] italic text-[#8b7050]">
-          편집장이 방향들을 정리하고 있어요…
+          {waitMsg}
         </p>
       </div>
     );

@@ -4,6 +4,7 @@ import { useContext, useEffect, useState } from "react";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useEditorWait } from "@/lib/v3/useEditorWait";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId, V3Session } from "@/lib/v3/scenes/types";
 
@@ -35,6 +36,7 @@ export function TimeHorizonScene({
   canGoBack?: boolean;
 }) {
   const { session, patch } = useV3Session();
+  const waitMsg = useEditorWait();
   const { setStage } = useContext(DialogStageContext);
 
   // Resume support: if the participant already finished this scene, reuse
@@ -103,7 +105,7 @@ export function TimeHorizonScene({
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-[16px] italic text-[#8b7050]">
-          편집장이 시간 위에 펼쳐보고 있어요…
+          {waitMsg}
         </p>
       </div>
     );

@@ -8,6 +8,7 @@ import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useEditorWait } from "@/lib/v3/useEditorWait";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
@@ -49,6 +50,7 @@ export function Chapter2MagazineScene({
 }) {
   const { session, patch } = useV3Session();
   const { setStage } = useContext(DialogStageContext);
+  const waitMsg = useEditorWait();
 
   const [synthesis, setSynthesis] = useState<string>(session.strengthSynthesis);
   const [loaded, setLoaded] = useState<boolean>(Boolean(session.strengthSynthesis));
@@ -100,7 +102,7 @@ export function Chapter2MagazineScene({
   }, []);
 
   if (!loaded || !synthesis) {
-    return <NarrationBlock text="편집장이 이야기를 모아 천천히 꿰어보고 있어요…" />;
+    return <NarrationBlock text={waitMsg} />;
   }
 
   const parsed = parseBeats(synthesis, 4);
@@ -246,7 +248,7 @@ export function Chapter2MagazineScene({
                 onClick={() => setExamplesOpen(true)}
                 className="text-[14px] text-[#8a7a68] underline decoration-[#8a7a68]/40 underline-offset-[3px] transition hover:text-[#3d2414] hover:decoration-[#3d2414] md:text-[16px]"
               >
-                다른 사람들은 자기를 어떻게 정의했을까요?
+                다른 분들은 자신을 어떻게 정의했을까요?
               </button>
             </div>
             {attempts > 0 && attempts < MAX_ATTEMPTS && (
@@ -292,7 +294,7 @@ export function Chapter2MagazineScene({
                       From other passengers
                     </p>
                     <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414]">
-                      다른 사람들은 자기를 어떻게 정의했을까요?
+                      다른 분들은 자신을 어떻게 정의했을까요?
                     </h2>
                   </div>
                   <button

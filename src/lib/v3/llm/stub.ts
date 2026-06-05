@@ -312,7 +312,7 @@ export const stubLLM: LLMContract = {
 
   async writeEditorNote({ session, kind }) {
     if (kind === "intro") {
-      return `${session.name}님을 만났다. ${session.gender}는 LG에서 일하는 ${session.job || "한 사람"}이었다. ${session.gender}가 들려준 이야기는 화려하지 않았지만, 그 속에는 자기만의 결이 흐르고 있었다. 우리는 ${session.gender}의 이야기를 한 호의 매거진으로 담았다.`;
+      return `${session.name}님을 만났다. ${session.gender}는 ${session.job ? `${session.job} 일을 하는 사람이었다` : "묵묵히 자기 자리를 지키는 한 사람이었다"}. ${session.gender}가 들려준 이야기는 화려하지 않았지만, 그 속에는 자기만의 결이 흐르고 있었다. 우리는 ${session.gender}의 이야기를 한 호의 매거진으로 담았다.`;
     }
     return `우리는 묵묵히 자기 빛을 쌓아온 한 사람을 만났다.\n\n${session.gender}의 이야기를 들으며, 우리는 ${session.gender}가 이미 자기만의 답을 가지고 있음을 깨달았다.\n\n이 한 호가 ${session.gender}의 다음 여정에 작은 등불이 되기를.`;
   },

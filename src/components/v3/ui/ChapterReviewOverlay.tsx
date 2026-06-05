@@ -197,11 +197,12 @@ function EntryBox({
             >
               취소
             </button>
+            {/* 저장은 StoryButtonV3 동일 톤 — 어두운 양피지·크림 글자·rounded-md. */}
             <button
               type="button"
               onClick={save}
               disabled={draft.trim().length === 0}
-              className="rounded-md border border-[#3d2414] bg-[#3d2414] px-3 py-1 text-white transition hover:bg-[#5a3a1f] disabled:opacity-40"
+              className="rounded-md bg-[#3d2414] px-4 py-2 text-[14px] text-[#f5ead6] transition hover:bg-[#5a3520] disabled:opacity-40"
             >
               저장
             </button>

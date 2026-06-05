@@ -1,5 +1,6 @@
 "use client";
 
+import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import type { V3Session } from "@/lib/v3/scenes/types";
 
 const CHAPTER_LABEL: Record<string, string> = {
@@ -36,21 +37,9 @@ export function ResumeModal({
           {name}님의 비전 익스프레스가 <strong>{chapterLabel}</strong>에서 멈춰있어요.
         </p>
         <p className="mt-4 text-sm">이어서 가시겠어요? 아니면 새로 시작하시겠어요?</p>
-        <div className="mt-6 flex gap-3">
-          <button
-            type="button"
-            onClick={onResume}
-            className="flex-1 rounded-md bg-[#3d2414] px-4 py-2 text-sm text-[#f5ead6]"
-          >
-            이어가기
-          </button>
-          <button
-            type="button"
-            onClick={onRestart}
-            className="flex-1 rounded-md border border-[#3d2414]/30 px-4 py-2 text-sm text-[#3d2414]"
-          >
-            새로 시작
-          </button>
+        <div className="mt-6 flex justify-end gap-3">
+          <StoryButtonV3 label="새로 시작" onClick={onRestart} variant="secondary" />
+          <StoryButtonV3 label="이어가기" onClick={onResume} ritual />
         </div>
       </div>
     </div>

@@ -458,11 +458,11 @@ function V3Inner() {
                   : stage === "ambient"
                     // Transparent dialog — no border / shadow, lower parchment opacity
                     // + backdrop blur so background image stays visible behind narration.
-                    ? "relative mx-auto flex min-h-[160px] flex-col overflow-hidden rounded-md bg-[#f6efdf]/55 px-6 py-5 backdrop-blur-[2px]"
+                    ? "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md bg-[#f6efdf]/55 px-6 py-5 backdrop-blur-[2px]"
                     : stage === "reflection"
                     // 페이지 분할된 LLM 반향(미러/되비춤) — 입력칸 없는 콘텐츠 박스.
                     // 짧은 페이지는 min-h로 받치고, 긴 페이지는 스크롤. pb-7로 "다음"이 바닥 정렬.
-                    ? "relative mx-auto flex min-h-[200px] max-h-[calc(100vh_-_140px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
+                    ? "relative mx-auto flex min-h-[240px] max-h-[calc(100vh_-_140px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
                     : FULL_HEIGHT_KINDS.has(spec.kind) && stage === "content"
                   ? // ── FULL_HEIGHT_KINDS 분기 — kind-specific 스타일 먼저, 그 다음 default ──
                   // 주의: 모든 kind-specific 검사는 반드시 FULL_HEIGHT_KINDS 분기 *안*에
@@ -506,10 +506,9 @@ function V3Inner() {
                         // [v1 백업용] strengthSynthesis 단독 씬 — Chapter 2 통합으로
                         // 대체된 이후엔 도달 없음. 폴백 유지.
                         ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[500px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
-                        // [2026-06-05] 동물의 숲 풍 "꽉 찬 느낌" 피드백 → 기본 narration
-                        // dialog 를 240px 고정에서 콘텐츠 hug + 살짝 좁은 패딩으로 전환.
-                        // 1~2줄 텍스트일 때 박스가 텅 비어 보이던 문제 해결.
-                        : "relative mx-auto flex min-h-[140px] max-h-[calc(100vh_-_140px)] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 py-5 shadow-2xl"
+                        // [2026-06-06] 콘텐츠 hug 로 바꿨더니 박스 높이가 씬마다
+                        // 출렁여 보인다는 피드백 → 240px 고정 복귀. 폭/패딩 압축은 유지.
+                        : "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 py-5 shadow-2xl"
               }
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             >

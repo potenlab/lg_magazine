@@ -52,18 +52,21 @@ export function CardChoiceScene({
   };
 
   return (
-    // 상단(질문)/중간(선택지, 스크롤)/하단(footer) 3-영역. dialog wrapper 는
-    // overflow-hidden 으로 잡고, 스크롤은 이 안의 중간 영역에서만.
-    <div className="flex h-full min-h-0 w-full flex-1 flex-col">
+    // 상단/중간/하단 3-영역. flex-1 안 씀 — 콘텐츠가 자연 높이로 쌓이도록.
+    // 콘텐츠가 wrapper max-h 를 넘으면 중간 영역(overflow-y-auto + min-h-0)이
+    // shrink 되며 그 안에서만 스크롤. 짧을 땐 대사 → 선택지 → 버튼이 빈 공간
+    // 없이 바로 이어짐.
+    <div className="flex h-full max-h-full w-full flex-col">
       {/* 상단 — narration + 질문 라인 (정적) */}
       <div className="shrink-0 space-y-4">
         {narration && <NarrationBlock text={narration} />}
         <AutoFlowText lines={lines} onSettled={() => setSettled(true)} />
       </div>
 
-      {/* 중간 — 선택 카드 스크롤 영역 */}
+      {/* 중간 — 선택 카드. flex-1 X, min-h-0 overflow-y-auto 로 콘텐츠가
+          dialog 를 넘칠 때만 안에서 스크롤. */}
       {settled && (
-        <div className="min-h-0 flex-1 overflow-y-auto pt-3">
+        <div className="min-h-0 overflow-y-auto pt-3">
           <div className="flex flex-col gap-3">
             {choices.map((c, i) => (
               <button

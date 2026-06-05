@@ -501,10 +501,10 @@ function V3Inner() {
                     // wrapper 는 overflow-hidden, 스크롤은 씬 내부 3-영역 패턴에서.
                     : "relative mx-auto flex h-[calc(100vh_-_200px)] min-h-[300px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl"
                   : spec.kind === "cardChoice" && stage === "content"
-                    // wrapper 는 overflow-hidden 고정 — scene 내부에서 헤더/스크롤/
-                    // footer 3-영역으로 분리해 콘텐츠만 스크롤. dialog 자체는 늘
-                    // 같은 크기·테두리 유지.
-                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[320px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl text-[16px]"
+                    // wrapper 는 콘텐츠 hug — dialog 가 대사+선택지+버튼 자연 높이로.
+                    // max-h cap 으로 viewport 넘기지 않게. min-h 는 충분히 짧게 둬서
+                    // 짧은 콘텐츠일 때 buttons 가 바로 아래에 붙도록.
+                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl text-[16px]"
                     : INPUT_KINDS.has(spec.kind) && stage === "content"
                       // [2026-06-05] AC 풍 압축 — px/pt 28→22, pb 108→92 (버튼 공간만 남김).
                       ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[320px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-[92px] shadow-2xl text-[16px]"

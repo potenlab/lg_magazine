@@ -38,6 +38,12 @@ const elements: Partial<Record<AudioName, HTMLAudioElement>> = {};
 // re-renders that would otherwise replay the same horn/chime/switch SFX.
 const lastPlayedAt: Partial<Record<AudioName, number>> = {};
 const PLAY_COOLDOWN_MS = 1500;
+// 사용자 클릭에 직접 묶이는 SFX 는 짧은 쿨다운 + 재생 중에도 재시작 허용.
+// 카드/페이퍼 처럼 연속 탭이 자연스러운 음원은 여기에 추가.
+const CLIP_COOLDOWN_MS: Partial<Record<AudioName, number>> = {
+  card: 80,
+  paper: 80,
+};
 
 function get(name: AudioName): HTMLAudioElement | null {
   if (typeof window === "undefined") return null;
@@ -72,13 +78,16 @@ export function playOnce(name: AudioName, volume = DEFAULT_SFX_VOL): void {
   if (!el) return;
   // 글로벌 볼륨이 0이면 (음소거) 재생 자체를 스킵
   if (_volumeMultiplier === 0) return;
-  // 이미 재생 중이면 무시
-  if (!el.paused && !el.ended) return;
+  const cooldown = CLIP_COOLDOWN_MS[name] ?? PLAY_COOLDOWN_MS;
+  const isClickDriven = CLIP_COOLDOWN_MS[name] !== undefined;
+  // 클릭-기반 SFX(card/paper) 는 이전 재생을 자르고 새로 시작. 그 외는
+  // 이미 재생 중이면 무시 (호른·스위치·전환음 중복 방지).
+  if (!isClickDriven && !el.paused && !el.ended) return;
   // Cooldown: 같은 클립을 짧은 시간 안에 다시 호출하면 무시.
   // (StrictMode 이중 mount / fast refresh / 빠른 리렌더로 인한 중복 재생 방지)
   const now = Date.now();
   const last = lastPlayedAt[name] ?? 0;
-  if (now - last < PLAY_COOLDOWN_MS) return;
+  if (now - last < cooldown) return;
   lastPlayedAt[name] = now;
   el.loop = false;
   el.volume = volume * _volumeMultiplier;

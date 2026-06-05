@@ -10,6 +10,7 @@ export const CH2_SCENES: SceneSpec[] = [
     chapter: 2,
     kind: "chapterCard",
     timeOfDay: "starsRising",
+    bgm: "benkirb-shine-10-268906.mp3",
     next: "2-0",
   },
   {

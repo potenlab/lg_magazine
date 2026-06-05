@@ -482,11 +482,9 @@ function V3Inner() {
                     : spec.kind === "chapter2Magazine" || spec.kind === "growthVisionSynthesis" || spec.kind === "magazinePoster"
                     // 매거진 스프레드 씬들 — 좌·우 2 페이지가 가로로 펼쳐지므로 와이드 폭
                     // (1024px). 세 씬 모두 동일한 비율로 통일.
-                    // [2026-06-06] 대화창 높이 축소 — 매거진 스프레드 안쪽 콘텐츠가
-                    // 길어 페이지 자체가 스크롤되던 문제. max-h cap 을 -140 → -180px
-                    // 으로 늘려 헤더(pt-24) + 푸터 여백 + 외곽 호흡까지 다 들어가게.
-                    // min-h 도 640 → 520 으로 줄여 짧은 뷰포트에서 페이지 스크롤 방지.
-                    ? "relative mx-auto flex max-h-[calc(100vh_-_180px)] min-h-[520px] w-full max-w-[1024px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
+                    // 매거진 스프레드 — wrapper 는 overflow-hidden, 본문 스크롤은
+                    // 씬 내부에서 처리해 헤더/푸터가 정적으로 고정되게.
+                    ? "relative mx-auto flex max-h-[calc(100vh_-_180px)] min-h-[520px] w-full max-w-[1024px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
                     : spec.kind === "magazineHandoff"
                     // [2026-05-20] 풀 세션이면 요약이 8~12줄로 길어져 dialog
                     // overflow-y-auto + sticky 버튼 조합에서 하단이 잘리던 회귀.

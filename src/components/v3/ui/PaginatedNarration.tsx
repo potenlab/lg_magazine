@@ -60,8 +60,13 @@ export function PaginatedNarration({
   // fast-forwards), block advance for a short beat so the fade-in finishes
   // and the line actually has a chance to be read. QA: "엘아울 멘트 다
   // 눌러야 다음으로 넘어갈 수 있게."
+  // [2026-06-05] 800ms 는 길어서 "텍스트창 눌렀는데 안 넘어가는 구간이 있음"
+  // 피드백의 주범이었음. 380ms 로 줄이고, dwell 중 클릭은 버퍼링했다가 dwell
+  // 종료 즉시 자동 advance 하도록 변경 (buffered tap). 클릭이 silent-drop 되는
+  // 케이스 자체를 없앰.
   const [canAdvance, setCanAdvance] = useState(false);
-  const POST_SETTLE_DWELL_MS = FADE_DURATION_MS + 200; // 600 + 200 = 800ms
+  const [pendingAdvance, setPendingAdvance] = useState(false);
+  const POST_SETTLE_DWELL_MS = 380;
 
   const isLastPage = page >= totalPages - 1;
   const pageLines = pages[page] ?? [];
@@ -87,6 +92,11 @@ export function PaginatedNarration({
     return () => clearTimeout(t);
   }, [shown, pageLines.length]);
 
+  // 페이지가 바뀌면 이전 페이지에서 큐에 담아둔 advance 의도는 폐기.
+  useEffect(() => {
+    setPendingAdvance(false);
+  }, [page]);
+
   // Tell parent when the current page has fully revealed, and start the
   // post-settle dwell timer. Reset the dwell flag whenever the page changes
   // or shown rewinds. setState calls are deferred via queueMicrotask to
@@ -105,18 +115,7 @@ export function PaginatedNarration({
     return () => clearTimeout(t);
   }, [shown, pageLines.length, isLastPage, onSettled, POST_SETTLE_DWELL_MS]);
 
-  const advancePage = () => {
-    // Mid-reveal click: fast-forward the current page instead of advancing.
-    // Prevents accidental scene skips when the user taps right as the last
-    // line settles ("말 끝나지도 않았는데 화면 넘어가는" QA report).
-    if (shown < pageLines.length) {
-      setShown(pageLines.length);
-      return;
-    }
-    // Post-settle dwell: ignore clicks until the last line has had a beat
-    // to fade in and be read. The user can still rapid-tap; they'll just
-    // wait ~800ms after the final reveal before the next tap is honored.
-    if (!canAdvance) return;
+  const doAdvance = () => {
     if (isLastPage) {
       onAdvance?.();
     } else {
@@ -125,7 +124,40 @@ export function PaginatedNarration({
     }
   };
 
-  const settled = canAdvance;
+  const advancePage = () => {
+    // Mid-reveal click: fast-forward the current page instead of advancing.
+    // Prevents accidental scene skips when the user taps right as the last
+    // line settles ("말 끝나지도 않았는데 화면 넘어가는" QA report).
+    if (shown < pageLines.length) {
+      setShown(pageLines.length);
+      return;
+    }
+    // Post-settle dwell: 클릭을 silent-drop 하지 않고 큐에 담아둔다. dwell 이
+    // 끝나는 효과(아래)에서 pendingAdvance 를 보고 즉시 진행 — "텍스트창
+    // 눌렀는데 안 넘어가는" 회귀 방지.
+    if (!canAdvance) {
+      setPendingAdvance(true);
+      return;
+    }
+    doAdvance();
+  };
+
+  // dwell 종료 시점에 큐가 있으면 즉시 진행.
+  useEffect(() => {
+    if (canAdvance && pendingAdvance) {
+      setPendingAdvance(false);
+      doAdvance();
+    }
+    // doAdvance 는 effect 마다 새로 생성되지만 동일 closure 안에서 한 번만
+    // 호출되므로 deps 에 포함 불필요.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canAdvance, pendingAdvance]);
+
+  // 마지막 줄이 화면에 떴으면 "다음" 힌트는 이미 보이도록 (dwell 중에도 0.45
+  // 투명도로 노출). dwell 끝나면 1.0. 사용자에게 "여기 누르면 다음으로 가는
+  // 곳" 어피던스를 더 일찍 주기 위함.
+  const fullyShown = shown >= pageLines.length && pageLines.length > 0;
+  const hintOpacity = canAdvance ? "opacity-100" : fullyShown ? "opacity-45" : "opacity-0";
 
   return (
     <div className={tight ? "flex flex-col" : "flex flex-1 flex-col"} onClick={advancePage}>
@@ -171,7 +203,7 @@ export function PaginatedNarration({
         // reserved space at the dialog bottom.
         <div className="absolute bottom-6 right-6 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
           <span
-            className={`italic transition-opacity ${settled ? "opacity-100" : "opacity-0"}`}
+            className={`italic transition-opacity duration-300 ${hintOpacity}`}
           >
             {isLastPage
               ? onAdvance

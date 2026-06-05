@@ -498,14 +498,13 @@ function V3Inner() {
                     // 콘텐츠 짧은 final-stage 씬 — 콘텐츠 hug로 빈 양피지 회귀 방지.
                     ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[420px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
                     // default FULL_HEIGHT — recordPage / toolSelect / visionSelect / magazinePosterV1.
-                    // overflow-y-auto + p-6. 씬 내부에서 sticky footer 패턴으로
-                    // 이전/건네기 버튼이 viewport 하단에 고정되도록 처리.
-                    : "relative mx-auto flex h-[calc(100vh_-_200px)] min-h-[300px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl"
+                    // wrapper 는 overflow-hidden, 스크롤은 씬 내부 3-영역 패턴에서.
+                    : "relative mx-auto flex h-[calc(100vh_-_200px)] min-h-[300px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl"
                   : spec.kind === "cardChoice" && stage === "content"
-                    // [2026-06-06] question/followup INPUT_KINDS 패턴과 통일.
-                    // 이전엔 sticky footer + p-7 가 다른 씬과 따로 놀았음. 이젠
-                    // min-h-[320px] + pb-[92px] (absolute 버튼용 공간) 동일 톤.
-                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[320px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-[92px] shadow-2xl text-[16px]"
+                    // wrapper 는 overflow-hidden 고정 — scene 내부에서 헤더/스크롤/
+                    // footer 3-영역으로 분리해 콘텐츠만 스크롤. dialog 자체는 늘
+                    // 같은 크기·테두리 유지.
+                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[320px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl text-[16px]"
                     : INPUT_KINDS.has(spec.kind) && stage === "content"
                       // [2026-06-05] AC 풍 압축 — px/pt 28→22, pb 108→92 (버튼 공간만 남김).
                       ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[320px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-[92px] shadow-2xl text-[16px]"

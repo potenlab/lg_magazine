@@ -52,20 +52,19 @@ export function CardChoiceScene({
   };
 
   return (
-    // Fill the full dialog width — same as question/followup scenes whose
-    // textarea spans the whole dialog. The previous 720px cap left an empty
-    // right-side gutter that didn't match the other input scenes.
-    <div className="flex w-full flex-col gap-5">
-      {/* Stage direction */}
-      {narration && <NarrationBlock text={narration} />}
-
-      {/* Question lines */}
-      <div className="space-y-4">
+    // 상단(질문)/중간(선택지, 스크롤)/하단(footer) 3-영역. dialog wrapper 는
+    // overflow-hidden 으로 잡고, 스크롤은 이 안의 중간 영역에서만.
+    <div className="flex h-full min-h-0 w-full flex-1 flex-col">
+      {/* 상단 — narration + 질문 라인 (정적) */}
+      <div className="shrink-0 space-y-4">
+        {narration && <NarrationBlock text={narration} />}
         <AutoFlowText lines={lines} onSettled={() => setSettled(true)} />
+      </div>
 
-        {/* Cards */}
-        {settled && (
-          <div className="mt-3 flex flex-col gap-3">
+      {/* 중간 — 선택 카드 스크롤 영역 */}
+      {settled && (
+        <div className="min-h-0 flex-1 overflow-y-auto pt-3">
+          <div className="flex flex-col gap-3">
             {choices.map((c, i) => (
               <button
                 key={i}
@@ -77,7 +76,6 @@ export function CardChoiceScene({
                     : "border-[#b99b6b]/40 bg-white/50 text-[#3d2414] hover:bg-[#f0e4c8]/70"
                 }`}
               >
-                {/* Radio circle */}
                 <span
                   className={`mt-[3px] flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition ${
                     selected === i
@@ -103,14 +101,11 @@ export function CardChoiceScene({
               </button>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Footer — wrapper 가 overflow-y-auto 라 absolute bottom 은 스크롤 콘텐츠
-          끝에 붙음. sticky bottom-0 + 음수 마진(-mx-6 -mb-6, mt-2)으로 viewport
-          하단에 고정해 스크롤 위로 떠 있게. wrapper 의 pb-[92px] 가 sticky
-          footer 가 콘텐츠 마지막 줄을 가리지 않도록 여백을 미리 잡아둠. */}
-      <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex items-center justify-between gap-3 rounded-b-md bg-[#f6efdf]/90 px-6 py-3">
+      {/* 하단 — 이전/선택하기 (정적, 항상 보임) */}
+      <div className="shrink-0 mt-3 flex items-center justify-between gap-3">
         {onPrev && canGoBack ? (
           <button
             type="button"

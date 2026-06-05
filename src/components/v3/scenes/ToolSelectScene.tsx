@@ -64,11 +64,17 @@ export function ToolSelectScene({
   };
 
   return (
-    <div className="flex flex-col gap-5">
-      <AutoFlowText lines={lines} onSettled={() => setSettled(true)} />
+    // 전체 flex 컬럼. 상단(질문)/중간(도구박스, 스크롤)/하단(footer) 3-영역.
+    // dialog wrapper 는 overflow-hidden, 스크롤은 이 안의 중간 영역에서만.
+    <div className="flex h-full min-h-0 flex-1 flex-col">
+      {/* 상단 — 질문 라인 (정적) */}
+      <div className="shrink-0">
+        <AutoFlowText lines={lines} onSettled={() => setSettled(true)} />
+      </div>
 
+      {/* 중간 — 도구박스 스크롤 영역 */}
       {settled && (
-        <>
+        <div className="min-h-0 flex-1 overflow-y-auto pt-5">
           <div className="grid gap-4 md:grid-cols-2">
             <ToolBox
               title="지금 가장 잘 쓰는 도구"
@@ -84,21 +90,18 @@ export function ToolSelectScene({
 
           {spec.editorNote && (
             <p
-              className="border-l-2 border-[#b99b6b]/50 pl-3 text-[16px] italic leading-[1.6] text-[#8b7050]"
+              className="mt-5 border-l-2 border-[#b99b6b]/50 pl-3 text-[16px] italic leading-[1.6] text-[#8b7050]"
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             >
               편집장의 한마디 — {renderTemplate(spec.editorNote, session)}
             </p>
           )}
-        </>
+        </div>
       )}
 
-      {/* Footer — dialog wrapper(overflow-y-auto, p-6) 안에서 sticky bottom-0
-          으로 viewport 하단 고정. 음수 마진(-mx-6 -mb-6)으로 wrapper 의
-          p-6 패딩 가장자리까지 background 가 닿게 해서 스크롤 콘텐츠 위로
-          살짝 떠 있는 느낌. */}
+      {/* 하단 — 이전/건네기 (정적, 항상 보임) */}
       <div
-        className={`sticky bottom-0 z-10 -mx-6 -mb-6 flex items-center justify-between gap-3 rounded-b-md bg-[#f6efdf]/90 px-6 py-3 transition-opacity duration-500 ${settled ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        className={`shrink-0 mt-3 flex items-center justify-between gap-3 transition-opacity duration-500 ${settled ? "opacity-100" : "pointer-events-none opacity-0"}`}
       >
         {onPrev && canGoBack ? (
           <button

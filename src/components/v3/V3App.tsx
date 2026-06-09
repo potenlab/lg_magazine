@@ -477,7 +477,7 @@ function V3Inner() {
                     // (1024px). 세 씬 모두 동일한 비율로 통일.
                     // 매거진 스프레드 — wrapper 는 overflow-hidden, 본문 스크롤은
                     // 씬 내부에서 처리해 헤더/푸터가 정적으로 고정되게.
-                    ? "relative mx-auto flex max-h-[calc(100vh_-_180px)] min-h-[520px] w-full max-w-[1024px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
+                    ? "relative mx-auto flex h-[calc(100vh_-_180px)] min-h-[360px] w-full max-w-[1024px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
                     : spec.kind === "magazineHandoff"
                     // [2026-05-20] 풀 세션이면 요약이 8~12줄로 길어져 dialog
                     // overflow-y-auto + sticky 버튼 조합에서 하단이 잘리던 회귀.

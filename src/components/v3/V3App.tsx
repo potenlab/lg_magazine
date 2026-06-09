@@ -155,7 +155,7 @@ function V3Inner() {
     // edits between sessions), reset to intro instead of trying to resume
     // into nothingness. loadSession() already filters this case for fresh
     // tab loads; this guards in-tab navigation too.
-    const validResume = id && id !== "intro" && id !== "C-4" && SCENES[id];
+    const validResume = id && id !== "intro" && SCENES[id];
     queueMicrotask(() => {
       if (validResume) {
         setShowResume(true);
@@ -205,13 +205,6 @@ function V3Inner() {
 
   const handleAdvance = (next: SceneId) => {
     const current = activeIdRef.current;
-    // Terminal: C-4 self-loop sentinel → reset back to fresh start
-    if (current === "C-4" && next === "C-4") {
-      reset();
-      setActiveId("intro");
-      setPrevStack([]);
-      return;
-    }
     // Re-entry: same scene id → bump counter so motion key forces remount.
     // Don't push to prev stack — would cause "이전" to land on the same scene.
     if (next === current) {

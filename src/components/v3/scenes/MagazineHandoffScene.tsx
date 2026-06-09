@@ -152,9 +152,9 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
             </p>
             <dl className="space-y-2.5 text-[16px] leading-[1.6]">
               {summary.map(([k, v]) => (
-                <div key={k} className="grid grid-cols-[110px_1fr] gap-3">
-                  <dt className="text-[16px] tracking-wide text-[#8b7050]">{k}</dt>
-                  <dd className="text-[#3d2414]">{v}</dd>
+                <div key={k} className="grid grid-cols-[145px_1fr] gap-3">
+                  <dt className="break-keep whitespace-nowrap text-[16px] tracking-wide text-[#8b7050]">{k}</dt>
+                  <dd className="break-keep text-[#3d2414]">{v}</dd>
                 </div>
               ))}
             </dl>

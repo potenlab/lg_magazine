@@ -78,27 +78,30 @@ export const CLOSING_SCENES: SceneSpec[] = [
       "그동안 {name}님의 이야기를 들려주셔서, 정말 고맙습니다.",
       "부디 빛나시기를.",
     ],
-    next: "C-4",
-  },
-  {
-    id: "C-4",
-    chapter: "C",
-    kind: "ritual",
-    owl: "closingBook",
-    hideOwl: true,
-    hideSpeakerLabel: true,
-    timeOfDay: "dawnFirstLight",
-    bgImage: "/vision_express/common/arriving-train.jpg",
-    // 역 플랫폼 ambience (사람/새 소리). loop 가능 — ONE_SHOT_BGMS 아님.
-    bgm: "freesound_community-train_station_outdoor_platform_birds_people-30576.mp3",
-    narration: "비전 익스프레스가 종착역에 도착했습니다.",
-    buttonLabel: "이제 내릴게요",
     next: "C-5",
   },
+  // ── [2026-06 제거] C-4 "이제 내릴게요" 종착역 페이지 ─────────────────
+  // 매거진 완성 후 굳이 한 단계 더 추가할 필요가 없다는 피드백으로 흐름에서 제외.
+  // C-3 → C-5 직결로 변경. 복원이 필요하면 아래 객체 주석을 풀고 C-3.next 도
+  // "C-4" 로 되돌릴 것.
+  // {
+  //   id: "C-4",
+  //   chapter: "C",
+  //   kind: "ritual",
+  //   owl: "closingBook",
+  //   hideOwl: true,
+  //   hideSpeakerLabel: true,
+  //   timeOfDay: "dawnFirstLight",
+  //   bgImage: "/vision_express/common/arriving-train.jpg",
+  //   bgm: "freesound_community-train_station_outdoor_platform_birds_people-30576.mp3",
+  //   narration: "비전 익스프레스가 종착역에 도착했습니다.",
+  //   buttonLabel: "이제 내릴게요",
+  //   next: "C-5",
+  // },
   {
     // 종착역에서 내린 뒤 보여지는 마지막 안내 화면.
     // 세션을 초기화하지 않고, "내 매거진 다시보기" 버튼으로 C-2b(매거진 스프레드)로
-    // 돌아갈 수 있게 한다. 사용자는 이후에도 C-2b → C-3 → C-4 → C-5 루프를 자유롭게
+    // 돌아갈 수 있게 한다. 사용자는 이후에도 C-2b → C-3 → C-5 루프를 자유롭게
     // 순환하며 자신의 답변/매거진을 다시 읽을 수 있다.
     id: "C-5",
     chapter: "C",

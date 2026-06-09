@@ -170,14 +170,8 @@ function EntryBox({
             수정
           </button>
         )}
-        {locked && !editing && (
-          <span
-            className="shrink-0 text-[11px] italic text-[#a18965]"
-            title="이 답변은 편집장의 반향이 이미 만들어진 뒤라 수정할 수 없어요."
-          >
-            반향 생성 후 잠김
-          </span>
-        )}
+        {/* "반향 생성 후 잠김" 인디케이터 제거 (피드백): 매거진 완성 후엔 모든
+            답이 잠기므로 굳이 라벨로 표시할 필요가 없음. lock 자체는 유지. */}
       </div>
       {editing ? (
         <div className="mt-2 space-y-2">

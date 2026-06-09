@@ -72,7 +72,7 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
     if (!a) return [];
     return [
       {
-        label: `AI 기사: ${a.headline}`,
+        label: `엘아울의 기사: ${a.headline}`,
         tone: "result",
         text: [a.body, a.pullQuote ? `— ${a.pullQuote}` : ""].filter(Boolean).join("\n\n"),
       },

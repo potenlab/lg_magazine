@@ -13,6 +13,7 @@ import { llm } from "@/lib/v3/llm";
 import { DialogStageContext } from "@/components/v3/V3App";
 import { josa } from "@/lib/v3/scenes/josa";
 import { extractIdentityTitle, toAnchorSummary } from "@/lib/v3/scenes/template";
+import { buildV3ChapterThreads } from "@/lib/v3/session/adminView";
 import type { SceneSpec, SceneId, V3Session } from "@/lib/v3/scenes/types";
 
 /**
@@ -59,8 +60,8 @@ export function MagazinePosterScene({
   const { setStage } = useContext(DialogStageContext);
 
   const [articles, setArticles] = useState<Articles>(() => session.chapterArticles ?? {});
-  // 0, 1 = chapter spreads / 2 = cards spread (한 호의 요약)
-  const [page, setPage] = useState<0 | 1 | 2>(0);
+  // 0, 1 = chapter spreads / 2 = cards spread (Editor's Cards + Editor's Note) / 3 = Appendix (별첨)
+  const [page, setPage] = useState<0 | 1 | 2 | 3>(0);
 
   useEffect(() => {
     setStage("content");
@@ -111,8 +112,8 @@ export function MagazinePosterScene({
   };
 
   const handleNext = () => {
-    if (page < 2) {
-      setPage(((page + 1) as 0 | 1 | 2));
+    if (page < 3) {
+      setPage(((page + 1) as 0 | 1 | 2 | 3));
       // Scroll to top of the spread when navigating — avoids the next spread
       // opening already mid-scroll from the previous one.
       const root = document.getElementById("magazine-spread-root");
@@ -124,15 +125,15 @@ export function MagazinePosterScene({
 
   const handlePrev = () => {
     if (page > 0) {
-      setPage(((page - 1) as 0 | 1 | 2));
+      setPage(((page - 1) as 0 | 1 | 2 | 3));
       const root = document.getElementById("magazine-spread-root");
       if (root) root.scrollTop = 0;
     }
   };
 
   const buttonLabel =
-    page < 2 ? "다음 페이지" : spec.buttonLabel ?? "이 호를 닫을게요";
-  const pageIndicator = `${page + 1} / 3`;
+    page < 3 ? "다음 페이지" : spec.buttonLabel ?? "이 호를 닫을게요";
+  const pageIndicator = `${page + 1} / 4`;
 
   return (
     // 다른 스크롤 씬과 동일 3-영역 패턴: 헤더(정적) / 본문(스크롤) / 푸터(정적).
@@ -166,8 +167,10 @@ export function MagazinePosterScene({
                 right={SPREADS[page].right}
                 articles={articles}
               />
-            ) : (
+            ) : page === 2 ? (
               <CardsSpread session={session} />
+            ) : (
+              <AppendixSpread session={session} />
             )}
           </motion.div>
         </AnimatePresence>
@@ -250,10 +253,12 @@ function CardsSpread({ session }: { session: V3Session }) {
           Editor&rsquo;s Cards
         </p>
 
-        <div className="py-20">
+        {/* 여백을 줄여 완성도 올림. 정체성/본문에 word-break:keep-all 적용해
+            한국어 단어가 중간에서 끊기지 않게 한다 (Tailwind `break-keep`). */}
+        <div className="py-8">
           {identityTitle && (
             <h2
-              className="text-[22px] font-medium leading-[1.5] text-[#3d2414] md:text-[24px]"
+              className="mx-auto max-w-[600px] break-keep text-[22px] font-medium leading-[1.5] text-[#3d2414] md:text-[24px]"
               style={{ fontFamily: "var(--font-ridi-batang), serif" }}
             >
               {trimQuotes(identityTitle)}
@@ -261,7 +266,7 @@ function CardsSpread({ session }: { session: V3Session }) {
           )}
           {(session.topValue || session.visionLine) && (
             <p
-              className="mx-auto mt-5 max-w-[640px] text-[16px] leading-[1.85] text-[#3d2414]"
+              className="mx-auto mt-5 max-w-[640px] break-keep text-[16px] leading-[1.85] text-[#3d2414]"
               style={{ fontFamily: "var(--font-ridi-batang), serif" }}
             >
               {session.topValue && (
@@ -286,7 +291,7 @@ function CardsSpread({ session }: { session: V3Session }) {
           Editor&rsquo;s Note
         </p>
         <p
-          className="mt-2 text-[15px] italic leading-relaxed text-[#5a3d22]"
+          className="mx-auto mt-2 max-w-[560px] break-keep text-[15px] italic leading-relaxed text-[#5a3d22]"
           style={{ fontFamily: "var(--font-ridi-batang), serif" }}
         >
           본 호는 {session.name}님 한 분만을 위해 발행된 단 한 호의 매거진입니다.
@@ -300,4 +305,112 @@ function CardsSpread({ session }: { session: V3Session }) {
 
 function trimQuotes(s: string): string {
   return s.trim().replace(/^["'`「」“”‘’]+/, "").replace(/["'`「」“”‘’]+$/, "");
+}
+
+/** ── 별첨 (Appendix) — 매거진 후면 페이지 ────────────────────────────
+ *
+ *  Editor's Note 뒷면에 한 번에 모아 보여주는 "내가 적은 기록" 페이지.
+ *  buildV3ChapterThreads 를 재사용해 어드민/기록 패널과 동일한 데이터 소스를
+ *  사용한다. MagazineHandoffScene 의 접이식 ChapterAttachment 와 같은 패턴이지만
+ *  여기서는 매거진 한 페이지로 펼쳐서 보여준다.
+ *
+ *  렌더 규칙:
+ *   - 질문(tone: "question") — 이탤릭, 작게, 답변이 없으면 숨김
+ *   - 답변(tone: "answer" / "followup") — 본문 톤
+ *   - 결과(tone: "result") — 베이지 박스
+ */
+function AppendixSpread({ session }: { session: V3Session }) {
+  const threads = buildV3ChapterThreads(session).filter((t) =>
+    t.entries.some((e) => e.text && e.text.trim().length > 0),
+  );
+
+  return (
+    <article className="space-y-6">
+      <header className="text-center">
+        <p className="text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">Appendix</p>
+        <h2
+          className="mt-2 text-[20px] font-medium text-[#3d2414] md:text-[22px]"
+          style={{ fontFamily: "var(--font-ridi-batang), serif" }}
+        >
+          내가 적은 기록
+        </h2>
+        <p className="mt-2 text-[13px] italic leading-[1.7] text-[#8b7050]">
+          네 챕터에서 주고받은 질문 · 답변 · 편집장 요약을 한 자리에 모아둔 페이지예요.
+        </p>
+        <div className="mx-auto mt-4 h-px w-20 bg-[#b99b6b]/40" />
+      </header>
+
+      {threads.length === 0 ? (
+        <p className="text-center text-[14px] italic text-[#8b7050]">
+          기록할 답변이 아직 없어요.
+        </p>
+      ) : (
+        <div className="space-y-8">
+          {threads.map((thread) => {
+            // 질문이 있는데 답이 비어있는 페어는 숨김 (UX: 빈 질문 노출 방지).
+            const entries = thread.entries.filter((e, i, arr) => {
+              if (!e.text || e.text.trim().length === 0) return false;
+              if (e.tone === "question") {
+                const next = arr[i + 1];
+                const answered = next?.text && next.text.trim().length > 0;
+                if (!answered) return false;
+              }
+              return true;
+            });
+            if (entries.length === 0) return null;
+            return (
+              <section key={thread.chapter} className="space-y-3">
+                <div className="border-b border-[#b99b6b]/30 pb-2">
+                  <p className="text-[11px] uppercase tracking-[0.14em] text-[#9b8768]">
+                    {thread.chapter}
+                  </p>
+                  <h3
+                    className="mt-0.5 text-[17px] font-semibold text-[#3d2414]"
+                    style={{ fontFamily: "var(--font-ridi-batang), serif" }}
+                  >
+                    {thread.title}
+                  </h3>
+                </div>
+                <div className="space-y-2.5">
+                  {entries.map((entry, i) => {
+                    const isQuestion = entry.tone === "question";
+                    const isResult = entry.tone === "result";
+                    const boxClass = isQuestion
+                      ? "rounded-md border-l-[3px] border-[#b99b6b] bg-transparent px-3 py-1.5"
+                      : isResult
+                        ? "rounded-md border border-[#d7bd83]/40 bg-[#ede1c6]/40 px-3 py-2.5"
+                        : "rounded-md border border-[#b99b6b]/30 bg-white/55 px-3 py-2.5";
+                    const labelClass = isQuestion
+                      ? "text-[11px] uppercase tracking-[0.08em] text-[#9b8768]"
+                      : "text-[12px] tracking-wide text-[#8b7050]";
+                    const textClass = isQuestion
+                      ? "mt-1 whitespace-pre-wrap text-[14px] italic leading-[1.55] text-[#6b5337]"
+                      : isResult
+                        ? "mt-1 whitespace-pre-wrap text-[14px] leading-[1.7] text-[#3d2414]"
+                        : "mt-1 whitespace-pre-wrap text-[14px] leading-[1.7] text-[#3d2414]";
+                    return (
+                      <div key={i} className={boxClass}>
+                        <p className={labelClass}>{entry.label}</p>
+                        <p className={textClass}>{entry.text}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 매거진 후면 마무리 — 페이지 닫힘 톤 */}
+      <footer className="mt-6 border-t border-[#b99b6b]/35 pt-4 text-center">
+        <p
+          className="text-[13px] italic text-[#8b7050]"
+          style={{ fontFamily: "var(--font-ridi-batang), serif" }}
+        >
+          — {session.name}님이 직접 적어주신 기록 —
+        </p>
+      </footer>
+    </article>
+  );
 }

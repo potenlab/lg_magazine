@@ -59,6 +59,15 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
     if (has(session.visionLine)) {
       locked.add("identityName");
     }
+    // Ch4(firstStep/supportPerson/neededResource)는 LLM 산출물 입력으로 안 쓰여서
+    // 자동 잠금 대상이 아니지만, 사용자가 Closing 화면에 도달했다는 건 매거진이
+    // 완성됐다는 뜻 → 다른 챕터와 일관되게 함께 잠근다. (피드백: "Ch4만 수정
+    // 가능한 게 왜?" — 잠금 처리하는 게 더 자연스러움.)
+    if (has(session.firstStep) || has(session.supportPerson) || has(session.neededResource)) {
+      locked.add("firstStep");
+      locked.add("supportPerson");
+      locked.add("neededResource");
+    }
     return locked;
   }, [session]);
 

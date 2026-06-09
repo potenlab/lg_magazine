@@ -178,7 +178,7 @@ export const CH4_SCENES: SceneSpec[] = [
     lines: [
       "긴 시간 고생 많으셨어요.",
     ],
-    buttonLabel: "네",
+    buttonLabel: "다음",
     next: "C-1",
   },
 ];

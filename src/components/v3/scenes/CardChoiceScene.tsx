@@ -3,6 +3,7 @@
 import { useContext, useEffect, useState } from "react";
 import { AutoFlowText } from "@/components/v3/ui/AutoFlowText";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
+import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { DialogStageContext } from "@/components/v3/V3App";
@@ -51,20 +52,22 @@ export function CardChoiceScene({
   };
 
   return (
-    // Fill the full dialog width — same as question/followup scenes whose
-    // textarea spans the whole dialog. The previous 720px cap left an empty
-    // right-side gutter that didn't match the other input scenes.
-    <div className="flex w-full flex-col gap-5">
-      {/* Stage direction */}
-      {narration && <NarrationBlock text={narration} />}
-
-      {/* Question lines */}
-      <div className="space-y-4">
+    // 상단/중간/하단 3-영역. flex-1 안 씀 — 콘텐츠가 자연 높이로 쌓이도록.
+    // 콘텐츠가 wrapper max-h 를 넘으면 중간 영역(overflow-y-auto + min-h-0)이
+    // shrink 되며 그 안에서만 스크롤. 짧을 땐 대사 → 선택지 → 버튼이 빈 공간
+    // 없이 바로 이어짐.
+    <div className="flex w-full flex-1 flex-col">
+      {/* 상단 — narration + 질문 라인 (정적) */}
+      <div className="shrink-0 space-y-4">
+        {narration && <NarrationBlock text={narration} />}
         <AutoFlowText lines={lines} onSettled={() => setSettled(true)} />
+      </div>
 
-        {/* Cards */}
-        {settled && (
-          <div className="mt-3 flex flex-col gap-3">
+      {/* 중간 — 선택 카드. flex-1 X, min-h-0 overflow-y-auto 로 콘텐츠가
+          dialog 를 넘칠 때만 안에서 스크롤. */}
+      {settled && (
+        <div className="min-h-0 overflow-y-auto pt-3">
+          <div className="flex flex-col gap-3">
             {choices.map((c, i) => (
               <button
                 key={i}
@@ -76,7 +79,6 @@ export function CardChoiceScene({
                     : "border-[#b99b6b]/40 bg-white/50 text-[#3d2414] hover:bg-[#f0e4c8]/70"
                 }`}
               >
-                {/* Radio circle */}
                 <span
                   className={`mt-[3px] flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition ${
                     selected === i
@@ -102,13 +104,13 @@ export function CardChoiceScene({
               </button>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Footer — 이전 + 선택하기 in same row. sticky so it stays visible
-          on short screens; transparent (no border / bg) so it doesn't paint
-          a distracting band over the parchment dialog. */}
-      <div className="sticky bottom-0 z-10 -mx-7 -mb-7 mt-1 flex items-center justify-between px-7 py-3">
+      {/* 하단 — 이전/선택하기 (정적, 항상 대화창 바닥에 고정).
+          mt-auto 로 짧은 콘텐츠일 때 빈 공간을 위쪽이 아니라 footer 위로 몰아
+          buttons 가 늘 같은 위치에 보이게. */}
+      <div className="shrink-0 mt-auto pt-3 flex items-center justify-between gap-3">
         {onPrev && canGoBack ? (
           <button
             type="button"
@@ -120,14 +122,12 @@ export function CardChoiceScene({
         ) : (
           <span />
         )}
-        <button
-          type="button"
+        <StoryButtonV3
+          label={spec.buttonLabel ?? "선택하기"}
           onClick={confirm}
           disabled={selected === null}
-          className="rounded-md bg-[#3d2414] px-6 py-3 text-[16px] text-[#f5ead6] transition hover:bg-[#5a3520] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#3d2414]"
-        >
-          {spec.buttonLabel ?? "선택하기"}
-        </button>
+          ritual
+        />
       </div>
     </div>
   );

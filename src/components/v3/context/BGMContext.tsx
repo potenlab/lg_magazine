@@ -19,7 +19,7 @@ const BGMContext = createContext<BGMContextType | undefined>(undefined);
 // even at user volume = 100% the BGM was barely audible under SFX.
 const VOLUME_LEVELS: Record<string, number> = {
   // Ambient/looping tracks
-  "kokoreli777-inside-old-train-169418.mp3": 0.55,
+  "kokoreli777-inside-old-train-169418.mp3": 0.32,
   "freesound_community-train_station_outdoor_platform_birds_people-30576.mp3": 0.6,
   // Sound effects (single play or loop)
   "writing-with-pen-loud.mp3": 1.0,

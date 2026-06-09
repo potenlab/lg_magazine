@@ -39,17 +39,17 @@ export function ResumeModal({
         <div className="mt-6 flex gap-3">
           <button
             type="button"
-            onClick={onResume}
-            className="flex-1 rounded-md bg-[#3d2414] px-4 py-2 text-sm text-[#f5ead6]"
-          >
-            이어가기
-          </button>
-          <button
-            type="button"
             onClick={onRestart}
             className="flex-1 rounded-md border border-[#3d2414]/30 px-4 py-2 text-sm text-[#3d2414]"
           >
             새로 시작
+          </button>
+          <button
+            type="button"
+            onClick={onResume}
+            className="flex-1 rounded-md bg-[#3d2414] px-4 py-2 text-sm text-[#f5ead6]"
+          >
+            이어가기
           </button>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { pdf } from "@react-pdf/renderer";
 import { AutoFlowText } from "@/components/v3/ui/AutoFlowText";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
+import { buildV3ChapterThreads } from "@/lib/v3/session/adminView";
 import { extractIdentityTitle, renderTemplate } from "@/lib/v3/scenes/template";
 import { llm } from "@/lib/v3/llm";
 import { readUrlConfig } from "@/lib/v3/llm/realLLM";
@@ -146,7 +147,7 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
             transition={{ duration: 0.6, delay: 0.3 }}
             className="rounded-md border border-[#b99b6b]/30 bg-white/40 p-5"
           >
-            <p className="mb-3 text-center text-[16px] uppercase tracking-[0.3em] text-[#8b7050]">
+            <p className="mb-3 text-center text-[16px] uppercase tracking-[0.14em] text-[#8b7050]">
               한 호의 요약
             </p>
             <dl className="space-y-2.5 text-[16px] leading-[1.6]">
@@ -167,6 +168,8 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
             {status === "error" && "매거진 정리에 잠깐 어려움이 있었어요. 그래도 다운로드는 가능해요."}
           </p>
         )}
+
+        {settled && <ChapterAttachment session={session} />}
       </div>
 
       {/* 고정 푸터 — scroll 영역 밖 shrink-0. 항상 카드 하단에 보임. */}
@@ -196,5 +199,98 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
         />
       </div>
     </div>
+  );
+}
+
+/** 별첨 — 챕터 1/2/3/4 의 매거진 요약 + 사용자가 적었던 답변 전체를 결과지 안에서
+ *  한 번에 모아 보기 위한 접이식 섹션. 기본 닫힘 — 펼치면 ChapterReviewOverlay
+ *  와 동일한 구조(질문/답변/AI 결과 분리)로 렌더한다. 데이터 소스는 어드민/기록
+ *  패널과 동일하게 buildV3ChapterThreads 를 재사용해 진실의 원천을 일치시킨다. */
+function ChapterAttachment({ session }: { session: import("@/lib/v3/scenes/types").V3Session }) {
+  const [open, setOpen] = useState(false);
+  const threads = buildV3ChapterThreads(session).filter((t) =>
+    t.entries.some((e) => e.text && e.text.trim().length > 0),
+  );
+  if (threads.length === 0) return null;
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.5 }}
+      className="rounded-md border border-[#b99b6b]/30 bg-white/35 p-5"
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between text-left"
+        aria-expanded={open}
+      >
+        <div>
+          <p className="text-[12px] uppercase tracking-[0.14em] text-[#8b7050]">Appendix</p>
+          <p className="mt-1 text-[16px] font-semibold text-[#3d2414]">
+            별첨 — 내가 적은 기록과 챕터별 요약 전체 보기
+          </p>
+          <p className="mt-1 text-[13px] italic text-[#8b7050]">
+            네 챕터에서 주고받은 질문·답변·편집장 요약을 한 자리에 모아둔 페이지예요.
+          </p>
+        </div>
+        <span className="ml-3 shrink-0 text-[20px] text-[#8b7050]" aria-hidden>
+          {open ? "−" : "+"}
+        </span>
+      </button>
+
+      {open && (
+        <div className="mt-5 space-y-6">
+          {threads.map((thread) => {
+            const entries = thread.entries.filter((e, i, arr) => {
+              if (!e.text || e.text.trim().length === 0) return false;
+              if (e.tone === "question") {
+                const next = arr[i + 1];
+                const answered = next?.text && next.text.trim().length > 0;
+                if (!answered) return false;
+              }
+              return true;
+            });
+            if (entries.length === 0) return null;
+            return (
+              <div key={thread.chapter} className="space-y-3">
+                <div className="border-b border-[#b99b6b]/30 pb-2">
+                  <p className="text-[11px] uppercase tracking-[0.1em] text-[#9b8768]">
+                    {thread.chapter}
+                  </p>
+                  <h4 className="mt-0.5 text-[16px] font-semibold text-[#3d2414]">
+                    {thread.title}
+                  </h4>
+                </div>
+                <div className="space-y-2.5">
+                  {entries.map((entry, i) => {
+                    const isQuestion = entry.tone === "question";
+                    const isResult = entry.tone === "result";
+                    const boxClass = isQuestion
+                      ? "rounded-md border-l-[3px] border-[#b99b6b] bg-transparent px-3 py-1.5"
+                      : isResult
+                        ? "rounded-md border border-[#d7bd83]/40 bg-[#ede1c6]/40 px-3 py-2.5"
+                        : "rounded-md border border-[#b99b6b]/30 bg-white/55 px-3 py-2.5";
+                    const labelClass = isQuestion
+                      ? "text-[11px] uppercase tracking-[0.08em] text-[#9b8768]"
+                      : "text-[12px] tracking-wide text-[#8b7050]";
+                    const textClass = isQuestion
+                      ? "mt-1 whitespace-pre-wrap text-[14px] italic leading-[1.55] text-[#6b5337]"
+                      : "mt-1.5 whitespace-pre-wrap text-[14px] leading-[1.65] text-[#3d2414]";
+                    return (
+                      <div key={i} className={boxClass}>
+                        <p className={labelClass}>{entry.label}</p>
+                        <div className={textClass}>{entry.text}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </motion.section>
   );
 }

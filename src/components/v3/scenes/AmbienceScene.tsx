@@ -7,6 +7,7 @@ import { PaginatedNarration } from "@/components/v3/ui/PaginatedNarration";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { DialogStageContext } from "@/components/v3/V3App";
+import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 export function AmbienceScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance: (n: SceneId) => void }) {
@@ -47,6 +48,13 @@ export function AmbienceScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
     if (typeof spec.next === "string") onAdvance(spec.next);
     else if (typeof spec.next === "function") onAdvance(spec.next(session));
   };
+  // Enter 가 onClick 과 같은 효과를 내도록. phase 0/1 에서는 다음 phase 로,
+  // phase 2 (또는 hasLines 가 false 인 phase 1) 에서는 advance.
+  useEnterToAdvance(() => {
+    if (phase === 0) setPhase(1);
+    else if (phase === 1) (hasLines ? setPhase(2) : advance());
+    else advance();
+  });
 
   // Phase 0 — full-screen click overlay; dialog motion.div is hidden by stage="hidden".
   // IMPORTANT: rendered via createPortal to document.body to escape the framer-motion
@@ -63,8 +71,11 @@ export function AmbienceScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
           onClick={() => setPhase(1)}
           aria-label="장면 진행"
         />
-        <div className="pointer-events-none fixed bottom-12 right-12 z-40 text-[16px] italic text-[#f5ead6]/70">
-          다음
+        {/* Phase 0 는 dialog 가 완전히 hidden 이라 어디를 눌러야 진행되는지
+            인지가 어렵다는 피드백 → 화면 정중앙에 클릭 가이드 한 줄만 노출
+            (밝기/굵기 ↑, 부드러운 호흡 애니메이션). */}
+        <div className="ambience-click-hint pointer-events-none fixed left-1/2 top-1/2 z-40 -translate-x-1/2 -translate-y-1/2 select-none text-center text-[18px] italic text-[#f5ead6] drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)]">
+          화면을 눌러 다음으로
         </div>
       </>,
       document.body,
@@ -93,7 +104,7 @@ export function AmbienceScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
           <div className="flex-1">
             <NarrationBlock text={narration} />
           </div>
-          <div className="absolute bottom-7 right-7 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
+          <div className="absolute bottom-6 right-6 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
             <span className="italic">다음</span>
           </div>
         </div>
@@ -112,7 +123,7 @@ export function AmbienceScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance:
         <div className="flex-1">
           <NarrationBlock text={narration} />
         </div>
-        <div className="absolute bottom-7 right-7 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
+        <div className="absolute bottom-6 right-6 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
           <span className="italic">다음</span>
         </div>
       </div>

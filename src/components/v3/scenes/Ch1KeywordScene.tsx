@@ -6,6 +6,8 @@ import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useEditorWait } from "@/lib/v3/useEditorWait";
+import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { paginateMirror, splitReadableChunks } from "@/lib/v3/paginateMirror";
 import { DialogStageContext } from "@/components/v3/V3App";
@@ -24,6 +26,7 @@ type Beat = "narration1" | "mirror";
 
 export function Ch1KeywordScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance: (n: SceneId) => void }) {
   const { session, patch } = useV3Session();
+  const waitMsg = useEditorWait();
   const [mirror, setMirror] = useState(session.ch1PoeticMirror);
   const narration = spec.narration ? renderTemplate(spec.narration, session) : undefined;
   // Skip the narration1 beat entirely if no narration is provided — the
@@ -76,6 +79,7 @@ export function Ch1KeywordScene({ spec, onAdvance }: { spec: SceneSpec; onAdvanc
     }
     if (typeof spec.next === "string") onAdvance(spec.next);
   };
+  useEnterToAdvance(advance, Boolean(mirror));
 
   const canAdvance =
     beat === "narration1" || (beat === "mirror" && Boolean(mirror));
@@ -105,7 +109,7 @@ export function Ch1KeywordScene({ spec, onAdvance }: { spec: SceneSpec; onAdvanc
               ))}
             </motion.div>
           ) : (
-            <NarrationBlock text="편집장이 두 이야기를 나란히 놓고 천천히 들여다본다…" />
+            <NarrationBlock text={waitMsg} />
           )
         )}
       </div>

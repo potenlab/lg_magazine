@@ -106,8 +106,8 @@ export function ValueCardScene({
           <AutoFlowTextLight lines={lines} onSettled={() => setSettled(true)} />
         </div>
 
-        {/* 스크롤 영역 — 카드 그리드 + 직접입력 + 카운터 + 칩. 콘텐츠가
-            뷰포트를 넘어가도 전체 페이지가 아니라 이 영역 안에서만 스크롤. */}
+        {/* 스크롤 영역 — 카드 그리드만 (직접입력/카운터/칩은 아래 shrink-0
+            footer 로 분리). 카드가 많아도 푸터가 묻히지 않게. */}
         <div className="relative min-h-0 flex-1 overflow-y-auto">
         {settled && (
           // Portrait (3:4) cards — capped grid width keeps each card a
@@ -175,12 +175,13 @@ export function ValueCardScene({
           </div>
         )}
 
-        {/* Custom-card input bar — moved out of the grid so every column has
-            the same height (header + 5 cards). Saves one full card-row of
-            vertical space, which lets the entire 5-row grid + chrome fit in
-            a single viewport on standard laptops. */}
+        </div>
+        {/* ── Footer (shrink-0): 직접입력 + 카운터 + 선택 칩 ─────────────
+            스크롤 영역 밖으로 빼서 카드 그리드가 길어져도 항상 보이게.
+            "직접 적기" 인풋이 그리드 아래에 묻혀 보이지 않는다는 피드백
+            반영. */}
         {settled && (
-          <div className="relative mx-auto mt-3 flex max-w-[640px] gap-2">
+          <div className="relative mx-auto mt-3 flex max-w-[640px] shrink-0 gap-2">
             <div className="relative flex flex-1 items-center gap-2 rounded-md border-2 border-dashed border-[#a78550]/40 bg-[#f6efdf]/15 px-3 py-1.5">
               <span className="shrink-0 text-[16px] tracking-wider text-[#d4b88a]">
                 여기 없어요? 직접 적기 [+]
@@ -210,18 +211,16 @@ export function ValueCardScene({
           </div>
         )}
 
-        {/* Bottom strip: counter + L-OWL mark */}
         {settled && (
-          <div className="relative mt-4 flex items-center justify-between px-2 text-[16px] tracking-[0.2em] text-[#d4b88a]/80">
+          <div className="relative mt-3 flex shrink-0 items-center justify-between px-2 text-[16px] tracking-[0.2em] text-[#d4b88a]/80">
             <span className="invisible">L-OWL</span>
             <span className="font-medium">선택한 카드: {picked.length}/3</span>
             <span className="font-semibold tracking-[0.3em]">L-OWL</span>
           </div>
         )}
 
-        {/* Selected chips — sit at the bottom of the dark menu board */}
         {settled && picked.length > 0 && (
-          <div className="relative mt-4 flex flex-wrap items-center gap-2 px-2">
+          <div className="relative mt-3 flex shrink-0 flex-wrap items-center gap-2 px-2">
             <span className="text-xs text-[#d4b88a]">선택:</span>
             {picked.map((p) => (
               <button
@@ -237,7 +236,6 @@ export function ValueCardScene({
             ))}
           </div>
         )}
-        </div>
       </div>
 
       {/* Center popup — appears once participant has filled all 3 picks.

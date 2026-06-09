@@ -25,7 +25,7 @@ export function MagazineArticlePage({
 }) {
   return (
     <div className="space-y-5">
-      <p className="text-[16px] uppercase tracking-[0.28em] text-[#9a7b4c]">
+      <p className="text-[16px] uppercase tracking-[0.14em] text-[#9a7b4c]">
         Chapter {chapter}
       </p>
       <h2 className="font-serif text-2xl italic text-[#3d2414]">{article.headline}</h2>
@@ -54,7 +54,7 @@ export function MagazineArticlePage({
 export function MagazineArticleLoading({ chapter }: { chapter: 1 | 2 | 3 | 4 }) {
   return (
     <div className="space-y-5">
-      <p className="text-[16px] uppercase tracking-[0.28em] text-[#9a7b4c]/60">
+      <p className="text-[16px] uppercase tracking-[0.14em] text-[#9a7b4c]/60">
         Chapter {chapter}
       </p>
       <p className="text-[16px] italic text-[#8b7050]">
@@ -103,7 +103,7 @@ export function MagazineBeatPage({
         {number}
       </p>
       <div className="h-px w-12 bg-[#b99b6b]" />
-      <p className="text-[11px] uppercase tracking-[0.32em] text-[#9b8768]">
+      <p className="text-[11px] uppercase tracking-[0.08em] text-[#9b8768]">
         {category}
       </p>
       {headline && (

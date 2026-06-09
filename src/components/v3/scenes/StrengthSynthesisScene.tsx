@@ -6,6 +6,8 @@ import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useEditorWait } from "@/lib/v3/useEditorWait";
+import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
@@ -28,6 +30,7 @@ export function StrengthSynthesisScene({
   onAdvance: (n: SceneId) => void;
 }) {
   const { session, patch } = useV3Session();
+  const waitMsg = useEditorWait();
   const [synthesis, setSynthesis] = useState<string>(session.strengthSynthesis);
   const [loaded, setLoaded] = useState<boolean>(Boolean(session.strengthSynthesis));
   const { setStage } = useContext(DialogStageContext);
@@ -50,6 +53,7 @@ export function StrengthSynthesisScene({
             .map((word) => ({ word, meaning: session.valueDefinitions[word] ?? "" }))
             .filter((v) => v.word.trim().length > 0),
           strengthCommonAsk: session.strengthCommonAsk,
+          helpRequests: session.helpRequests,
           othersDescription: session.othersDescription,
         });
         if (cancelled) return;
@@ -72,9 +76,10 @@ export function StrengthSynthesisScene({
     if (typeof spec.next === "string") onAdvance(spec.next);
     else if (typeof spec.next === "function") onAdvance(spec.next(session));
   };
+  useEnterToAdvance(advance, Boolean(loaded && synthesis));
 
   if (!loaded || !synthesis) {
-    return <NarrationBlock text="편집장이 이야기를 모아 천천히 꿰어보고 있어요…" />;
+    return <NarrationBlock text={waitMsg} />;
   }
 
   // Split LLM output into separate "beats" — each beat will land in its
@@ -106,7 +111,7 @@ export function StrengthSynthesisScene({
             transition={{ delay: 0.15 * i, duration: 0.5, ease: "easeOut" }}
             className="rounded-md border border-[#b99b6b]/40 bg-white/55 px-4 py-3"
           >
-            <p className="text-[11px] uppercase tracking-[0.22em] text-[#9b8768]">
+            <p className="text-[11px] uppercase tracking-[0.1em] text-[#9b8768]">
               {CARD_LABELS[i] ?? `BEAT ${i + 1}`}
             </p>
             <p className="mt-1.5 text-[14px] leading-[1.6] text-[#3d2414]">

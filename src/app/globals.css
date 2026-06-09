@@ -458,3 +458,23 @@ body {
   animation: corner-hint-pulse 1.7s ease-out infinite;
   border-radius: inherit;
 }
+
+/* ═══════ Ambience Click Hint (cinematic phase 0 — 외투/객실 등 어디를 눌러야
+   진행되는지 인지 어렵다는 피드백 → 호흡하듯 부드럽게 깜빡이는 가이드). ═══════ */
+@keyframes ambience-click-hint {
+  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: 1;    transform: translate(-50%, -50%) scale(1.02); }
+}
+@keyframes ambience-click-hint-corner {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+.ambience-click-hint {
+  animation: ambience-click-hint 2.2s ease-in-out infinite;
+}
+/* 우하단 "다음 ›" 는 translate 가 없으므로 별도 keyframe 사용 (opacity 만). */
+.ambience-click-hint.fixed.bottom-12,
+.ambience-click-hint:not([class*="-translate"]) {
+  animation: ambience-click-hint-corner 2.2s ease-in-out infinite;
+  transform: none;
+}

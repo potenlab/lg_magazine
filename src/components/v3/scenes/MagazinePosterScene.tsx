@@ -135,50 +135,53 @@ export function MagazinePosterScene({
   const pageIndicator = `${page + 1} / 3`;
 
   return (
-    <div id="magazine-spread-root" className="relative flex min-h-0 flex-1 flex-col overflow-y-auto">
-      {/* ── 매거진 마스트헤드 (모든 spread 공통) ─────────────────────── */}
-      <header className="mb-4 shrink-0 text-center">
-        <p className="text-[11px] tracking-[0.42em] text-[#7a5a3a]">
+    // 다른 스크롤 씬과 동일 3-영역 패턴: 헤더(정적) / 본문(스크롤) / 푸터(정적).
+    // wrapper 는 overflow-hidden, 중간만 overflow-y-auto.
+    <div className="flex h-full w-full flex-1 flex-col">
+      {/* ── 매거진 마스트헤드 (정적) ─────────────────────────────────── */}
+      <header className="shrink-0 text-center">
+        <p className="text-[11px] tracking-[0.2em] text-[#7a5a3a]">
           MAGAZINE STORY · VOL. {session.name.toUpperCase() || "?"}
         </p>
         <div className="mt-2 flex items-center justify-center gap-3">
           <div className="h-px w-8 bg-[#b99b6b]/55" />
-          <span className="text-[12px] tracking-[0.3em] text-[#9a7b4c]">{pageIndicator}</span>
+          <span className="text-[12px] tracking-[0.14em] text-[#9a7b4c]">{pageIndicator}</span>
           <div className="h-px w-8 bg-[#b99b6b]/55" />
         </div>
       </header>
 
-      {/* ── 스프레드 본문 ───────────────────────────────────────────── */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={page}
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -16 }}
-          transition={{ duration: 0.32, ease: "easeOut" }}
-          className="flex-1"
-        >
-          {page < 2 ? (
-            <ChapterSpread
-              left={SPREADS[page].left}
-              right={SPREADS[page].right}
-              articles={articles}
-            />
-          ) : (
-            <CardsSpread session={session} />
-          )}
-        </motion.div>
-      </AnimatePresence>
+      {/* ── 스프레드 본문 (스크롤) ─────────────────────────────────── */}
+      <div id="magazine-spread-root" className="mt-4 min-h-0 flex-1 overflow-y-auto">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={page}
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.32, ease: "easeOut" }}
+          >
+            {page < 2 ? (
+              <ChapterSpread
+                left={SPREADS[page].left}
+                right={SPREADS[page].right}
+                articles={articles}
+              />
+            ) : (
+              <CardsSpread session={session} />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
-      {/* ── 푸터 (이전/다음) ────────────────────────────────────────── */}
-      <footer className="mt-5 flex shrink-0 items-center justify-between border-t border-[#d7bd83]/30 pt-4">
+      {/* ── 푸터 (정적, 항상 보임) — 다른 씬과 동일 톤. border-t·`←` 제거. */}
+      <div className="shrink-0 mt-3 flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={handlePrev}
           disabled={page === 0}
-          className="text-[14px] italic text-[#8b7050] transition hover:text-[#3d2414] disabled:opacity-30"
+          className="flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414] disabled:opacity-30"
         >
-          ← 이전
+          이전
         </button>
         <StoryButtonV3
           key={`adv-${page}`}
@@ -186,7 +189,7 @@ export function MagazinePosterScene({
           onClick={handleNext}
           ritual
         />
-      </footer>
+      </div>
     </div>
   );
 }
@@ -243,7 +246,7 @@ function CardsSpread({ session }: { session: V3Session }) {
     <article className="space-y-5">
       {/* 표제 — Editor's Cards. 정체성 → 가치 → 4년 비전이 한 문장 흐름으로 이어진다. */}
       <header className="text-center">
-        <p className="text-[12px] uppercase tracking-[0.42em] text-[#7a5a3a]">
+        <p className="text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
           Editor&rsquo;s Cards
         </p>
 
@@ -279,7 +282,7 @@ function CardsSpread({ session }: { session: V3Session }) {
       </header>
 
       <section className="mt-4 border-t border-[#b99b6b]/35 pt-4 text-center">
-        <p className="text-[12px] uppercase tracking-[0.4em] text-[#7a5a3a]">
+        <p className="text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
           Editor&rsquo;s Note
         </p>
         <p

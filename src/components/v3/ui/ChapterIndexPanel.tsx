@@ -18,7 +18,7 @@ import type { Chapter } from "@/lib/v3/scenes/types";
  * per-scene "이전" button (prevStack in V3App) is untouched and separate.
  */
 export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter }) {
-  const { session } = useV3Session();
+  const { session, patch } = useV3Session();
   const [open, setOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const { hint } = useCornerHint();
@@ -26,6 +26,41 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
   // buildV3ChapterThreads returns one thread per chapter, in order:
   // index 0 → Chapter 0, index 1 → Chapter 1, ... index 4 → Chapter 4.
   const threads = useMemo(() => buildV3ChapterThreads(session), [session]);
+
+  // 이미 LLM 반향/요약이 생성된 답변 필드는 수정 차단 — 답만 바꾸면 결과지가
+  // 어긋남. session 의 LLM 산출물 존재 여부로 lock 판정.
+  const lockedFields = useMemo(() => {
+    const locked = new Set<string>();
+    const has = (v: unknown) => typeof v === "string" && v.trim().length > 0;
+    // Ch1 두 몰입 경험 → ch1PoeticMirror 가 이미 만들어졌으면 잠금
+    if (has(session.ch1PoeticMirror)) {
+      locked.add("flowExperience1");
+      locked.add("flowExperience2");
+    }
+    // strengthSynthesis (Ch2 매거진) 가 만들어졌으면 그 입력 전부 잠금
+    if (has(session.strengthSynthesis)) {
+      locked.add("flowExperience1");
+      locked.add("flowExperience2");
+      locked.add("commonPattern");
+      locked.add("helpRequests");
+      locked.add("othersDescription");
+    }
+    // growthVisionSynthesis(Ch3 매거진) 가 만들어졌으면 Ch3 입력 + identityName 잠금
+    if (has(session.growthVisionSynthesis)) {
+      locked.add("identityName");
+      locked.add("attraction");
+      locked.add("alreadyDoing");
+      locked.add("obstacles");
+      locked.add("whyReason");
+      locked.add("growthDirection");
+      locked.add("contribution");
+    }
+    // visionLine 도 identityName 을 참조 — 정체성 굳었으면 잠금
+    if (has(session.visionLine)) {
+      locked.add("identityName");
+    }
+    return locked;
+  }, [session]);
 
   // Closing ("C") means every numbered chapter is behind the participant.
   const currentChapterNum = currentChapter === "C" ? 5 : currentChapter;
@@ -43,7 +78,7 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`pointer-events-auto fixed left-4 top-4 z-[57] rounded-md border border-[#d7bd83]/40 bg-[#160d08]/70 px-3 py-1.5 text-[16px] tracking-wide text-[#e9d5a8] backdrop-blur transition hover:bg-[#160d08]/90 ${hint === "record" ? "corner-hint-pulse" : ""}`}
+        className={`pointer-events-auto fixed left-4 top-4 z-[57] rounded-md border-2 border-[#e9d5a8] bg-[#160d08] px-3.5 py-1.5 text-[16px] font-semibold tracking-wide text-[#e9d5a8] shadow-lg transition hover:bg-[#241710] ${hint === "record" ? "corner-hint-pulse" : ""}`}
         style={{ fontFamily: "var(--font-ridi-batang)" }}
         aria-label="챕터 기록"
       >
@@ -71,7 +106,7 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
               exit={{ x: -300 }}
               transition={{ duration: 0.28, ease: "easeOut" }}
             >
-              <p className="mb-3 px-2 text-[16px] font-semibold uppercase tracking-[0.22em] text-[#9b8768]">
+              <p className="mb-3 px-2 text-[14px] font-semibold uppercase tracking-[0.1em] text-[#9b8768]">
                 챕터 기록
               </p>
               {threads.map((thread, i) => {
@@ -87,7 +122,7 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
                       isFuture ? "cursor-default opacity-35" : "hover:bg-[#f6efdf]/10"
                     }`}
                   >
-                    <span className="text-[16px] uppercase tracking-[0.16em] text-[#9b8768]">
+                    <span className="text-[14px] uppercase tracking-[0.08em] text-[#9b8768]">
                       {thread.chapter}
                       {isCurrent ? " · 진행 중" : ""}
                     </span>
@@ -105,6 +140,10 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
           <ChapterReviewOverlay
             thread={threads[selectedIndex]}
             onClose={() => setSelectedIndex(null)}
+            onEdit={(fieldKey, next) => {
+              patch({ [fieldKey]: next } as Partial<typeof session>);
+            }}
+            lockedFields={lockedFields}
           />
         )}
       </AnimatePresence>

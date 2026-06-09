@@ -9,6 +9,10 @@ export type ConversationEntry = {
   label: string;
   text?: string;
   tone?: "question" | "answer" | "followup" | "result";
+  /** 기록 패널에서 인라인 편집을 허용할 답변의 V3Session 필드 키.
+   *  배열·파생·뱃치 필드는 비워둘 것 — 클라이언트는 fieldKey 가 있고 tone 이
+   *  "answer" 일 때만 "수정" 어피던스를 렌더한다. */
+  fieldKey?: keyof V3Session & string;
 };
 
 export type ChapterThread = {
@@ -81,8 +85,8 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
       title: "VISION EXPRESS 탑승을 환영합니다",
       entries: [
         { label: "질문", tone: "question", text: "열차에 오르기 전, 지금 마음이 어떤지 궁금해요." },
-        { label: "나의 답변", tone: "answer", text: s.freeContext },
-        { label: "어색함 / 긴장 피드백", tone: "answer", text: s.awkwardnessFeedback },
+        { label: "나의 답변", tone: "answer", text: s.freeContext, fieldKey: "freeContext" },
+        { label: "어색함 / 긴장 피드백", tone: "answer", text: s.awkwardnessFeedback, fieldKey: "awkwardnessFeedback" },
       ],
     },
     {
@@ -90,12 +94,12 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
       title: "내가 지나온 길",
       entries: [
         { label: "질문", tone: "question", text: "시간 가는 줄 모르고 빠져들었던 순간은?" },
-        { label: "첫 번째 경험", tone: "answer", text: s.flowExperience1 },
+        { label: "첫 번째 경험", tone: "answer", text: s.flowExperience1, fieldKey: "flowExperience1" },
         { label: "질문", tone: "question", text: "비슷하게 빠져들었던 또 다른 순간은?" },
-        { label: "두 번째 경험", tone: "answer", text: s.flowExperience2 },
+        { label: "두 번째 경험", tone: "answer", text: s.flowExperience2, fieldKey: "flowExperience2" },
         { label: "엘아울의 한마디", tone: "result", text: s.ch1PoeticMirror },
         { label: "질문", tone: "question", text: "그 안에 흐르는 공통점이 있다면, 어떤 것이 있을까요?" },
-        { label: "내가 찾은 공통점", tone: "answer", text: s.commonPattern },
+        { label: "내가 찾은 공통점", tone: "answer", text: s.commonPattern, fieldKey: "commonPattern" },
         ...articleEntry(1),
       ],
     },
@@ -106,9 +110,9 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
         { label: "선택한 가치 카드", tone: "answer", text: s.selectedValues?.join(", ") },
         { label: "각 가치의 의미", tone: "answer", text: fmtValueDefs(s.valueDefinitions) },
         { label: "엘아울의 한마디", tone: "result", text: s.valueReflection },
-        { label: "도움 요청받았던 경험", tone: "answer", text: s.helpRequests },
+        { label: "도움 요청받았던 경험", tone: "answer", text: s.helpRequests, fieldKey: "helpRequests" },
         { label: "AI: 강점 공통 결", tone: "result", text: s.strengthCommonAsk },
-        { label: "타인이 보는 나", tone: "answer", text: s.othersDescription },
+        { label: "타인이 보는 나", tone: "answer", text: s.othersDescription, fieldKey: "othersDescription" },
         { label: "엘아울의 발견", tone: "result", text: fmtStrengthSynthesis(s.strengthSynthesis) },
         { label: "자기 강점 정렬", tone: "answer", text: fmtAlignment(s.selfStrengthAlignment) },
         { label: "AI: 패턴 미러 (상황)", tone: "result", text: s.patternMirrorSituation },
@@ -118,7 +122,7 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
           tone: "answer",
           text: s.patternConfirmed ? "맞아요" : s.patternRevised,
         },
-        { label: "나의 정체성", tone: "answer", text: s.identityName },
+        { label: "나의 정체성", tone: "answer", text: s.identityName, fieldKey: "identityName" },
         ...articleEntry(2),
       ],
     },
@@ -126,14 +130,14 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
       chapter: "Chapter 3",
       title: "내가 그리는 미래",
       entries: [
-        { label: "끌리는 것", tone: "answer", text: s.attraction },
-        { label: "이미 하고 있는 것", tone: "answer", text: s.alreadyDoing },
-        { label: "걸리는 것 / 장애물", tone: "answer", text: s.obstacles },
-        { label: "향하고 싶은 이유", tone: "answer", text: s.whyReason },
-        { label: "성장 방향", tone: "answer", text: s.growthDirection },
+        { label: "끌리는 것", tone: "answer", text: s.attraction, fieldKey: "attraction" },
+        { label: "이미 하고 있는 것", tone: "answer", text: s.alreadyDoing, fieldKey: "alreadyDoing" },
+        { label: "걸리는 것 / 장애물", tone: "answer", text: s.obstacles, fieldKey: "obstacles" },
+        { label: "향하고 싶은 이유", tone: "answer", text: s.whyReason, fieldKey: "whyReason" },
+        { label: "성장 방향", tone: "answer", text: s.growthDirection, fieldKey: "growthDirection" },
         { label: "지금 잘 쓰는 도구", tone: "answer", text: s.currentTool?.join(", ") },
         { label: "더 키우고 싶은 도구", tone: "answer", text: s.growthTool?.join(", ") },
-        { label: "기여하고 싶은 것", tone: "answer", text: s.contribution },
+        { label: "기여하고 싶은 것", tone: "answer", text: s.contribution, fieldKey: "contribution" },
         { label: "나의 성장 비전 문장", tone: "result", text: s.visionLine },
         { label: "시간 지평 (1년/3년/언젠가)", tone: "answer", text: s.timeHorizon?.join("\n") },
         ...articleEntry(3),
@@ -144,9 +148,9 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
       title: "내일로 향하는 한 걸음",
       entries: [
         { label: "질문", tone: "question", text: "내일부터 시작할 수 있는 가장 작은 한 걸음은?" },
-        { label: "내일부터의 첫 걸음", tone: "answer", text: s.firstStep },
-        { label: "함께할 사람", tone: "answer", text: s.supportPerson },
-        { label: "필요한 자원", tone: "answer", text: s.neededResource },
+        { label: "내일부터의 첫 걸음", tone: "answer", text: s.firstStep, fieldKey: "firstStep" },
+        { label: "함께할 사람", tone: "answer", text: s.supportPerson, fieldKey: "supportPerson" },
+        { label: "필요한 자원", tone: "answer", text: s.neededResource, fieldKey: "neededResource" },
       ],
     },
   ];

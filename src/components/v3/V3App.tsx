@@ -189,7 +189,7 @@ function V3Inner() {
     // edits between sessions), reset to intro instead of trying to resume
     // into nothingness. loadSession() already filters this case for fresh
     // tab loads; this guards in-tab navigation too.
-    const validResume = id && id !== "intro" && id !== "C-4" && SCENES[id];
+    const validResume = id && id !== "intro" && SCENES[id];
     queueMicrotask(() => {
       if (validResume) {
         setShowResume(true);
@@ -239,13 +239,6 @@ function V3Inner() {
 
   const handleAdvance = (next: SceneId) => {
     const current = activeIdRef.current;
-    // Terminal: C-4 self-loop sentinel → reset back to fresh start
-    if (current === "C-4" && next === "C-4") {
-      reset();
-      setActiveId("intro");
-      setPrevStack([]);
-      return;
-    }
     // Re-entry: same scene id → bump counter so motion key forces remount.
     // Don't push to prev stack — would cause "이전" to land on the same scene.
     if (next === current) {
@@ -399,11 +392,11 @@ function V3Inner() {
           <section className="relative w-full max-w-[800px] flex-1 flex flex-col">
             <motion.div
               key={motionKey}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.32 }}
-              className="relative flex flex-1 flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-7 shadow-2xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.45, ease: "easeInOut" }}
+              className="relative flex flex-1 flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl"
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             >
               <SceneComponent spec={spec} onAdvance={handleAdvance} />
@@ -411,7 +404,7 @@ function V3Inner() {
                 <button
                   type="button"
                   onClick={handlePrev}
-                  className="absolute bottom-7 left-7 z-20 flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
+                  className="absolute bottom-6 left-6 z-20 flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
                 >
                   이전
                 </button>
@@ -468,7 +461,7 @@ function V3Inner() {
       )}
 
       <div className="relative z-20 flex min-h-screen flex-col items-center justify-end px-5 pb-12 pt-24 lg:px-10">
-        <section className={`relative w-full ${spec.kind === "valueCards" && stage === "content" ? "mb-24" : "max-w-[1156px]"}`}>
+        <section className={`relative w-full ${spec.kind === "valueCards" && stage === "content" ? "mb-24" : "max-w-[920px]"}`}>
           {!spec.hideSpeakerLabel && stage !== "hidden" && stage !== "ambient" && (
             <p
               className="mb-3 ml-1 text-[20px] tracking-wide text-[#e9d5a8]"
@@ -477,13 +470,15 @@ function V3Inner() {
               {spec.speakerLabel ?? "편집장 | 엘 아울"}
             </p>
           )}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={motionKey}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.32 }}
+          {/* AnimatePresence + motion.div 페이드를 모두 제거.
+              씬마다 dialog 박스 크기/위치/배경이 크게 달라서 어떤 방식의
+              크로스페이드를 시도해도 "박스가 늘어난다 / 좌상단으로 튄다 /
+              빈 화면 딜레이가 보인다" 중 하나가 발생. 가장 안정적인 선택은
+              그냥 즉시 스왑. key 만 살려두면 React 가 깔끔하게 unmount/mount.
+              씬 내부의 콘텐츠(라인, 카드, 입력)는 각자 fade-in 애니메이션을
+              이미 갖고 있으므로 외곽 박스만 snap. */}
+          <div key={motionKey}>
+            <div
               className={
                 stage === "hidden"
                   // Cinematic ambience first-beat — dialog wrapper fully hidden.
@@ -492,11 +487,11 @@ function V3Inner() {
                   : stage === "ambient"
                     // Transparent dialog — no border / shadow, lower parchment opacity
                     // + backdrop blur so background image stays visible behind narration.
-                    ? "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md bg-[#f6efdf]/55 p-7 backdrop-blur-[2px]"
+                    ? "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md bg-[#f6efdf]/55 px-6 py-5 backdrop-blur-[2px]"
                     : stage === "reflection"
                     // 페이지 분할된 LLM 반향(미러/되비춤) — 입력칸 없는 콘텐츠 박스.
                     // 짧은 페이지는 min-h로 받치고, 긴 페이지는 스크롤. pb-7로 "다음"이 바닥 정렬.
-                    ? "relative mx-auto flex min-h-[240px] max-h-[calc(100vh_-_140px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
+                    ? "relative mx-auto flex min-h-[240px] max-h-[calc(100vh_-_140px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
                     : FULL_HEIGHT_KINDS.has(spec.kind) && stage === "content"
                   ? // ── FULL_HEIGHT_KINDS 분기 — kind-specific 스타일 먼저, 그 다음 default ──
                   // 주의: 모든 kind-specific 검사는 반드시 FULL_HEIGHT_KINDS 분기 *안*에
@@ -505,7 +500,7 @@ function V3Inner() {
                     // timeHorizon은 LLM이 3줄만 채워주는 짧은 콘텐츠라 viewport
                     // 가득 채우면 빈 공간이 너무 많이 보인다. max-h로 잘리는 케이스만
                     // 보호하고 평소엔 콘텐츠에 맞춰 높이를 자동으로 줄인다.
-                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
+                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
                     : spec.kind === "valueCards"
                     // valueCards renders its own dark "menu board" container,
                     // so the dialog wrapper goes transparent — no parchment
@@ -514,32 +509,36 @@ function V3Inner() {
                     : spec.kind === "chapter2Magazine" || spec.kind === "growthVisionSynthesis" || spec.kind === "magazinePoster"
                     // 매거진 스프레드 씬들 — 좌·우 2 페이지가 가로로 펼쳐지므로 와이드 폭
                     // (1024px). 세 씬 모두 동일한 비율로 통일.
-                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[640px] w-full max-w-[1024px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
+                    // 매거진 스프레드 — wrapper 는 overflow-hidden, 본문 스크롤은
+                    // 씬 내부에서 처리해 헤더/푸터가 정적으로 고정되게.
+                    ? "relative mx-auto flex h-[calc(100vh_-_180px)] min-h-[360px] w-full max-w-[1024px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
                     : spec.kind === "magazineHandoff"
                     // [2026-05-20] 풀 세션이면 요약이 8~12줄로 길어져 dialog
                     // overflow-y-auto + sticky 버튼 조합에서 하단이 잘리던 회귀.
                     // overflow-hidden으로 두고, 씬 내부에서 flex-1 스크롤 영역 +
                     // 고정 푸터(register/freetext와 동일 패턴)로 처리.
                     // 한 호 요약을 한 눈에 보도록 dialog를 80vh로 고정.
-                    ? "relative mx-auto flex h-[80vh] max-h-[calc(100vh_-_140px)] w-full flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
+                    ? "relative mx-auto flex h-[80vh] max-h-[calc(100vh_-_140px)] w-full flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
                     : spec.kind === "editorCredits"
                     // 콘텐츠 짧은 final-stage 씬 — 콘텐츠 hug로 빈 양피지 회귀 방지.
-                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[420px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
-                    // default FULL_HEIGHT — recordPage / toolSelect / visionSelect / magazinePosterV1
-                    : "relative mx-auto flex h-[calc(100vh_-_200px)] min-h-[300px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-7 shadow-2xl"
+                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[420px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
+                    // default FULL_HEIGHT — recordPage / toolSelect / visionSelect / magazinePosterV1.
+                    // wrapper 는 overflow-hidden, 스크롤은 씬 내부 3-영역 패턴에서.
+                    : "relative mx-auto flex h-[calc(100vh_-_200px)] min-h-[300px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl"
                   : spec.kind === "cardChoice" && stage === "content"
-                    // cardChoice keeps the same bottom-anchored position +
-                    // 1156px width as other dialogs, but drops the min-height
-                    // so the dialog hugs the 3-choice content instead of
-                    // forcing 480px of empty space + losing scroll.
-                    ? "relative mx-auto flex max-h-[calc(100vh_-_220px)] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
+                    // 콘텐츠 hug + max-h cap + min-h-[240px] (기본 narration dialog
+                    // 와 동일). 짧은 콘텐츠일 때 다른 씬 대화창 높이와 톤 맞춤.
+                    ? "relative mx-auto flex min-h-[240px] max-h-[calc(100vh_-_140px)] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl text-[16px]"
                     : INPUT_KINDS.has(spec.kind) && stage === "content"
-                      ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[360px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-[108px] shadow-2xl text-[16px]"
+                      // [2026-06-05] AC 풍 압축 — px/pt 28→22, pb 108→92 (버튼 공간만 남김).
+                      ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[320px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-[92px] shadow-2xl text-[16px]"
                       : spec.kind === "strengthSynthesis" && stage === "content"
                         // [v1 백업용] strengthSynthesis 단독 씬 — Chapter 2 통합으로
                         // 대체된 이후엔 도달 없음. 폴백 유지.
-                        ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[500px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-7 pt-7 pb-7 shadow-2xl text-[16px]"
-                        : "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-7 shadow-2xl"
+                        ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[500px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
+                        // [2026-06-06] 콘텐츠 hug 로 바꿨더니 박스 높이가 씬마다
+                        // 출렁여 보인다는 피드백 → 240px 고정 복귀. 폭/패딩 압축은 유지.
+                        : "relative mx-auto flex h-[240px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 py-5 shadow-2xl"
               }
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             >
@@ -557,13 +556,13 @@ function V3Inner() {
                 <button
                   type="button"
                   onClick={handlePrev}
-                  className="absolute bottom-7 left-7 z-20 flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
+                  className="absolute bottom-6 left-6 z-20 flex h-[44px] items-center italic text-[16px] text-[#8b7050] transition hover:text-[#3d2414]"
                 >
                   이전
                 </button>
               )}
-            </motion.div>
-          </AnimatePresence>
+            </div>
+          </div>
         </section>
       </div>
 

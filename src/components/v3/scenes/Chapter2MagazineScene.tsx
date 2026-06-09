@@ -8,6 +8,7 @@ import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useEditorWait } from "@/lib/v3/useEditorWait";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
@@ -38,6 +39,9 @@ const IDENTITY_EXAMPLES = [
   "호기심이 많고 꼭 검색해보고 이해해야만 하는 사람",
   "복잡한 구조 속에서도 관계를 쉽게 파악하고, 누구나 쉽게 이해할 수 있게 설명해주는 걸 잘하는 사람",
   "사람들을 좋아하고 서로 다른 색깔을 가진 사람들이 조화롭게 어우러지도록, 경험을 설계하는 걸 좋아하는 사람",
+  "막막한 일 앞에서 길을 찾아내고, 끝까지 손에 쥐고 마무리하는 사람",
+  "처음 만나는 사람과도 안전한 공기를 만들어, 진짜 이야기가 흘러나오게 하는 사람",
+  "팀이 흩어져 있을 때 묵묵히 다리를 놓고, 같이 가는 방향을 다시 비추는 사람",
 ];
 
 export function Chapter2MagazineScene({
@@ -49,6 +53,7 @@ export function Chapter2MagazineScene({
 }) {
   const { session, patch } = useV3Session();
   const { setStage } = useContext(DialogStageContext);
+  const waitMsg = useEditorWait();
 
   const [synthesis, setSynthesis] = useState<string>(session.strengthSynthesis);
   const [loaded, setLoaded] = useState<boolean>(Boolean(session.strengthSynthesis));
@@ -80,6 +85,7 @@ export function Chapter2MagazineScene({
             .map((word) => ({ word, meaning: session.valueDefinitions[word] ?? "" }))
             .filter((v) => v.word.trim().length > 0),
           strengthCommonAsk: session.strengthCommonAsk,
+          helpRequests: session.helpRequests,
           othersDescription: session.othersDescription,
         });
         if (cancelled) return;
@@ -99,7 +105,7 @@ export function Chapter2MagazineScene({
   }, []);
 
   if (!loaded || !synthesis) {
-    return <NarrationBlock text="편집장이 이야기를 모아 천천히 꿰어보고 있어요…" />;
+    return <NarrationBlock text={waitMsg} />;
   }
 
   const parsed = parseBeats(synthesis, 4);
@@ -158,7 +164,7 @@ export function Chapter2MagazineScene({
             initial={{ opacity: 0, scale: 1.5, rotate: -16 }}
             animate={{ opacity: 1, scale: 1, rotate: -8 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            className="pointer-events-none absolute right-1 top-0 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.18em] text-[#a13c2a]/90"
+            className="pointer-events-none absolute right-4 bottom-4 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.08em] text-[#a13c2a]/90"
           >
             CHAPTER 2 · 완성
           </motion.div>
@@ -167,11 +173,11 @@ export function Chapter2MagazineScene({
 
       {/* 마스트헤드 */}
       <header className="mb-4 shrink-0 text-center">
-        <p className="text-[11px] tracking-[0.42em] text-[#7a5a3a]">STORY · MAGAZINE · CHAPTER 2</p>
+        <p className="text-[11px] tracking-[0.2em] text-[#7a5a3a]">STORY · MAGAZINE · CHAPTER 2</p>
         <h1 className="mt-1 text-[18px] font-semibold tracking-wide text-[#3d2414]">발견</h1>
         <div className="mt-2 flex items-center justify-center gap-3">
           <div className="h-px w-8 bg-[#b99b6b]/55" />
-          <span className="text-[12px] tracking-[0.3em] text-[#9a7b4c]">EDITOR&rsquo;S SUMMARY</span>
+          <span className="text-[12px] tracking-[0.14em] text-[#9a7b4c]">EDITOR&rsquo;S SUMMARY</span>
           <div className="h-px w-8 bg-[#b99b6b]/55" />
         </div>
       </header>
@@ -185,7 +191,7 @@ export function Chapter2MagazineScene({
 
       {/* 정체성 입력 */}
       <section className="mt-7 border-t border-[#b99b6b]/30 pt-6">
-        <p className="mb-3 text-center text-[12px] uppercase tracking-[0.42em] text-[#7a5a3a]">
+        <p className="mb-3 text-center text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
           Editor&rsquo;s Question
         </p>
         {/* 터세한 "님은 어떤 사람입니까?" 대신 엘아울의 따뜻한 원래 멘트(구 2-8). */}
@@ -245,7 +251,7 @@ export function Chapter2MagazineScene({
                 onClick={() => setExamplesOpen(true)}
                 className="text-[14px] text-[#8a7a68] underline decoration-[#8a7a68]/40 underline-offset-[3px] transition hover:text-[#3d2414] hover:decoration-[#3d2414] md:text-[16px]"
               >
-                다른 사람들은 자기를 어떻게 정의했을까요?
+                다른 분들은 자신을 어떻게 정의했을까요?
               </button>
             </div>
             {attempts > 0 && attempts < MAX_ATTEMPTS && (
@@ -278,20 +284,20 @@ export function Chapter2MagazineScene({
                 role="dialog"
                 aria-modal="true"
                 aria-label="다른 사람들의 정체성 예시"
-                className="relative z-10 w-full max-w-[480px] rounded-md border border-[#d7bd83]/40 bg-[#f6efdf] p-7 shadow-2xl"
+                className="relative z-10 flex max-h-[80vh] w-full max-w-[480px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/40 bg-[#f6efdf] shadow-2xl"
                 style={{ fontFamily: "var(--font-ridi-batang)" }}
                 initial={{ y: 16, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 8, opacity: 0 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="shrink-0 flex items-start justify-between gap-3 px-6 pt-6">
                   <div>
-                    <p className="text-[16px] uppercase tracking-[0.32em] text-[#7a5a3a]">
+                    <p className="text-[14px] uppercase tracking-[0.08em] text-[#7a5a3a]">
                       From other passengers
                     </p>
                     <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414]">
-                      다른 사람들은 자기를 어떻게 정의했을까요?
+                      다른 분들은 자신을 어떻게 정의했을까요?
                     </h2>
                   </div>
                   <button
@@ -303,19 +309,21 @@ export function Chapter2MagazineScene({
                     ×
                   </button>
                 </div>
-                <div className="mt-4 space-y-2.5">
-                  {IDENTITY_EXAMPLES.map((ex, i) => (
-                    <div
-                      key={i}
-                      className="block w-full rounded-md border border-[#8c785a]/25 bg-white/40 p-3 text-left"
-                    >
-                      <p className="text-[16px] leading-[1.55] text-[#5a4a38]">
-                        {i + 1}. {ex}
-                      </p>
-                    </div>
-                  ))}
+                <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+                  <div className="space-y-2.5">
+                    {IDENTITY_EXAMPLES.map((ex, i) => (
+                      <div
+                        key={i}
+                        className="block w-full rounded-md border border-[#8c785a]/25 bg-white/40 p-3 text-left"
+                      >
+                        <p className="text-[16px] leading-[1.55] text-[#5a4a38]">
+                          {i + 1}. {ex}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <p className="mt-4 text-center text-[16px] italic text-[#8a7a68]">
+                <p className="shrink-0 px-6 pb-5 text-center text-[16px] italic text-[#8a7a68]">
                   참고용 예시입니다. 내 정의는 직접 입력해주세요.
                 </p>
               </motion.div>
@@ -365,7 +373,7 @@ function BeatCard({ beat, delay }: { beat: Beat; delay: number }) {
       transition={{ delay, duration: 0.5, ease: "easeOut" }}
       className="rounded-md border border-[#b99b6b]/40 bg-white/55 px-4 py-4"
     >
-      <p className="text-[11px] uppercase tracking-[0.22em] text-[#9b8768]">
+      <p className="text-[11px] uppercase tracking-[0.1em] text-[#9b8768]">
         {beat.number} · {beat.category}
       </p>
       {beat.headline ? (

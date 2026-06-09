@@ -35,6 +35,9 @@ const VISION_EXAMPLES = [
   "막막함을 풀어주는 자리에서 자기다운 빛을 내는",
   "복잡한 문제 앞에서 길을 짚고, 함께 가는 사람들에게 자리를 만들어 주는",
   "낯선 곳에서도 자기 페이스로 배우며 다음 한 걸음을 짚어가는",
+  "흩어진 정보 사이에서 맥락을 잇고, 그 다리를 후배에게 건네주는",
+  "내가 짠 판 위에서 후배가 자기 결정을 내릴 수 있게, 무대를 만들어 주는",
+  "한 번의 시도가 어떤 흔적을 남기는지 끝까지 지켜보는, 단단한 직업인이 되는",
 ];
 
 export function GrowthVisionSynthesisScene({
@@ -168,7 +171,7 @@ export function GrowthVisionSynthesisScene({
             initial={{ opacity: 0, scale: 1.5, rotate: -16 }}
             animate={{ opacity: 1, scale: 1, rotate: -8 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            className="pointer-events-none absolute right-1 top-0 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.18em] text-[#a13c2a]/90"
+            className="pointer-events-none absolute right-4 bottom-4 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.08em] text-[#a13c2a]/90"
           >
             CHAPTER 3 · 완성
           </motion.div>
@@ -176,11 +179,11 @@ export function GrowthVisionSynthesisScene({
       </AnimatePresence>
 
       <header className="mb-4 shrink-0 text-center">
-        <p className="text-[11px] tracking-[0.42em] text-[#7a5a3a]">STORY · MAGAZINE · CHAPTER 3</p>
+        <p className="text-[11px] tracking-[0.2em] text-[#7a5a3a]">STORY · MAGAZINE · CHAPTER 3</p>
         <h1 className="mt-1 text-[18px] font-semibold tracking-wide text-[#3d2414]">향하는 길</h1>
         <div className="mt-2 flex items-center justify-center gap-3">
           <div className="h-px w-8 bg-[#b99b6b]/55" />
-          <span className="text-[12px] tracking-[0.3em] text-[#9a7b4c]">EDITOR&rsquo;S SUMMARY</span>
+          <span className="text-[12px] tracking-[0.14em] text-[#9a7b4c]">EDITOR&rsquo;S SUMMARY</span>
           <div className="h-px w-8 bg-[#b99b6b]/55" />
         </div>
       </header>
@@ -194,7 +197,7 @@ export function GrowthVisionSynthesisScene({
 
       {/* visionLine 입력 */}
       <section className="mt-7 border-t border-[#b99b6b]/30 pt-6">
-        <p className="mb-3 text-center text-[12px] uppercase tracking-[0.42em] text-[#7a5a3a]">
+        <p className="mb-3 text-center text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
           Editor&rsquo;s Question
         </p>
         {/* 2-10과 톤 통일 — 엘아울의 따뜻한 멘트로. */}
@@ -291,16 +294,16 @@ export function GrowthVisionSynthesisScene({
                 role="dialog"
                 aria-modal="true"
                 aria-label="다른 사람들의 성장 방향 예시"
-                className="relative z-10 w-full max-w-[480px] rounded-md border border-[#d7bd83]/40 bg-[#f6efdf] p-7 shadow-2xl"
+                className="relative z-10 flex max-h-[80vh] w-full max-w-[480px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/40 bg-[#f6efdf] shadow-2xl"
                 style={{ fontFamily: "var(--font-ridi-batang)" }}
                 initial={{ y: 16, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 8, opacity: 0 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="shrink-0 flex items-start justify-between gap-3 px-6 pt-6">
                   <div>
-                    <p className="text-[16px] uppercase tracking-[0.32em] text-[#7a5a3a]">
+                    <p className="text-[14px] uppercase tracking-[0.08em] text-[#7a5a3a]">
                       From other passengers
                     </p>
                     <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414]">
@@ -316,19 +319,21 @@ export function GrowthVisionSynthesisScene({
                     ×
                   </button>
                 </div>
-                <div className="mt-4 space-y-2.5">
-                  {VISION_EXAMPLES.map((ex, i) => (
-                    <div
-                      key={i}
-                      className="block w-full rounded-md border border-[#8c785a]/25 bg-white/40 p-3 text-left"
-                    >
-                      <p className="text-[16px] leading-[1.55] text-[#5a4a38]">
-                        {i + 1}. {ex}
-                      </p>
-                    </div>
-                  ))}
+                <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+                  <div className="space-y-2.5">
+                    {VISION_EXAMPLES.map((ex, i) => (
+                      <div
+                        key={i}
+                        className="block w-full rounded-md border border-[#8c785a]/25 bg-white/40 p-3 text-left"
+                      >
+                        <p className="text-[16px] leading-[1.55] text-[#5a4a38]">
+                          {i + 1}. {ex}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <p className="mt-4 text-center text-[16px] italic text-[#8a7a68]">
+                <p className="shrink-0 px-6 pb-5 text-center text-[16px] italic text-[#8a7a68]">
                   참고용 예시입니다. 내 방향은 직접 입력해주세요.
                 </p>
               </motion.div>
@@ -377,7 +382,7 @@ function BeatCard({ beat, delay }: { beat: Beat; delay: number }) {
       transition={{ delay, duration: 0.5, ease: "easeOut" }}
       className="rounded-md border border-[#b99b6b]/40 bg-white/55 px-4 py-4"
     >
-      <p className="text-[11px] uppercase tracking-[0.22em] text-[#9b8768]">
+      <p className="text-[11px] uppercase tracking-[0.1em] text-[#9b8768]">
         {beat.number} · {beat.category}
       </p>
       {beat.headline ? (

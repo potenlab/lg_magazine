@@ -32,11 +32,13 @@ export function StoryButtonV3({ label, onClick, disabled, ritual, variant = "pri
     }, 450);
   };
 
+  // h-12 (48px) 고정 — variant/size 따라 가로 패딩과 폰트만 달라짐.
+  // 화면 곳곳 '건네기' 류 버튼 높이가 매번 달라 보였다는 피드백 반영.
   const sizing = ritual
     ? size === "lg"
-      ? "px-8 py-3 text-[16px] font-serif italic tracking-[0.04em]"
-      : "px-6 py-3 font-serif italic tracking-[0.04em]"
-    : "px-5 py-2.5 text-sm tracking-[0.02em]";
+      ? "h-12 inline-flex items-center justify-center px-8 text-[16px] font-serif italic tracking-[0.04em]"
+      : "h-12 inline-flex items-center justify-center px-6 font-serif italic tracking-[0.04em]"
+    : "h-12 inline-flex items-center justify-center px-5 text-sm tracking-[0.02em]";
   const palette =
     variant === "secondary"
       ? "bg-[#f5ead6] text-[#3d2414] border border-[#3d2414]/30"

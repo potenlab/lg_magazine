@@ -5,6 +5,7 @@ import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { PaginatedNarration } from "@/components/v3/ui/PaginatedNarration";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
+import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 export function OwlNarrationScene({
@@ -25,6 +26,12 @@ export function OwlNarrationScene({
     if (typeof spec.next === "string") onAdvance(spec.next);
     else if (typeof spec.next === "function") onAdvance(spec.next(session));
   };
+  // narration 표시 단계에서는 Enter 가 setShowLines(true) 또는 advance 를 흉내내야
+  // 자연스럽다. 둘 다 "다음으로 한 칸 진행" 의미이므로 하나의 핸들러로 처리.
+  useEnterToAdvance(() => {
+    if (!showLines && narration && lines.length > 0) setShowLines(true);
+    else advance();
+  });
 
   if (!showLines && narration) {
     // Narration-only scene (no lines): click advances directly to the next scene.

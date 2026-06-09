@@ -9,6 +9,7 @@ import { renderTemplate } from "@/lib/v3/scenes/template";
 import { paginateMirror } from "@/lib/v3/paginateMirror";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useEditorWait } from "@/lib/v3/useEditorWait";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { Branch, SceneSpec, SceneId, V3Session, BranchSpec } from "@/lib/v3/scenes/types";
 
@@ -41,6 +42,7 @@ export function FollowupScene({
   onAdvance: (n: SceneId) => void;
 }) {
   const { session, patch, incrementFollowup } = useV3Session();
+  const waitMsg = useEditorWait();
   const parentSaveTo = spec.parentSaveTo;
   if (!parentSaveTo) {
     throw new Error(`FollowupScene ${spec.id} missing parentSaveTo`);
@@ -140,7 +142,7 @@ export function FollowupScene({
 
   if (loading || !branch) {
     return (
-      <NarrationBlock text="편집장이 답변을 들여다본다.&#10;펜이 잠시 멈춘다…" />
+      <NarrationBlock text={waitMsg} />
     );
   }
 
@@ -363,10 +365,10 @@ function FollowupBody({
         )}
       </div>
       {/* Absolute-anchored to dialog bottom-right — mirrors the "이전" button
-          (absolute bottom-7 left-7) so the action button stays at a fixed
+          (absolute bottom-6 left-6) so the action button stays at a fixed
           position regardless of how much content is above. */}
       <div
-        className={`absolute bottom-7 right-7 z-10 flex h-[44px] items-center transition-opacity duration-500 ${
+        className={`absolute bottom-6 right-6 z-10 flex h-[44px] items-center transition-opacity duration-500 ${
           settled ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >

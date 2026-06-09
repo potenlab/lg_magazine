@@ -18,7 +18,13 @@ export function ChapterCardScene({
   onAdvance: (n: SceneId) => void;
 }) {
   const title = CHAPTER_TITLE[String(spec.chapter)] ?? "";
-  const starCount = typeof spec.chapter === "number" ? Math.max(1, spec.chapter) : 1;
+  // 중앙 별 개수 = 챕터 숫자 (Ch1→1, Ch2→2, Ch3→3, Ch4→4). 'C'(Closing) 는 4.
+  const starCount =
+    spec.chapter === "C"
+      ? 4
+      : typeof spec.chapter === "number"
+        ? Math.max(1, spec.chapter)
+        : 1;
   const advance = () => {
     if (typeof spec.next === "string") onAdvance(spec.next);
   };

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Extract static assets from the built production image into the host directory
-# served directly by nginx. Run after docker compose build and before restart.
+# served directly by nginx.
 set -euo pipefail
 
 IMAGE="${IMAGE:-lg-magazine:latest}"
@@ -26,7 +26,7 @@ trap cleanup EXIT
 "${SUDO[@]}" docker cp "$CID:/app/.next/static/." "$TMP/_next/static/"
 
 "${SUDO[@]}" chown -R "$OWNER" "$TMP"
-"${SUDO[@]}" rsync -a --delete --exclude "_next/" "$TMP/public/" "$DEST/"
+"${SUDO[@]}" rsync -a --delete --exclude '_next/' "$TMP/public/" "$DEST/"
 "${SUDO[@]}" mkdir -p "$DEST/_next/static"
 "${SUDO[@]}" rsync -a --delete "$TMP/_next/static/" "$DEST/_next/static/"
 "${SUDO[@]}" chown -R "$OWNER" "$DEST"

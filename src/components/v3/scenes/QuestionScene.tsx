@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { AutoFlowText } from "@/components/v3/ui/AutoFlowText";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { PaginatedNarration } from "@/components/v3/ui/PaginatedNarration";
@@ -9,6 +10,7 @@ import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { DialogStageContext } from "@/components/v3/V3App";
+import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
 import type { SceneSpec, SceneId, V3Session } from "@/lib/v3/scenes/types";
 
 const PAGINATE_THRESHOLD = 3;
@@ -31,6 +33,9 @@ export function QuestionScene({
   const narration = spec.narration ? renderTemplate(spec.narration, session) : undefined;
   const [showLines, setShowLines] = useState(!narration);
   const { setStage } = useContext(DialogStageContext);
+  // Question 씬은 (1) narration 단계 — Enter 로 lines 로 이동, (2) input 단계 —
+  // 입력창이 포커스를 갖는 동안은 hook 이 자체적으로 무시함.
+  useEnterToAdvance(() => setShowLines(true), !showLines && Boolean(narration));
   const ritual =
     !spec.buttonLabel ||
     spec.buttonLabel === "전달하기" ||
@@ -105,28 +110,37 @@ export function QuestionScene({
           <AutoFlowText lines={lines} onSettled={() => setInputReady(true)} />
         )}
         {editorNoteReady && spec.editorNote && (
-          <p
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
             className="border-l-2 border-[#b99b6b]/50 pl-3 text-[16px] italic leading-[1.6] text-[#8b7050]"
             style={{ fontFamily: "var(--font-ridi-batang)" }}
           >
             편집장의 한마디 — {renderTemplate(spec.editorNote, session)}
-          </p>
+          </motion.p>
         )}
         {inputVisible && (
-          <HintInput
-            value={value}
-            onChange={setValue}
-            placeholder={spec.placeholder ? renderTemplate(spec.placeholder, session) : undefined}
-            hint={spec.inputHint ? renderTemplate(spec.inputHint, session) : undefined}
-          />
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+          >
+            <HintInput
+              value={value}
+              onChange={setValue}
+              placeholder={spec.placeholder ? renderTemplate(spec.placeholder, session) : undefined}
+              hint={spec.inputHint ? renderTemplate(spec.inputHint, session) : undefined}
+            />
+          </motion.div>
         )}
       </div>
       {/* Absolute-anchored to dialog bottom-right (mirrors the "이전" button
-          which sits absolute bottom-7 left-7). Keeps button position fixed
+          which sits absolute bottom-6 left-6). Keeps button position fixed
           regardless of content height so short questions don't leave a big
           empty gap between the input and the action button. */}
       <div
-        className={`absolute bottom-7 right-7 z-10 flex h-[44px] items-center transition-opacity duration-500 ${
+        className={`absolute bottom-6 right-6 z-10 flex h-[44px] items-center transition-opacity duration-500 ${
           inputVisible ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
@@ -142,7 +156,7 @@ export function QuestionScene({
           <button
             type="button"
             onClick={() => setShowReview(true)}
-            className="absolute right-7 top-7 text-[16px] italic text-[#8b7050] underline decoration-dotted underline-offset-[3px] transition hover:text-[#3d2414]"
+            className="absolute right-6 top-6 text-[16px] italic text-[#8b7050] underline decoration-dotted underline-offset-[3px] transition hover:text-[#3d2414]"
           >
             내 답변 다시 보기
           </button>

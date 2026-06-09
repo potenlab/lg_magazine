@@ -67,7 +67,7 @@ export function MagazinePosterSceneV1({
 
         {/* — Cover header — */}
         <header className="relative flex flex-col items-center text-center">
-          <p className="text-[16px] uppercase tracking-[0.42em] text-[#7a5a3a]">
+          <p className="text-[16px] uppercase tracking-[0.2em] text-[#7a5a3a]">
             Vision Express
           </p>
           <div className="mt-2 flex items-center gap-3">
@@ -80,7 +80,7 @@ export function MagazinePosterSceneV1({
             </h1>
             <div className="h-px w-8 bg-[#b99b6b]/55" />
           </div>
-          <div className="mt-2 flex items-center gap-4 text-[16px] tracking-[0.28em] text-[#7a5a3a]">
+          <div className="mt-2 flex items-center gap-4 text-[16px] tracking-[0.14em] text-[#7a5a3a]">
             <span>VOL. {session.name.toUpperCase()}</span>
             <span className="opacity-50">·</span>
             <span>{dateStr}</span>
@@ -89,7 +89,7 @@ export function MagazinePosterSceneV1({
 
         {/* — Article hero — */}
         <section className="relative mt-5 flex flex-col items-center border-y border-[#b99b6b]/35 px-2 py-4 text-center">
-          <p className="text-[16px] uppercase tracking-[0.4em] text-[#7a5a3a]">
+          <p className="text-[16px] uppercase tracking-[0.2em] text-[#7a5a3a]">
             The Story of
           </p>
           {identityTitle && (
@@ -101,7 +101,7 @@ export function MagazinePosterSceneV1({
             </h2>
           )}
           {session.topValue && (
-            <p className="mt-2 text-[16px] tracking-[0.16em] text-[#7a5a3a]">
+            <p className="mt-2 text-[16px] tracking-[0.08em] text-[#7a5a3a]">
               {session.topValue}{josa(session.topValue, "을/를")} 가장 소중히 여기는 {session.gender || "그"}
             </p>
           )}
@@ -161,7 +161,7 @@ export function MagazinePosterSceneV1({
 
         {/* — Editor's note — */}
         <section className="relative mt-4 shrink-0 border-t border-[#b99b6b]/35 pt-3 text-center">
-          <p className="text-[16px] uppercase tracking-[0.4em] text-[#7a5a3a]">
+          <p className="text-[16px] uppercase tracking-[0.2em] text-[#7a5a3a]">
             Editor&rsquo;s Note
           </p>
           <p
@@ -204,7 +204,7 @@ function PosterCard({
       : "border-[#b99b6b]/35 bg-white/35";
   return (
     <div className={`flex h-full min-h-0 flex-col overflow-hidden rounded-sm border ${accent} px-3 py-3`}>
-      <p className="text-[7.5px] uppercase tracking-[0.28em] text-[#7a5a3a]">
+      <p className="text-[7.5px] uppercase tracking-[0.14em] text-[#7a5a3a]">
         {label}
       </p>
       <div className="mt-2 min-h-0 flex-1 overflow-hidden text-[#3d2414]">{children}</div>

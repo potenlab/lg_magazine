@@ -32,6 +32,7 @@ import { MagazineHandoffScene } from "./MagazineHandoffScene";
 import { MagazinePosterScene } from "./MagazinePosterScene";
 import { MagazinePosterSceneV1 } from "./MagazinePosterScene_v1";
 import { EditorCreditsScene } from "./EditorCreditsScene";
+import { ClosingChoiceScene } from "./ClosingChoiceScene";
 
 interface SceneComponentProps {
   spec: SceneSpec;
@@ -76,4 +77,5 @@ export const SCENE_COMPONENTS: Record<SceneKind, ComponentType<SceneComponentPro
   magazinePoster: MagazinePosterScene,
   magazinePosterV1: MagazinePosterSceneV1,
   editorCredits: EditorCreditsScene,
+  closingChoice: ClosingChoiceScene,
 };

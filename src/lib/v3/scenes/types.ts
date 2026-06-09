@@ -84,7 +84,8 @@ export type SceneKind =
   | "magazineHandoff"
   | "magazinePoster"
   | "magazinePosterV1"
-  | "editorCredits";
+  | "editorCredits"
+  | "closingChoice";
 
 export type SceneId = string;
 

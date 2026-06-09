@@ -52,29 +52,56 @@ function decodeJwtExp(jwt: string): number {
   return Math.floor(Date.now() / 1000) + 3600;
 }
 
+// Upstream rejects an over-quota call with this Korean phrase in the body —
+// shared by both the daily ("하루 토큰 호출량 한도를 초과…") and per-minute
+// ("분당 토큰 호출량 한도를 초과…") limits. Matching the common substring lets
+// us detect either without depending on HTTP status (it has arrived as 400 and
+// as 200+resultVal:"err").
+const QUOTA_PHRASE = "토큰 호출량";
+// A per-minute hit clears within ~60s; a daily hit needs a re-probe later in the
+// day. We don't know the exact reset clock, so a daily cooldown just parks the
+// code long enough to stop hammering it — if it re-trips after the cooldown the
+// request simply rotates on, so over/under-estimating is self-correcting.
+const MINUTE_COOLDOWN_MS = 60_000;
+const DAILY_COOLDOWN_MS = 30 * 60_000;
+
 export class AIStudioProvider implements LLMProvider {
   readonly name = "aistudio";
   private base: string;
   private workspaceId: string;
   private password: string;
-  private apiCode: string;
+  private apiCodes: string[];
   private promptIndex: string;
   private empNo: string;
   private cached: CachedToken | null = null;
+  // Round-robin cursor + per-code cooldown deadline (unix ms). Persisted on the
+  // singleton provider instance (see provider.ts cache), so load spreads across
+  // codes and exhausted codes stay parked between requests.
+  private cursor = 0;
+  private cooldownUntil: number[];
 
   constructor() {
     const env = process.env;
     if (!env.AISTUDIO_BASE_URL) throw new Error("AISTUDIO_BASE_URL is not set");
     if (!env.AISTUDIO_WORKSPACE_ID) throw new Error("AISTUDIO_WORKSPACE_ID is not set");
     if (!env.AISTUDIO_API_KEY) throw new Error("AISTUDIO_API_KEY is not set");
-    if (!env.AISTUDIO_API_CODE) throw new Error("AISTUDIO_API_CODE is not set");
     if (!env.AISTUDIO_EMP_NO) throw new Error("AISTUDIO_EMP_NO is not set");
+    // Prefer the multi-code pool (AISTUDIO_API_CODES, comma-separated) for quota
+    // failover; fall back to the single AISTUDIO_API_CODE.
+    const codes = (env.AISTUDIO_API_CODES || env.AISTUDIO_API_CODE || "")
+      .split(",")
+      .map((c) => c.trim())
+      .filter(Boolean);
+    if (codes.length === 0) {
+      throw new Error("AISTUDIO_API_CODES (or AISTUDIO_API_CODE) is not set");
+    }
     this.base = env.AISTUDIO_BASE_URL.replace(/\/+$/, "");
     this.workspaceId = env.AISTUDIO_WORKSPACE_ID;
     this.password = env.AISTUDIO_API_KEY;
-    this.apiCode = env.AISTUDIO_API_CODE;
+    this.apiCodes = codes;
     this.promptIndex = env.AISTUDIO_PROMPT_INDEX || "1";
     this.empNo = env.AISTUDIO_EMP_NO;
+    this.cooldownUntil = new Array(codes.length).fill(0);
   }
 
   async generateText(req: LLMRequest): Promise<LLMResult> {
@@ -83,35 +110,72 @@ export class AIStudioProvider implements LLMProvider {
       { key: "USER", value: req.user },
     ];
     const body = JSON.stringify({ empNo: this.empNo, historyId: null, parameters });
-    const url = `${this.base}/genai/${this.apiCode}/prompt/${this.promptIndex}`;
 
-    let res = await this.callPrompt(url, body, await this.getJwt());
-    if (res.status === 401) {
-      this.cached = null;
-      res = await this.callPrompt(url, body, await this.getJwt());
+    let quotaHits = 0;
+    // Try each code at most once per call, rotating past any that are quota-capped.
+    for (let attempt = 0; attempt < this.apiCodes.length; attempt++) {
+      const idx = this.nextAvailableCode();
+      if (idx < 0) break; // every code is in cooldown
+      const code = this.apiCodes[idx];
+      const url = `${this.base}/genai/${code}/prompt/${this.promptIndex}`;
+
+      let res = await this.callPrompt(url, body, await this.getJwt());
+      if (res.status === 401) {
+        this.cached = null;
+        res = await this.callPrompt(url, body, await this.getJwt());
+      }
+      const raw = await res.text();
+
+      if (raw.includes(QUOTA_PHRASE)) {
+        // Per-minute limits mention "분"(minute); anything else is the daily cap.
+        const perMinute = raw.includes("분");
+        this.cooldownUntil[idx] =
+          Date.now() + (perMinute ? MINUTE_COOLDOWN_MS : DAILY_COOLDOWN_MS);
+        quotaHits++;
+        continue; // rotate to the next code
+      }
+      if (!res.ok) {
+        throw new Error(`aistudio call (${code}): ${res.status} ${raw}`);
+      }
+
+      const data = JSON.parse(raw) as unknown;
+      const text =
+        pickFirst(data, TEXT_KEYS) ??
+        pickFirst((data as { data?: unknown })?.data, TEXT_KEYS) ??
+        pickFirst((data as { result?: unknown })?.result, TEXT_KEYS);
+      if (!text) {
+        throw new Error(`aistudio: no text in response — payload: ${raw}`);
+      }
+      const tokens = (data as { tokens?: { inputTokens?: number; outputTokens?: number } })?.tokens;
+      return {
+        text: text.trim(),
+        usage: tokens
+          ? {
+              promptTokens: typeof tokens.inputTokens === "number" ? tokens.inputTokens : undefined,
+              completionTokens:
+                typeof tokens.outputTokens === "number" ? tokens.outputTokens : undefined,
+            }
+          : undefined,
+      };
     }
-    if (!res.ok) {
-      throw new Error(`aistudio call: ${res.status} ${await res.text()}`);
+
+    throw new Error(
+      `aistudio: all ${this.apiCodes.length} API code(s) exhausted (${quotaHits} quota-capped) — raise quotas or add more codes via AISTUDIO_API_CODES`,
+    );
+  }
+
+  // Round-robin to the next code whose cooldown has elapsed, advancing the cursor
+  // so load spreads evenly. Returns -1 when every code is currently capped.
+  private nextAvailableCode(): number {
+    const now = Date.now();
+    for (let n = 0; n < this.apiCodes.length; n++) {
+      const idx = (this.cursor + n) % this.apiCodes.length;
+      if (this.cooldownUntil[idx] <= now) {
+        this.cursor = (idx + 1) % this.apiCodes.length;
+        return idx;
+      }
     }
-    const data = (await res.json()) as unknown;
-    const text =
-      pickFirst(data, TEXT_KEYS) ??
-      pickFirst((data as { data?: unknown })?.data, TEXT_KEYS) ??
-      pickFirst((data as { result?: unknown })?.result, TEXT_KEYS);
-    if (!text) {
-      throw new Error(`aistudio: no text in response — payload: ${JSON.stringify(data)}`);
-    }
-    const tokens = (data as { tokens?: { inputTokens?: number; outputTokens?: number } })?.tokens;
-    return {
-      text: text.trim(),
-      usage: tokens
-        ? {
-            promptTokens: typeof tokens.inputTokens === "number" ? tokens.inputTokens : undefined,
-            completionTokens:
-              typeof tokens.outputTokens === "number" ? tokens.outputTokens : undefined,
-          }
-        : undefined,
-    };
+    return -1;
   }
 
   private callPrompt(url: string, body: string, jwt: string): Promise<Response> {

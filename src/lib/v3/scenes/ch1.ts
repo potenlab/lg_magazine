@@ -264,7 +264,7 @@ export const CH1_SCENES: SceneSpec[] = [
     owl: "closingBook",
     hideOwl: true,
     timeOfDay: "starsRising",
-    bgImage: "/vision_express/common/Chapter02-1.webp",
+    bgImage: "/vision_express/common/Chapter02-1.jpg",
     narration: "창밖이 어둑해진다.",
     next: "1-6b",
   },
@@ -275,7 +275,7 @@ export const CH1_SCENES: SceneSpec[] = [
     kind: "ambience",
     owl: "closingBook",
     timeOfDay: "starsRising",
-    bgImage: "/vision_express/common/Chapter02-3.webp",
+    bgImage: "/vision_express/common/Chapter02-3.jpg",
     bgm: "dragon-studio-light-switch-on-382714.mp3",
     lines: [
       "객실 램프를 켜둘게요.",

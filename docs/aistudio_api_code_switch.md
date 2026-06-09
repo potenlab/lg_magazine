@@ -8,8 +8,8 @@ restart, one verification.
 > server. Every step has a verification gate — do not continue past a failed
 > gate.
 >
-> **Companion docs:** [qrius_production_deployment.md](qrius_production_deployment.md)
-> · [scaling_plan_3_replicas.md](scaling_plan_3_replicas.md).
+> **Companion docs:** [production_deployment.md §0b](production_deployment.md) (Qrius env vars)
+> · [production_deployment.md §5](production_deployment.md) (3-replica rollout).
 
 ---
 
@@ -183,7 +183,7 @@ build artefacts touched.
 - **Error handling is still imperfect.** The route at
   [../src/app/api/v3/llm/route.ts](../src/app/api/v3/llm/route.ts) still
   returns HTTP 500 for an upstream quota error (it should return 429/503). That
-  fix is action item #6 in [scaling_plan_3_replicas.md](scaling_plan_3_replicas.md);
+  fix is covered in the 3-replica rollout in [production_deployment.md §5](production_deployment.md);
   not part of this runbook.
 - **Privacy posture.** The `Includes sensitive information` checkbox on the new
   API is currently **off** so responses are visible in 호출 이력 (useful while

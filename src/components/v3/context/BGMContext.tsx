@@ -65,6 +65,13 @@ export function BGMProvider({ children }: { children: ReactNode }) {
 
     if (!audioRef.current) {
       audioRef.current = new Audio();
+      // preload="none" — defer the byte download until play() instead of when
+      // src is assigned. Even though this Audio() is created without a src (so
+      // nothing downloads on cold load), once a scene supplies a track we set
+      // audio.src below; "none" ensures that assignment alone doesn't eagerly
+      // pull the full 2.7 MB train BGM. The download happens on play(), which
+      // only runs after the user gesture that unblocks autoplay.
+      audioRef.current.preload = "none";
     }
 
     const audio = audioRef.current;

@@ -54,7 +54,12 @@ function get(name: AudioName): HTMLAudioElement | null {
   if (typeof window === "undefined") return null;
   if (!elements[name]) {
     const a = new Audio(AUDIO_FILES[name]);
-    a.preload = "auto";
+    // preload="none" — defer the byte download until an actual .play() call,
+    // not on element creation. Browsers download a preload="auto" clip in full
+    // the moment the Audio() is constructed; "none" keeps these mp3s off the
+    // cold-load critical path so they only cost bytes when the user actually
+    // triggers them (gesture/scene event). play() still streams + plays fine.
+    a.preload = "none";
     elements[name] = a;
   }
   return elements[name] ?? null;

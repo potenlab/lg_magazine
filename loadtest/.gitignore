@@ -4,3 +4,6 @@
 *
 !.gitignore
 !final-report.pdf
+!realistic-stress-test.js
+!stress-test.js
+!proof-api-only.js

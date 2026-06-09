@@ -13,7 +13,7 @@ import { OwlStage } from "@/components/v3/ui/OwlStage";
 import { TimeOfDayBackground } from "@/components/v3/ui/TimeOfDayBackground";
 import { SCENE_COMPONENTS } from "@/components/v3/scenes";
 import { SCENES, SCENE_ORDER, SCENE_PREDECESSORS } from "@/lib/v3/scenes";
-import type { SceneId, SceneKind } from "@/lib/v3/scenes/types";
+import type { OwlPose, SceneId, SceneKind, SceneSpec } from "@/lib/v3/scenes/types";
 import { personaConcept } from "@/concepts";
 
 // Scene components flip this when they're rendering a narration-only stage,
@@ -116,20 +116,54 @@ function V3Inner() {
   }, [prevStack]);
   const [introProgressVisible, setIntroProgressVisible] = useState(false);
 
-  // Preload all owl images once on mount so pose changes don't flash empty.
-  // Must go through the Next image optimizer (/_next/image): production's
-  // reverse proxy returns 400 for direct requests to /public assets, so a
-  // raw `new Image().src` would fail there. w=2048 matches the 2x srcset
-  // entry OwlStage's <Image> emits, so this warms the real browser cache.
+  // Lazy-load owl frames BY SCENE. Rather than warming all ~12 poses up front
+  // (~1.2 MB through the image optimizer, competing with the first-paint burst
+  // under load), warm only the CURRENT scene's pose plus the poses of the
+  // scenes reachable from it (next / branches / choices, plus the linear
+  // SCENE_ORDER neighbour as a catch-all for function-typed `next`). The next
+  // pose is cached while the user reads/clicks, so transitions still don't
+  // flash empty — but the intro scenes (no owl) and the cold first paint pull
+  // ZERO owl bytes. Frames go through /_next/image with the same w=2048&q=75
+  // shape OwlStage's <Image> emits (production's reverse proxy 400s direct
+  // /public requests). A persistent Set skips already-warmed poses.
+  const warmedOwl = useRef<Set<OwlPose>>(new Set());
   useEffect(() => {
-    const seen = new Set<string>();
-    for (const src of Object.values(personaConcept.characterImages)) {
-      if (seen.has(src)) continue;
-      seen.add(src);
+    const posesOf = (s: SceneSpec | undefined): OwlPose[] => {
+      if (!s || s.hideOwl) return [];
+      if (s.owlPool && s.owlPool.length > 0) {
+        return s.owl ? Array.from(new Set([s.owl, ...s.owlPool])) : s.owlPool;
+      }
+      return [s.owl ?? "serious"];
+    };
+    const cur = SCENES[activeId];
+    if (!cur) return;
+
+    // Scenes reachable from the current one — warm their poses ahead of the click.
+    const nextIds = new Set<SceneId>();
+    if (typeof cur.next === "string") nextIds.add(cur.next);
+    for (const b of Object.values(cur.branches ?? {})) {
+      if (b && typeof b === "object" && "next" in b && typeof b.next === "string") {
+        nextIds.add(b.next);
+      }
+    }
+    for (const c of cur.choices ?? []) {
+      if (typeof c.next === "string") nextIds.add(c.next);
+    }
+    const idx = SCENE_ORDER.indexOf(activeId);
+    if (idx >= 0 && idx + 1 < SCENE_ORDER.length) nextIds.add(SCENE_ORDER[idx + 1]);
+
+    const poses = new Set<OwlPose>(posesOf(cur));
+    for (const id of nextIds) for (const p of posesOf(SCENES[id])) poses.add(p);
+
+    for (const pose of poses) {
+      if (warmedOwl.current.has(pose)) continue;
+      warmedOwl.current.add(pose);
+      const src = personaConcept.characterImages[pose];
+      if (!src) continue;
       const img = new Image();
       img.src = `/_next/image?url=${encodeURIComponent(src)}&w=2048&q=75`;
     }
-  }, []);
+  }, [activeId]);
   // Current dialog stage — scene components set this to "narration" when they
   // render only a stage-direction; the dialog wrapper shrinks accordingly.
   // Scene components are responsible for re-setting stage on their own mount;

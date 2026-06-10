@@ -278,6 +278,10 @@ export interface V3Session {
   growthTool: string[];
   /** [3-8] The kind of contribution/impact they want to have in the world */
   contribution: string;
+  /** [3-10] LLM-recommended growth-direction phrases shown as reference
+   * cards between the 4 BEAT magazine grid and the visionLine input. Cached
+   * here so re-entering the scene doesn't re-trigger a fresh LLM call. */
+  growthDirectionRecommendations: string[];
 
   firstStep: string;
   supportPerson: string;
@@ -334,6 +338,7 @@ export const EMPTY_V3_SESSION: V3Session = {
   currentTool: [],
   growthTool: [],
   contribution: "",
+  growthDirectionRecommendations: [],
   firstStep: "",
   supportPerson: "",
   neededResource: "",

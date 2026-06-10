@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { parseBeats } from "@/components/v3/ui/MagazineArticlePage";
@@ -31,13 +31,16 @@ const BEAT_LABELS = [
   { number: "04", category: "종착지의 풍경" },
 ];
 
-const VISION_EXAMPLES = [
-  "막막함을 풀어주는 자리에서 자기다운 빛을 내는",
-  "복잡한 문제 앞에서 길을 짚고, 함께 가는 사람들에게 자리를 만들어 주는",
-  "낯선 곳에서도 자기 페이스로 배우며 다음 한 걸음을 짚어가는",
-  "흩어진 정보 사이에서 맥락을 잇고, 그 다리를 후배에게 건네주는",
-  "내가 짠 판 위에서 후배가 자기 결정을 내릴 수 있게, 무대를 만들어 주는",
-  "한 번의 시도가 어떤 흔적을 남기는지 끝까지 지켜보는, 단단한 직업인이 되는",
+// Axis labels for the 6 personalized recommendations produced by
+// v3GenerateVisionDirections. Order is fixed by that prompt's output schema:
+//   1 role · 2 method · 3 strength · 4 growth · 5 impact · 6 integration
+const RECOMMENDATION_AXES = [
+  "역할",
+  "방법",
+  "강점",
+  "성장",
+  "영향",
+  "통합",
 ];
 
 export function GrowthVisionSynthesisScene({
@@ -53,14 +56,19 @@ export function GrowthVisionSynthesisScene({
   const [synthesis, setSynthesis] = useState<string>(session.growthVisionSynthesis);
   const [loaded, setLoaded] = useState<boolean>(Boolean(session.growthVisionSynthesis));
 
+  // [ch3 wow — 2026-06-09] Personalized growth-direction recommendations.
+  // Shown as reference cards between the 4-BEAT grid and the Editor's Question.
+  // Replaces the previous "다른 사람들은 어떤 방향을…" abstract examples modal,
+  // which was reported as too generic to actually help users draft a visionLine.
+  const [recommendations, setRecommendations] = useState<string[]>(
+    session.growthDirectionRecommendations ?? [],
+  );
+  const [recLoaded, setRecLoaded] = useState<boolean>(
+    (session.growthDirectionRecommendations ?? []).length > 0,
+  );
+
   const [visionInput, setVisionInput] = useState<string>(session.visionLine ?? "");
-  const [attempts, setAttempts] = useState(0);
-  const MAX_ATTEMPTS = 3;
-  const [judging, setJudging] = useState(false);
-  const [editorHint, setEditorHint] = useState<string | null>(null);
   const [completed, setCompleted] = useState<boolean>(Boolean(session.visionLine));
-  const [examplesOpen, setExamplesOpen] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setStage("content");
@@ -109,6 +117,43 @@ export function GrowthVisionSynthesisScene({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fetch personalized direction recommendations in parallel with the BEAT
+  // synthesis. Failure is silent — the section just doesn't render.
+  useEffect(() => {
+    if (recLoaded) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await llm.generateVisionDirections({
+          name: session.name,
+          job: session.job,
+          commonPattern: session.commonPattern,
+          identityName: session.identityName,
+          strengthSummary: session.strengthSynthesis,
+          attraction: session.attraction,
+          alreadyDoing: session.alreadyDoing,
+          whyReason: session.whyReason,
+          growthDirection: session.growthDirection,
+          currentTool: session.currentTool,
+          growthTool: session.growthTool,
+          contribution: session.contribution,
+        });
+        if (cancelled) return;
+        const dirs = (r.directions ?? []).map((d) => d.trim()).filter(Boolean);
+        setRecommendations(dirs);
+        if (dirs.length > 0) patch({ growthDirectionRecommendations: dirs });
+        setRecLoaded(true);
+      } catch (err) {
+        console.error("[v3] generateVisionDirections failed:", err);
+        if (!cancelled) setRecLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!loaded || !synthesis) {
     return (
       <NarrationBlock text="편집장이 그동안의 이야기를 한자리에 모아 매거진으로 엮고 있어요…" />
@@ -121,35 +166,15 @@ export function GrowthVisionSynthesisScene({
     return { ...lbl, body, headline };
   });
 
-  const submit = async () => {
-    if (judging || completed) return;
+  // [2026-06-09] judgeBranch 기반 retry/hint 메커니즘 제거. 사용자 피드백:
+  // "너가 뭔데 날 판단해" — 본인의 성장 방향 한 줄을 판정·재시도 강요하는
+  // UX가 거슬린다는 의견. 이제는 입력값 그대로 저장하고 바로 완성 처리.
+  const submit = () => {
+    if (completed) return;
     const v = visionInput.trim();
     if (!v) return;
-    setJudging(true);
-    setEditorHint(null);
-    try {
-      const r = await llm.judgeBranch({ sceneId: spec.id, answer: v });
-      const next = attempts + 1;
-      setAttempts(next);
-      if (r.branch === "D" || next >= MAX_ATTEMPTS) {
-        patch({ visionLine: v });
-        setEditorHint(null);
-        setCompleted(true);
-      } else {
-        const hint =
-          r.branch === "A"
-            ? `조금 더 ${session.name}님다운 표현으로 — 매거진 카드의 단어를 가져와도 좋아요.`
-            : `직책이나 외적인 표현보다, ${session.name}님이 향하는 방향을 한 줄로 적어볼까요?`;
-        setEditorHint(hint);
-        setTimeout(() => inputRef.current?.focus(), 50);
-      }
-    } catch (err) {
-      console.error("[v3] judgeBranch failed:", err);
-      patch({ visionLine: v });
-      setCompleted(true);
-    } finally {
-      setJudging(false);
-    }
+    patch({ visionLine: v });
+    setCompleted(true);
   };
 
   const advance = () => {
@@ -157,7 +182,7 @@ export function GrowthVisionSynthesisScene({
     else if (typeof spec.next === "function") onAdvance(spec.next(session));
   };
 
-  const canSubmit = visionInput.trim().length > 0 && !judging && !completed;
+  const canSubmit = visionInput.trim().length > 0 && !completed;
   const headlineFill = visionInput || "";
 
   return (
@@ -195,6 +220,43 @@ export function GrowthVisionSynthesisScene({
         ))}
       </div>
 
+      {/* ── 추천 성장 방향 (참고용) ─────────────────────────────────
+          매거진 BEAT를 본 뒤 visionLine을 적기 직전, 사용자 데이터에 기반해
+          개인화된 방향 6개를 참고용 카드로 보여준다. 고르는 UI가 아니라
+          참고만 — 클릭/선택 인터랙션 의도적으로 제외. (LLM 실패 시 섹션
+          자체가 비어 자연스럽게 사라진다.) */}
+      {recommendations.length > 0 && (
+        <section className="mt-7 border-t border-[#b99b6b]/30 pt-6">
+          <p className="mb-2 text-center text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
+            Editor&rsquo;s Recommendation
+          </p>
+          <p className="mb-1 text-center text-[16px] leading-[1.6] text-[#3d2414]">
+            지금까지의 이야기를 모아 — {session.name}님이 향할 수 있는 방향들을 정리해봤어요.
+          </p>
+          <p className="mb-5 text-center text-[13px] italic leading-[1.5] text-[#8b7050]">
+            고르는 게 아니라, {session.name}님만의 한 줄을 적을 때 참고만 해주세요.
+          </p>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            {recommendations.map((rec, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.08 * i, duration: 0.4, ease: "easeOut" }}
+                className="rounded-md border border-[#b99b6b]/30 bg-white/40 px-3.5 py-3"
+              >
+                <p className="text-[10px] uppercase tracking-[0.12em] text-[#9b8768]">
+                  {RECOMMENDATION_AXES[i] ?? `방향 ${i + 1}`}
+                </p>
+                <p className="mt-1 text-[14px] leading-[1.65] text-[#3d2414]">
+                  {rec}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* visionLine 입력 */}
       <section className="mt-7 border-t border-[#b99b6b]/30 pt-6">
         <p className="mb-3 text-center text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
@@ -227,119 +289,24 @@ export function GrowthVisionSynthesisScene({
           <span className="text-[18px] text-[#3d2414]">방향.</span>
         </div>
 
-        <AnimatePresence>
-          {editorHint && !completed && (
-            <motion.p
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="mx-auto mb-3 max-w-[560px] text-center text-[14px] italic leading-[1.6] text-[#8b7050]"
-            >
-              {editorHint}
-            </motion.p>
-          )}
-        </AnimatePresence>
-
         {!completed && (
           <div className="mx-auto max-w-[520px]">
             <input
-              ref={inputRef}
               value={visionInput}
               onChange={(e) => setVisionInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  if (canSubmit) void submit();
+                  if (canSubmit) submit();
                 }
               }}
               className="w-full rounded-md border border-[#b99b6b]/50 bg-white/70 px-4 py-3 text-center text-[16px] text-[#3d2414] outline-none placeholder:text-[#a18965] focus:border-[#3d2414] disabled:opacity-50"
             />
-            <div className="mt-2 text-center">
-              <button
-                type="button"
-                onClick={() => setExamplesOpen(true)}
-                className="text-[14px] text-[#8a7a68] underline decoration-[#8a7a68]/40 underline-offset-[3px] transition hover:text-[#3d2414] hover:decoration-[#3d2414] md:text-[16px]"
-              >
-                다른 사람들은 어떤 방향을 그렸을까요?
-              </button>
-            </div>
-            {attempts > 0 && attempts < MAX_ATTEMPTS && (
-              <p className="mt-1.5 text-right text-[12px] text-[#9b8768]/80">
-                남은 시도 {MAX_ATTEMPTS - attempts}회
-              </p>
-            )}
+            {/* [2026-06-09] judgeBranch 기반 retry/hint/카운터 + "다른 사람들은
+                어떤 방향을 그렸을까요?" 모달 모두 제거. 판정 UX가 거슬린다는
+                피드백("너가 뭔데 날 판단해")과 추상 예시 무용 피드백 반영. */}
           </div>
         )}
-
-        {/* Examples modal — 인풋 아래 텍스트 버튼으로 열림. Ch2 정체성 예시 모달과 동일한
-            디자인 패턴(승객명부의 "다른 승객들은 ..."와 매칭). 백드롭/× 클릭으로 닫힘. */}
-        <AnimatePresence>
-          {examplesOpen && (
-            <motion.div
-              key="vision-examples-modal"
-              className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <button
-                type="button"
-                aria-label="닫기"
-                onClick={() => setExamplesOpen(false)}
-                className="absolute inset-0 cursor-default bg-black/55 backdrop-blur-sm"
-              />
-              <motion.div
-                role="dialog"
-                aria-modal="true"
-                aria-label="다른 사람들의 성장 방향 예시"
-                className="relative z-10 flex max-h-[80vh] w-full max-w-[480px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/40 bg-[#f6efdf] shadow-2xl"
-                style={{ fontFamily: "var(--font-ridi-batang)" }}
-                initial={{ y: 16, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 8, opacity: 0 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
-              >
-                <div className="shrink-0 flex items-start justify-between gap-3 px-6 pt-6">
-                  <div>
-                    <p className="text-[14px] uppercase tracking-[0.08em] text-[#7a5a3a]">
-                      From other passengers
-                    </p>
-                    <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414]">
-                      다른 사람들은 어떤 방향을 그렸을까요?
-                    </h2>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setExamplesOpen(false)}
-                    aria-label="닫기"
-                    className="-mr-1 -mt-1 rounded p-1 text-[18px] leading-none text-[#8a7a68] transition hover:text-[#3d2414]"
-                  >
-                    ×
-                  </button>
-                </div>
-                <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-                  <div className="space-y-2.5">
-                    {VISION_EXAMPLES.map((ex, i) => (
-                      <div
-                        key={i}
-                        className="block w-full rounded-md border border-[#8c785a]/25 bg-white/40 p-3 text-left"
-                      >
-                        <p className="text-[16px] leading-[1.55] text-[#5a4a38]">
-                          {i + 1}. {ex}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <p className="shrink-0 px-6 pb-5 text-center text-[16px] italic text-[#8a7a68]">
-                  참고용 예시입니다. 내 방향은 직접 입력해주세요.
-                </p>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         <AnimatePresence>
           {completed && (
@@ -360,7 +327,7 @@ export function GrowthVisionSynthesisScene({
         {!completed ? (
           <StoryButtonV3
             key="submit"
-            label={judging ? "편집장이 들여다보는 중…" : spec.buttonLabel ?? "이렇게 적어볼래요"}
+            label={spec.buttonLabel ?? "이렇게 적어볼래요"}
             onClick={submit}
             disabled={!canSubmit}
             ritual

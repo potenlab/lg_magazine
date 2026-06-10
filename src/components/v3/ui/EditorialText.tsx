@@ -11,8 +11,10 @@ export function polishEditorialText(text: string): string {
     .replace(/__/g, "")
     .replace(/([가-힣])\.(?:에|으로|로|을|를|이|가|은|는)(?=\s|[가-힣])/g, "$1.")
     .replace(/\s+([,.!?。])/g, "$1")
-    .replace(/[ \t]+/g, " ")
-    .trim();
+    .replace(/[ \t]+/g, " ");
+  // NOTE: intentionally no .trim() — EditorialInline is called on segments
+  // around **bold** spans by BoldMarkdown; trimming would eat the space
+  // before/after bold. Outer paragraph trim is handled by toEditorialBlocks.
 }
 
 function splitSentences(text: string): string[] {

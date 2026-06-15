@@ -160,6 +160,7 @@ export function MagazinePosterScene({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -16 }}
             transition={{ duration: 0.32, ease: "easeOut" }}
+            className={page === 2 ? "h-full" : undefined}
           >
             {page < 2 ? (
               <ChapterSpread
@@ -244,10 +245,13 @@ function PagePanel({ side, children }: { side: "left" | "right"; children: React
 function CardsSpread({ session }: { session: V3Session }) {
   const identityTitle = extractIdentityTitle(session.identityName);
   const visionSummary = toAnchorSummary(session.visionLine, 84);
+  const values = session.selectedValues.filter(Boolean);
+  const valuesText = values.join(" · ");
+  const valuesJosaWord = values[values.length - 1] ?? session.topValue;
 
   return (
-    <article className="space-y-5">
-      {/* 표제 — Editor's Cards. 정체성 → 가치 → 4년 비전이 한 문장 흐름으로 이어진다. */}
+    <article className="flex h-full min-h-full flex-col justify-center space-y-5">
+      {/* 표제 — Editor's Cards. 정체성 → 가치 → 5년 비전이 한 문장 흐름으로 이어진다. */}
       <header className="text-center">
         <p className="text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
           Editor&rsquo;s Cards
@@ -264,15 +268,15 @@ function CardsSpread({ session }: { session: V3Session }) {
               {trimQuotes(identityTitle)}
             </h2>
           )}
-          {(session.topValue || session.visionLine) && (
+          {(values.length > 0 || session.visionLine) && (
             <p
               className="mx-auto mt-5 max-w-[640px] break-keep text-[16px] leading-[1.85] text-[#3d2414]"
               style={{ fontFamily: "var(--font-ridi-batang), serif" }}
             >
-              {session.topValue && (
+              {values.length > 0 && (
                 <>
-                  {session.topValue}
-                  {josa(session.topValue, "을/를")} 가장 소중히 여기는{" "}
+                  {valuesText}
+                  {josa(valuesJosaWord, "을/를")} 가장 소중히 여기는{" "}
                   {session.gender || "그"}
                   {session.visionLine ? "," : "."}
                   <br />

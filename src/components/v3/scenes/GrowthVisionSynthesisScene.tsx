@@ -371,11 +371,9 @@ export function GrowthVisionSynthesisScene({
         <p className="mb-2 text-center text-[16.5px] font-medium leading-[1.75] text-[#3d2414]">
           이제 {session.name}님의 차례예요.
           <br />
-          앞으로 어떤 사람으로 성장하고 싶나요?
+          다가오는 5년, 앞으로 어떤 사람으로 성장하고 싶나요?
         </p>
         <p className="mb-8 text-center text-[12px] italic leading-[1.6] text-[#9b8768]">
-          현재의 내가 아니라, 앞으로 어떤 사람이 되고 싶은지를 작성해요.
-          <br />
           위의 표현을 가져와도 좋고, 합치거나 다시 써도 좋아요.
         </p>
 
@@ -395,7 +393,7 @@ export function GrowthVisionSynthesisScene({
                   if (canSubmit) void submit();
                 }
               }}
-              placeholder="어떤 사람이 되고 싶은지 자유롭게 써주세요"
+              placeholder="어떤 사람으로 성장하고 싶은지 자유롭게 써주세요"
               rows={2}
               disabled={judging}
               className="w-full resize-none rounded-md border border-[#b99b6b]/50 bg-white/70 px-4 py-3 text-center text-[16px] leading-[1.6] text-[#3d2414] outline-none placeholder:text-[#a18965] focus:border-[#3d2414] disabled:opacity-50"
@@ -406,7 +404,7 @@ export function GrowthVisionSynthesisScene({
               {headlineFill}
             </p>
           )}
-          <span className="text-[15px] leading-[1.7] text-[#6b5a3e]">하는 사람이 되고 싶어요.</span>
+          <span className="text-[15px] leading-[1.7] text-[#6b5a3e]">사람으로 성장하고 싶어요.</span>
         </div>
 
         <AnimatePresence>

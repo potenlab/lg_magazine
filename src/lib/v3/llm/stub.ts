@@ -79,15 +79,16 @@ export const stubLLM: LLMContract = {
     const askPhrase = strengthCommonAsk?.trim() || "어떻게 풀어야 할지 모르는 막막함";
     const others = othersDescription?.trim();
     const othersQuote = others ? `"${others.slice(0, 32)}${others.length > 32 ? "…" : ""}"` : null;
-    const value1 = selectedValues?.[0]?.word?.trim();
-    const value2 = selectedValues?.[1]?.word?.trim();
-    const valueList = [value1, value2].filter(Boolean).map((v) => `'${v}'`).join(", ");
+    const valueWords = (selectedValues ?? [])
+      .map((v) => v?.word?.trim())
+      .filter((w): w is string => !!w);
+    const valueList = valueWords.map((v) => `'${v}'`).join(", ");
     const namePrefix = name ? `${name}님` : "당신";
 
     const beat1 =
       `[HEADLINE: 직접 판을 짜고 결과를 만드는 사람] ` +
       `${namePrefix}이 들려준 두 장면은 장소도 상황도 달랐지만, 행동의 패턴은 정확히 같았어요. ` +
-      `남이 닦아놓은 길을 따라가는 대신 **직접 경로를 설계하고, 그 위에서 끝내 성과를 만들어내는 것**. ` +
+      `남이 닦아놓은 길을 따라가는 대신, **${namePrefix}은 직접 경로를 설계하고 그 위에서 끝내 성과를 만들어내고 있어요**. ` +
       `${namePrefix}은 어떤 자리에서도 자기 손으로 직접 판을 짜야 직성이 풀리는 사람인 것 같아요. ` +
       `이 행동 방식이 두 이야기를 한 사람의 정체성으로 묶어주고 있는 것 같아요.`;
 
@@ -310,9 +311,9 @@ export const stubLLM: LLMContract = {
     }
     if (chapter === 3) {
       return {
-        headline: `4년 후, ${pron}가 그린 자신`,
+        headline: `5년 후, ${pron}가 그린 자신`,
         body:
-          `${pron}에게 4년 후의 자신을 그려보라 청했을 때, ${pron}는 잠시 눈을 감았다.\n\n` +
+          `${pron}에게 5년 후의 자신을 그려보라 청했을 때, ${pron}는 잠시 눈을 감았다.\n\n` +
           `${pron}가 그린 미래는 "${firstSentence(session.futureSelf)}"의 모습이었다. ` +
           `${firstSentence(session.futureDay)}.\n\n` +
           `그것은 어떤 거창한 성취도, 거대한 직책도 아니었다. ` +
@@ -342,6 +343,6 @@ export const stubLLM: LLMContract = {
 
   async writeCoverHeadline({ session }) {
     const identityTitle = extractIdentityTitle(session.identityName);
-    return identityTitle ? `${identityTitle}, ${session.gender}의 4년` : `${session.name}님의 이야기`;
+    return identityTitle ? `${identityTitle}, ${session.gender}의 5년` : `${session.name}님의 이야기`;
   },
 };

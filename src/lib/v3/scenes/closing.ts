@@ -99,20 +99,18 @@ export const CLOSING_SCENES: SceneSpec[] = [
   //   next: "C-5",
   // },
   {
-    // 종착역에서 내린 뒤 보여지는 마지막 안내 화면.
-    // 세션을 초기화하지 않고, "내 매거진 다시보기" 버튼으로 C-2b(매거진 스프레드)로
-    // 돌아갈 수 있게 한다. 사용자는 이후에도 C-2b → C-3 → C-5 루프를 자유롭게
-    // 순환하며 자신의 답변/매거진을 다시 읽을 수 있다.
+    // 종착역에서 내린 뒤 보여지는 마지막 안내 화면 (최종 종결 페이지).
+    // ClosingChoiceScene 이 렌더 — "내 매거진 펼쳐보기" 는 매거진 전체를 모달로
+    // 띄워주고 X 로 닫힌다 (이전: C-2b 로 navigate → C-3 → C-5 무한 루프).
+    // PDF 다운로드 / 처음부터 다시하기 도 같이 제공.
     id: "C-5",
     chapter: "C",
-    kind: "ritual",
+    kind: "closingChoice",
     owl: "closingBook",
     hideOwl: true,
     hideSpeakerLabel: true,
     timeOfDay: "dawnFirstLight",
     bgImage: "/vision_express/common/arriving-train.webp",
     narration: "{name}님의 매거진은 언제든 다시 펼쳐보실 수 있어요.",
-    buttonLabel: "내 매거진 다시보기",
-    next: "C-2b",
   },
 ];

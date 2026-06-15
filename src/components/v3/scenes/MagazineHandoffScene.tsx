@@ -125,7 +125,7 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
       pickedValues.length > 0 ? pickedValues.join(", ") : session.topValue,
     ],
     ...valueRows,
-    ["4년 후 비전", session.visionLine],
+    ["5년 후 비전", session.visionLine],
     ["내일부터의 한 걸음", session.firstStep],
     ["곁의 사람", session.supportPerson],
     ["필요한 자원", session.neededResource],

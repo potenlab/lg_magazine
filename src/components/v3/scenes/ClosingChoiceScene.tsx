@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
+import { MagazinePosterScene } from "@/components/v3/scenes/MagazinePosterScene";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
 import { readUrlConfig } from "@/lib/v3/llm/realLLM";
@@ -33,6 +34,7 @@ export function ClosingChoiceScene({
   const [status, setStatus] = useState<PdfStatus>("loading");
   const [downloading, setDownloading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [magazineOpen, setMagazineOpen] = useState(false);
 
   useEffect(() => {
     registerPdfFonts();
@@ -129,12 +131,42 @@ export function ClosingChoiceScene({
           처음부터 다시하기
         </button>
         <StoryButtonV3
+          label="내 매거진 펼쳐보기"
+          onClick={() => setMagazineOpen(true)}
+          ritual
+        />
+        <StoryButtonV3
           label={downloadLabel}
           onClick={() => void handleDownload()}
           disabled={status !== "ready" || downloading}
           ritual
         />
       </div>
+
+      {magazineOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 sm:p-6">
+          <div className="relative flex h-full max-h-[92vh] w-full max-w-5xl flex-col rounded-md bg-[#f6efdf] p-5 text-[#3d2414] shadow-2xl sm:p-7">
+            <button
+              type="button"
+              onClick={() => setMagazineOpen(false)}
+              aria-label="매거진 닫기"
+              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#3d2414]/25 bg-[#f6efdf] text-[18px] leading-none text-[#3d2414] transition hover:bg-[#3d2414]/10"
+            >
+              ×
+            </button>
+            <div className="flex min-h-0 flex-1 flex-col pt-6">
+              <MagazinePosterScene
+                spec={{
+                  ...spec,
+                  buttonLabel: "닫기",
+                  next: () => spec.id,
+                }}
+                onAdvance={() => setMagazineOpen(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-6">

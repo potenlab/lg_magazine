@@ -338,16 +338,15 @@ function V3Inner() {
     setBGM(spec?.bgm, spec?.chapter as number);
   }, [spec?.bgm, spec?.chapter, setBGM]);
 
-  // Train loop ambience — 0-2(탑승)부터 C-3(작별 인사)까지. C-4(종착역)에서
-  // 정지. 사용자 요청: 도착 후에도 객실 안 분위기를 유지하기 위해 train loop
-  // 종료를 closing의 마지막 직전 scene까지 늦췄다.
+  // Train loop ambience — 0-2(탑승)부터 종결 직전(C-3 작별 인사)까지. 종결
+  // 페이지(C-5 closingChoice)에서는 BGM·효과음 모두 꺼지도록 명시적으로 정지.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const audio = await import("@/lib/v3/audio");
       const idx = SCENE_ORDER.indexOf(activeId);
       const trainStartIdx = SCENE_ORDER.indexOf("0-2");
-      const trainStopIdx = SCENE_ORDER.indexOf("C-4");
+      const trainStopIdx = SCENE_ORDER.indexOf("C-5");
       const inTrain =
         idx >= 0 &&
         trainStartIdx >= 0 &&

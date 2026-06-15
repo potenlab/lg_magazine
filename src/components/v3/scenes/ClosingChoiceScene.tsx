@@ -34,6 +34,9 @@ export function ClosingChoiceScene({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [magazineOpen, setMagazineOpen] = useState(false);
   const [feedback, setFeedback] = useState<string>(session.closingFeedback ?? "");
+  const [feedbackSent, setFeedbackSent] = useState<boolean>(
+    !!(session.closingFeedback && session.closingFeedback.trim().length > 0),
+  );
 
   useEffect(() => {
     registerPdfFonts();
@@ -110,6 +113,13 @@ export function ClosingChoiceScene({
     }
   };
 
+  const sendFeedback = () => {
+    const trimmed = feedback.trim();
+    if (trimmed.length === 0) return;
+    patch({ closingFeedback: trimmed });
+    setFeedbackSent(true);
+  };
+
   const handleRestartConfirm = () => {
     persistFeedback();
     reset();
@@ -141,12 +151,26 @@ export function ClosingChoiceScene({
           </p>
           <textarea
             value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
+            onChange={(e) => {
+              setFeedback(e.target.value);
+              if (feedbackSent) setFeedbackSent(false);
+            }}
             onBlur={persistFeedback}
             placeholder="좋았던 점, 아쉬웠던 점, 운영진에게 전하고 싶은 말 등 자유롭게 작성해주세요 :)"
-            className="mt-5 min-h-[180px] w-full flex-1 resize-none rounded-md border border-[#b99b6b]/40 bg-[#ede1c6]/55 px-4 py-3 text-[15px] leading-[1.6] text-[#3d2414] outline-none placeholder:text-[#8b7050]/80 focus:border-[#3d2414]"
+            className="mt-5 min-h-[160px] w-full flex-1 resize-none rounded-md border border-[#b99b6b]/40 bg-[#ede1c6]/55 px-4 py-3 text-[15px] leading-[1.6] text-[#3d2414] outline-none placeholder:text-[#8b7050]/80 focus:border-[#3d2414]"
             style={{ fontFamily: "var(--font-ridi-batang)" }}
           />
+          <div className="mt-3 flex items-center justify-end gap-3">
+            {feedbackSent && (
+              <span className="text-[14px] italic text-[#8b7050]">전송됐어요 :)</span>
+            )}
+            <StoryButtonV3
+              label={feedbackSent ? "다시 보내기" : "소감 보내기"}
+              onClick={sendFeedback}
+              disabled={feedback.trim().length === 0}
+              ritual
+            />
+          </div>
         </section>
 
         {/* 우측 — 매거진 다시 보기 / 다시 플레이하기 */}
@@ -162,12 +186,17 @@ export function ClosingChoiceScene({
             />
           </div>
           <div className="mt-3 flex justify-center">
-            <StoryButtonV3
-              label={downloadLabel}
+            {/* line(outline) 버튼 — 매거진 펼쳐보기보다 시각 위계 한 단계
+                낮춰 '주' 액션과 '보조' 액션을 구분. ritual press 결과로 다운로드가
+                여러 번 가능. */}
+            <button
+              type="button"
               onClick={() => void handleDownload()}
               disabled={status !== "ready" || downloading}
-              ritual
-            />
+              className="inline-flex h-12 items-center justify-center rounded-md border border-[#3d2414]/55 bg-transparent px-6 font-serif italic tracking-[0.04em] text-[#3d2414] transition hover:bg-[#3d2414]/5 disabled:opacity-40"
+            >
+              {downloadLabel}
+            </button>
           </div>
 
           <div className="mt-10 border-t border-[#b99b6b]/30 pt-6">
@@ -194,8 +223,8 @@ export function ClosingChoiceScene({
       </div>
 
       {magazineOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 sm:p-6">
-          <div className="relative flex h-full max-h-[92vh] w-full max-w-5xl flex-col rounded-md bg-[#f6efdf] p-5 text-[#3d2414] shadow-2xl sm:p-7">
+        <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/80 px-4 pt-[110px] pb-6 sm:px-6">
+          <div className="relative flex h-full max-h-[calc(100vh_-_140px)] w-full max-w-5xl flex-col rounded-md bg-[#f6efdf] p-5 text-[#3d2414] shadow-2xl sm:p-7">
             <button
               type="button"
               onClick={() => setMagazineOpen(false)}

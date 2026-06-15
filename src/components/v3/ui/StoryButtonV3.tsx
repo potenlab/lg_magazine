@@ -29,6 +29,10 @@ export function StoryButtonV3({ label, onClick, disabled, ritual, variant = "pri
     setPressed(true);
     setTimeout(() => {
       onClick();
+      // ritual press 가 끝나면 pressed 를 해제해 동일 버튼을 다시 누를 수
+      // 있게 한다. 씬 전환이 일어나는 케이스에서는 컴포넌트가 unmount 되어
+      // 무해, 종결 페이지처럼 같은 화면에 머무는 케이스에서는 재사용 가능.
+      setPressed(false);
     }, 450);
   };
 

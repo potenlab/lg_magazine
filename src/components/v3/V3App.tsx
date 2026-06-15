@@ -548,9 +548,10 @@ function V3Inner() {
                     // 콘텐츠 짧은 final-stage 씬 — 콘텐츠 hug로 빈 양피지 회귀 방지.
                     ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[420px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
                     : spec.kind === "closingChoice"
-                    // 종결 페이지 — 좌(소감) / 우(매거진·다시 플레이) 2-col 레이아웃.
-                    // 가독성 위해 폭 넓게, 높이는 콘텐츠 hug.
-                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[480px] w-full max-w-[1024px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/95 px-8 pt-8 pb-8 shadow-2xl text-[16px]"
+                    // 종결 페이지 — 좌(매거진) / 우(다시 플레이) 2-col 레이아웃.
+                    // 콘텐츠가 짧으니 min-h 를 콘텐츠에 맞춰 작게(280px) 유지하고
+                    // overflow 제한.
+                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[280px] w-full max-w-[1024px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/95 px-8 pt-7 pb-7 shadow-2xl text-[16px]"
                     // default FULL_HEIGHT — recordPage / toolSelect / visionSelect / magazinePosterV1.
                     // wrapper 는 overflow-hidden, 스크롤은 씬 내부 3-영역 패턴에서.
                     : "relative mx-auto flex h-[calc(100vh_-_200px)] min-h-[300px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl"

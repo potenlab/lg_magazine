@@ -127,17 +127,14 @@ export function ClosingChoiceScene({
             <br />
             다시 볼 수 있어요.
           </p>
-          <div className="mt-6 flex justify-center">
+          {/* 펼쳐보기(fill, primary) + 다운받기(line, secondary) 나란히 배치.
+              모바일에서는 한 줄에 둘 다 들어가도록 gap-3 + flex-row 유지. */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <StoryButtonV3
               label="내 매거진 펼쳐보기"
               onClick={() => setMagazineOpen(true)}
               ritual
             />
-          </div>
-          <div className="mt-3 flex justify-center">
-            {/* line(outline) 버튼 — 매거진 펼쳐보기보다 시각 위계 한 단계
-                낮춰 '주' 액션과 '보조' 액션을 구분. ritual press 결과로 다운로드가
-                여러 번 가능. */}
             <button
               type="button"
               onClick={() => void handleDownload()}

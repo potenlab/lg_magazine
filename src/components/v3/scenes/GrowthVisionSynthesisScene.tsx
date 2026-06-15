@@ -377,35 +377,43 @@ export function GrowthVisionSynthesisScene({
           위의 표현을 가져와도 좋고, 합치거나 다시 써도 좋아요.
         </p>
 
-        {/* 앵커 패턴 — "저는 앞으로 ___ 하는 사람이 되고 싶어요"
-            인풋 박스 디자인은 챕터 2 와 통일 (rounded-md / border / bg-white/70
-            / px-4 py-3 / text-center). 한 줄로 안 끝나는 케이스를 위해
-            textarea 는 유지. */}
-        <div className="mx-auto mb-7 flex max-w-[560px] flex-col gap-1.5">
-          <span className="text-[15px] leading-[1.7] text-[#6b5a3e]">저는 앞으로</span>
-          {!completed ? (
-            <textarea
+        {/* 앵커 패턴 — "저는 앞으로 ___ 사람으로 성장하고 싶어요"
+            UI 는 챕터 2 와 통일: 상단에 dashed-underline 한 줄로 입력 결과를
+            미리 보여주고, 하단(!completed 일 때)에 별도 입력 필드. */}
+        <div className="mb-6 flex flex-wrap items-baseline justify-center gap-x-2 text-center">
+          <span className="text-[18px] text-[#3d2414]">저는 앞으로</span>
+          <span
+            className={`inline-block min-w-[200px] border-b-2 border-dashed pb-1 text-[18px] font-semibold tracking-wide transition-colors ${
+              completed
+                ? "border-[#3d2414] text-[#3d2414]"
+                : headlineFill
+                  ? "border-[#b99b6b] text-[#3d2414]"
+                  : "border-[#b99b6b]/50 text-[#b99b6b]/50"
+            }`}
+          >
+            {headlineFill || "        "}
+          </span>
+          <span className="text-[18px] text-[#3d2414]">사람으로 성장하고 싶어요.</span>
+        </div>
+
+        {!completed && (
+          <div className="mx-auto max-w-[480px]">
+            <input
               value={visionInput}
               onChange={(e) => setVisionInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                if (e.key === "Enter") {
                   e.preventDefault();
                   if (canSubmit) void submit();
                 }
               }}
               placeholder="어떤 사람으로 성장하고 싶은지 자유롭게 써주세요"
-              rows={2}
               disabled={judging}
-              className="w-full resize-none rounded-md border border-[#b99b6b]/50 bg-white/70 px-4 py-3 text-center text-[16px] leading-[1.6] text-[#3d2414] outline-none placeholder:text-[#a18965] focus:border-[#3d2414] disabled:opacity-50"
+              className="w-full rounded-md border border-[#b99b6b]/50 bg-white/70 px-4 py-3 text-center text-[16px] text-[#3d2414] outline-none placeholder:text-[#a18965] focus:border-[#3d2414] disabled:opacity-50"
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             />
-          ) : (
-            <p className="w-full rounded-md border border-[#b99b6b]/50 bg-white/70 px-4 py-3 text-center text-[16px] font-medium leading-[1.6] text-[#3d2414]">
-              {headlineFill}
-            </p>
-          )}
-          <span className="text-[15px] leading-[1.7] text-[#6b5a3e]">사람으로 성장하고 싶어요.</span>
-        </div>
+          </div>
+        )}
 
         <AnimatePresence>
           {completed && (

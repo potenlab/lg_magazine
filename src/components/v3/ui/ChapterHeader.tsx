@@ -7,7 +7,7 @@ import { VolumeControl } from "@/components/v3/ui/VolumeControl";
 // so the masthead is visually unified across all V3 scenes.
 // Chapter info now lives in the bottom ProgressRail.
 // `dim` (spec.dimBackground 씬): 로고만 어둡게 — 볼륨 컨트롤은 그대로.
-export function ChapterHeader({ dim }: { dim?: boolean } = {}) {
+export function ChapterHeader({ dim, hideVolume }: { dim?: boolean; hideVolume?: boolean } = {}) {
   // pointer-events-none on the wrapper so the masthead doesn't intercept
   // clicks meant for the dialog beneath. VolumeControl re-enables pointer
   // events on its own button. z-[40] so the volume button sits above the
@@ -27,7 +27,7 @@ export function ChapterHeader({ dim }: { dim?: boolean } = {}) {
       />
 
       <div className="flex-1 flex justify-end">
-        <VolumeControl />
+        {!hideVolume && <VolumeControl />}
       </div>
     </div>
   );

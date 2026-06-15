@@ -228,10 +228,10 @@ function ChapterAttachment({ session }: { session: import("@/lib/v3/scenes/types
       >
         <div>
           <p className="text-[14px] uppercase tracking-[0.14em] text-[#8b7050]">Appendix</p>
-          <p className="mt-1 text-[16px] font-semibold text-[#3d2414]">
+          <p className="mt-1 text-[18px] font-semibold text-[#3d2414]">
             별첨 — 내가 적은 기록과 챕터별 요약 전체 보기
           </p>
-          <p className="mt-1 text-[14px] italic text-[#8b7050]">
+          <p className="mt-1 text-[15px] italic text-[#8b7050]">
             네 챕터에서 주고받은 질문·답변·편집장 요약을 한 자리에 모아둔 페이지예요.
           </p>
         </div>
@@ -259,7 +259,7 @@ function ChapterAttachment({ session }: { session: import("@/lib/v3/scenes/types
                   <p className="text-[14px] uppercase tracking-[0.1em] text-[#9b8768]">
                     {thread.chapter}
                   </p>
-                  <h4 className="mt-0.5 text-[16px] font-semibold text-[#3d2414]">
+                  <h4 className="mt-0.5 text-[18px] font-semibold text-[#3d2414]">
                     {thread.title}
                   </h4>
                 </div>
@@ -276,8 +276,8 @@ function ChapterAttachment({ session }: { session: import("@/lib/v3/scenes/types
                       ? "text-[14px] uppercase tracking-[0.08em] text-[#9b8768]"
                       : "text-[14px] tracking-wide text-[#8b7050]";
                     const textClass = isQuestion
-                      ? "mt-1 whitespace-pre-wrap text-[14px] italic leading-[1.55] text-[#6b5337]"
-                      : "mt-1.5 whitespace-pre-wrap text-[14px] leading-[1.65] text-[#3d2414]";
+                      ? "mt-1 whitespace-pre-wrap text-[15px] italic leading-[1.6] text-[#6b5337]"
+                      : "mt-1.5 whitespace-pre-wrap text-[16px] leading-[1.7] text-[#3d2414]";
                     return (
                       <div key={i} className={boxClass}>
                         <p className={labelClass}>{entry.label}</p>

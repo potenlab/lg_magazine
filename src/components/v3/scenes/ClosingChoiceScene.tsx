@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
-import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { MagazinePosterScene } from "@/components/v3/scenes/MagazinePosterScene";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
@@ -10,7 +9,6 @@ import { llm } from "@/lib/v3/llm";
 import { readUrlConfig } from "@/lib/v3/llm/realLLM";
 import { MagazinePDF, type MagazineData } from "@/lib/v3/pdf/MagazinePDF";
 import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
-import { renderTemplate } from "@/lib/v3/scenes/template";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 type PdfStatus = "loading" | "ready" | "error";
@@ -29,12 +27,13 @@ export function ClosingChoiceScene({
   spec: SceneSpec;
   onAdvance: (n: SceneId) => void;
 }) {
-  const { session, reset } = useV3Session();
+  const { session, patch, reset } = useV3Session();
   const [data, setData] = useState<MagazineData | null>(null);
   const [status, setStatus] = useState<PdfStatus>("loading");
   const [downloading, setDownloading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [magazineOpen, setMagazineOpen] = useState(false);
+  const [feedback, setFeedback] = useState<string>(session.closingFeedback ?? "");
 
   useEffect(() => {
     registerPdfFonts();
@@ -104,12 +103,19 @@ export function ClosingChoiceScene({
     }
   };
 
+  const persistFeedback = () => {
+    const trimmed = feedback.trim();
+    if (trimmed !== (session.closingFeedback ?? "")) {
+      patch({ closingFeedback: trimmed });
+    }
+  };
+
   const handleRestartConfirm = () => {
+    persistFeedback();
     reset();
     onAdvance("intro");
   };
 
-  const narration = spec.narration ? renderTemplate(spec.narration, session) : "";
   const downloadLabel =
     status === "loading"
       ? "잠시만요…"
@@ -119,28 +125,72 @@ export function ClosingChoiceScene({
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex-1">
-        {narration && <NarrationBlock text={narration} />}
-      </div>
-      <div className="mt-auto flex flex-col items-stretch justify-end gap-3 sm:flex-row sm:items-center">
-        <button
-          type="button"
-          onClick={() => setConfirmOpen(true)}
-          className="rounded-md border border-[#3d2414]/30 px-5 py-2.5 text-[15px] text-[#3d2414] transition hover:bg-[#3d2414]/5"
-        >
-          처음부터 다시하기
-        </button>
-        <StoryButtonV3
-          label="내 매거진 펼쳐보기"
-          onClick={() => setMagazineOpen(true)}
-          ritual
-        />
-        <StoryButtonV3
-          label={downloadLabel}
-          onClick={() => void handleDownload()}
-          disabled={status !== "ready" || downloading}
-          ritual
-        />
+      <div className="grid flex-1 gap-6 md:grid-cols-2 md:gap-10">
+        {/* 좌측 — 플레이 소감 */}
+        <section className="flex flex-col">
+          <h2
+            className="text-center text-[20px] font-semibold leading-[1.55] text-[#3d2414] md:text-[22px]"
+            style={{ fontFamily: "var(--font-ridi-batang)" }}
+          >
+            나를 돌아보는 기차 여정
+            <br />
+            MVP Vision Express, 어떠셨나요?
+          </h2>
+          <p className="mt-3 text-center text-[16px] leading-[1.6] text-[#3d2414]">
+            자유로운 플레이 소감을 남겨주세요.
+          </p>
+          <textarea
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            onBlur={persistFeedback}
+            placeholder="좋았던 점, 아쉬웠던 점, 운영진에게 전하고 싶은 말 등 자유롭게 작성해주세요 :)"
+            className="mt-5 min-h-[180px] w-full flex-1 resize-none rounded-md border border-[#b99b6b]/40 bg-[#ede1c6]/55 px-4 py-3 text-[15px] leading-[1.6] text-[#3d2414] outline-none placeholder:text-[#8b7050]/80 focus:border-[#3d2414]"
+            style={{ fontFamily: "var(--font-ridi-batang)" }}
+          />
+        </section>
+
+        {/* 우측 — 매거진 다시 보기 / 다시 플레이하기 */}
+        <section className="relative flex flex-col md:border-l md:border-[#b99b6b]/30 md:pl-10">
+          <p className="text-center text-[18px] font-semibold leading-[1.55] text-[#3d2414] md:text-[20px]">
+            나의 매거진은 언제든 다시 볼 수 있어요.
+          </p>
+          <div className="mt-5 flex justify-center">
+            <StoryButtonV3
+              label="내 매거진 펼쳐보기"
+              onClick={() => setMagazineOpen(true)}
+              ritual
+            />
+          </div>
+          <div className="mt-3 flex justify-center">
+            <StoryButtonV3
+              label={downloadLabel}
+              onClick={() => void handleDownload()}
+              disabled={status !== "ready" || downloading}
+              ritual
+            />
+          </div>
+
+          <div className="mt-10 border-t border-[#b99b6b]/30 pt-6">
+            <p className="text-center text-[17px] font-semibold leading-[1.55] text-[#3d2414] md:text-[18px]">
+              시간이 흘러 다시 나를 잃어버린 것 같다면,
+              <br />
+              괜찮아요. 언제든 다시 떠날 수 있어요.
+            </p>
+            <p className="mt-2 text-center text-[13px] italic text-[#8b7050]">
+              ※단, 다시 시작하면 지금까지의 기록은 사라져요.
+            </p>
+            <div className="mt-4 flex justify-center">
+              <StoryButtonV3
+                label="다시 플레이하기"
+                onClick={() => {
+                  persistFeedback();
+                  setConfirmOpen(true);
+                }}
+                ritual
+              />
+            </div>
+          </div>
+        </section>
       </div>
 
       {magazineOpen && (

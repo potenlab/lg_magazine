@@ -53,6 +53,7 @@ const FULL_HEIGHT_KINDS: ReadonlySet<SceneKind> = new Set<SceneKind>([
   "magazinePoster",
   "magazinePosterV1", // 임시 비교용 — v1 백업 디자인.
   "editorCredits",
+  "closingChoice",
   // 매거진 스프레드 씬들 — 좌·우 2 페이지 + 다음 페이지 흐름이라 풀-height.
   // FULL_HEIGHT_KINDS에 등록되면 (1) 자체적인 max-w/min-h 분기에 맞춰
   // 스타일링되고 (2) 다이얼로그 우상단 "이전" 전역 버튼이 자동 숨김 처리됨
@@ -72,6 +73,7 @@ const HIDE_PREV_KINDS: ReadonlySet<SceneKind> = new Set<SceneKind>([
   "magazineHandoff",
   "magazinePoster",
   "editorCredits",
+  "closingChoice",
 ]);
 
 export default function V3App() {
@@ -451,14 +453,18 @@ function V3Inner() {
     );
   }
 
+  // 종결 페이지(C-5 closingChoice)에서는 부수 chrome 을 모두 숨기고 로고만
+  // 남긴다 — 사용자가 소감을 적고 매거진을 다시 펼쳐보는 데에만 집중하도록.
+  const isClosingFinal = spec.kind === "closingChoice";
+
   return (
     <DialogStageContext.Provider value={{ setStage }}>
     <main className="relative min-h-screen overflow-hidden bg-[#160d08] text-[#f5ead6]">
       <TimeOfDayBackground time={time} bgImage={spec.bgImage} bgColor={spec.bgColor} chapter={typeof chapter === "number" ? chapter : undefined} />
-      <ChapterHeader dim={spec.dimBackground} />
+      <ChapterHeader dim={spec.dimBackground} hideVolume={isClosingFinal} />
       {/* key on chapter → panel remounts fresh when the chapter changes,
           resetting its open/selected state without an effect. */}
-      <ChapterIndexPanel key={String(chapter)} currentChapter={chapter} />
+      {!isClosingFinal && <ChapterIndexPanel key={String(chapter)} currentChapter={chapter} />}
 
       {/* Owl sits above the lower portion of the cabin so its head/torso clears the dialog. */}
       {shouldShowOwl && (
@@ -542,6 +548,10 @@ function V3Inner() {
                     : spec.kind === "editorCredits"
                     // 콘텐츠 짧은 final-stage 씬 — 콘텐츠 hug로 빈 양피지 회귀 방지.
                     ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[420px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
+                    : spec.kind === "closingChoice"
+                    // 종결 페이지 — 좌(소감) / 우(매거진·다시 플레이) 2-col 레이아웃.
+                    // 가독성 위해 폭 넓게, 높이는 콘텐츠 hug.
+                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[480px] w-full max-w-[1024px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/95 px-8 pt-8 pb-8 shadow-2xl text-[16px]"
                     // default FULL_HEIGHT — recordPage / toolSelect / visionSelect / magazinePosterV1.
                     // wrapper 는 overflow-hidden, 스크롤은 씬 내부 3-영역 패턴에서.
                     : "relative mx-auto flex h-[calc(100vh_-_200px)] min-h-[300px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl"
@@ -586,7 +596,7 @@ function V3Inner() {
         </section>
       </div>
 
-      <ProgressRail progress={progress} chapter={chapter} />
+      {!isClosingFinal && <ProgressRail progress={progress} chapter={chapter} />}
     </main>
     </DialogStageContext.Provider>
   );

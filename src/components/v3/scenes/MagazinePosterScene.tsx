@@ -338,7 +338,7 @@ function AppendixSpread({ session }: { session: V3Session }) {
         >
           내가 적은 기록
         </h2>
-        <p className="mt-2 text-[14px] italic leading-[1.7] text-[#8b7050]">
+        <p className="mt-2 text-[15px] italic leading-[1.7] text-[#8b7050]">
           네 챕터에서 주고받은 질문 · 답변 · 편집장 요약을 한 자리에 모아둔 페이지예요.
         </p>
         <div className="mx-auto mt-4 h-px w-20 bg-[#b99b6b]/40" />
@@ -369,7 +369,7 @@ function AppendixSpread({ session }: { session: V3Session }) {
                     {thread.chapter}
                   </p>
                   <h3
-                    className="mt-0.5 text-[17px] font-semibold text-[#3d2414]"
+                    className="mt-0.5 text-[19px] font-semibold text-[#3d2414]"
                     style={{ fontFamily: "var(--font-ridi-batang), serif" }}
                   >
                     {thread.title}
@@ -388,10 +388,10 @@ function AppendixSpread({ session }: { session: V3Session }) {
                       ? "text-[14px] uppercase tracking-[0.08em] text-[#9b8768]"
                       : "text-[14px] tracking-wide text-[#8b7050]";
                     const textClass = isQuestion
-                      ? "mt-1 whitespace-pre-wrap text-[14px] italic leading-[1.55] text-[#6b5337]"
+                      ? "mt-1 whitespace-pre-wrap text-[15px] italic leading-[1.6] text-[#6b5337]"
                       : isResult
-                        ? "mt-1 whitespace-pre-wrap text-[14px] leading-[1.7] text-[#3d2414]"
-                        : "mt-1 whitespace-pre-wrap text-[14px] leading-[1.7] text-[#3d2414]";
+                        ? "mt-1 whitespace-pre-wrap text-[16px] leading-[1.7] text-[#3d2414]"
+                        : "mt-1 whitespace-pre-wrap text-[16px] leading-[1.7] text-[#3d2414]";
                     return (
                       <div key={i} className={boxClass}>
                         <p className={labelClass}>{entry.label}</p>

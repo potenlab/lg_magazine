@@ -292,6 +292,10 @@ export interface V3Session {
   supportPerson: string;
   neededResource: string;
 
+  /** Final closing-page free-text 소감 (운영진에게 전하고 싶은 말). 마지막
+   * ClosingChoiceScene 에서 사용자가 작성. */
+  closingFeedback: string;
+
   followupCounts: Record<string, number>;
   /** Cached LLM-generated chapter articles. Filled when a recordPage scene
    * is first viewed; reused later by MagazineHandoffScene so the PDF shows
@@ -348,6 +352,7 @@ export const EMPTY_V3_SESSION: V3Session = {
   firstStep: "",
   supportPerson: "",
   neededResource: "",
+  closingFeedback: "",
   followupCounts: {},
   chapterArticles: {},
   lastSceneId: "intro",

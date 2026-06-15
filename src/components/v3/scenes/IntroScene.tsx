@@ -442,21 +442,16 @@ export function IntroScene({
                     paddingRight: 60,
                     paddingLeft: 76,
                     bottom: 76,
-                    // 마지막 페이지("그럼 지금 출발해볼까요?")는 한 줄뿐이라
-                    // 기본 좌측 상단 정렬로 두면 빈 공간이 크게 비어 어색하다.
-                    // flex로 가운데(가로/세로) 정렬해 한 줄이 카드 중앙에 놓이게.
-                    ...(letterPage === LETTER_PAGES.length - 1
-                      ? {
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          textAlign: "center" as const,
-                        }
-                      : {}),
                   }}
                 >
                   {/* Re-key the lines container on letterPage so each new
-                      page starts its fade-in from scratch. */}
+                      page starts its fade-in from scratch.
+                      마지막 페이지("그럼 지금 출발해볼까요?")는 한 줄뿐이라
+                      가운데 정렬이 자연스러운데, 정렬 스타일을 외부 컨테이너에
+                      두면 AnimatePresence 가 이전 페이지를 fade-out 하는 동안
+                      이전 페이지 텍스트가 이미 가운데로 옮겨가 보이는 깜빡임이
+                      생긴다. 따라서 정렬은 각 motion.div 가 자체적으로 들고
+                      페이지와 함께 페이드되도록 한다. */}
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={letterPage}
@@ -464,6 +459,18 @@ export function IntroScene({
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.35 }}
+                      style={
+                        letterPage === LETTER_PAGES.length - 1
+                          ? {
+                              minHeight: "100%",
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              textAlign: "center" as const,
+                            }
+                          : undefined
+                      }
                     >
                       {LETTER_PAGES[letterPage].map((line, i) => {
                         if (!line.text) return <div key={i} style={{ height: 8 }} />;

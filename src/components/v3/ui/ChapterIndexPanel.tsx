@@ -18,7 +18,7 @@ import type { Chapter } from "@/lib/v3/scenes/types";
  * per-scene "이전" button (prevStack in V3App) is untouched and separate.
  */
 export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter }) {
-  const { session, patch } = useV3Session();
+  const { session } = useV3Session();
   const [open, setOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const { hint } = useCornerHint();
@@ -26,50 +26,6 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
   // buildV3ChapterThreads returns one thread per chapter, in order:
   // index 0 → Chapter 0, index 1 → Chapter 1, ... index 4 → Chapter 4.
   const threads = useMemo(() => buildV3ChapterThreads(session), [session]);
-
-  // 이미 LLM 반향/요약이 생성된 답변 필드는 수정 차단 — 답만 바꾸면 결과지가
-  // 어긋남. session 의 LLM 산출물 존재 여부로 lock 판정.
-  const lockedFields = useMemo(() => {
-    const locked = new Set<string>();
-    const has = (v: unknown) => typeof v === "string" && v.trim().length > 0;
-    // Ch1 두 몰입 경험 → ch1PoeticMirror 가 이미 만들어졌으면 잠금
-    if (has(session.ch1PoeticMirror)) {
-      locked.add("flowExperience1");
-      locked.add("flowExperience2");
-    }
-    // strengthSynthesis (Ch2 매거진) 가 만들어졌으면 그 입력 전부 잠금
-    if (has(session.strengthSynthesis)) {
-      locked.add("flowExperience1");
-      locked.add("flowExperience2");
-      locked.add("commonPattern");
-      locked.add("helpRequests");
-      locked.add("othersDescription");
-    }
-    // growthVisionSynthesis(Ch3 매거진) 가 만들어졌으면 Ch3 입력 + identityName 잠금
-    if (has(session.growthVisionSynthesis)) {
-      locked.add("identityName");
-      locked.add("attraction");
-      locked.add("alreadyDoing");
-      locked.add("obstacles");
-      locked.add("whyReason");
-      locked.add("growthDirection");
-      locked.add("contribution");
-    }
-    // visionLine 도 identityName 을 참조 — 정체성 굳었으면 잠금
-    if (has(session.visionLine)) {
-      locked.add("identityName");
-    }
-    // Ch4(firstStep/supportPerson/neededResource)는 LLM 산출물 입력으로 안 쓰여서
-    // 자동 잠금 대상이 아니지만, 사용자가 Closing 화면에 도달했다는 건 매거진이
-    // 완성됐다는 뜻 → 다른 챕터와 일관되게 함께 잠근다. (피드백: "Ch4만 수정
-    // 가능한 게 왜?" — 잠금 처리하는 게 더 자연스러움.)
-    if (has(session.firstStep) || has(session.supportPerson) || has(session.neededResource)) {
-      locked.add("firstStep");
-      locked.add("supportPerson");
-      locked.add("neededResource");
-    }
-    return locked;
-  }, [session]);
 
   // Closing ("C") means every numbered chapter is behind the participant.
   const currentChapterNum = currentChapter === "C" ? 5 : currentChapter;
@@ -149,10 +105,6 @@ export function ChapterIndexPanel({ currentChapter }: { currentChapter: Chapter 
           <ChapterReviewOverlay
             thread={threads[selectedIndex]}
             onClose={() => setSelectedIndex(null)}
-            onEdit={(fieldKey, next) => {
-              patch({ [fieldKey]: next } as Partial<typeof session>);
-            }}
-            lockedFields={lockedFields}
           />
         )}
       </AnimatePresence>

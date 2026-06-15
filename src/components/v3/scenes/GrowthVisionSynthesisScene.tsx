@@ -79,6 +79,11 @@ export function GrowthVisionSynthesisScene({
 
   const [visionInput, setVisionInput] = useState<string>(session.visionLine ?? "");
   const [completed, setCompleted] = useState<boolean>(Boolean(session.visionLine));
+  // 챕터 2 와 통일: "이렇게 적어볼래요" 클릭 → 짧은 대기 비트 ("편집장이
+  // 들여다보는 중…") → 완성 도장 + "다음 페이지로". judging 자체는 LLM 판정이
+  // 없고 (사용자 피드백: "너가 뭔데 날 판단해"), 단지 "다음 단계로 넘어간다"
+  // 는 단계 전환 감을 살리기 위한 의도된 대기.
+  const [judging, setJudging] = useState(false);
 
   useEffect(() => {
     setStage("content");
@@ -205,12 +210,17 @@ export function GrowthVisionSynthesisScene({
 
   // [2026-06-09] judgeBranch 기반 retry/hint 메커니즘 제거. 사용자 피드백:
   // "너가 뭔데 날 판단해" — 본인의 성장 방향 한 줄을 판정·재시도 강요하는
-  // UX가 거슬린다는 의견. 이제는 입력값 그대로 저장하고 바로 완성 처리.
-  const submit = () => {
-    if (completed) return;
+  // UX는 거슬린다. 다만 챕터 2 와 통일된 "단계 전환 감" 을 위해 의도된 1.4s
+  // 대기 비트를 둔다 (LLM 판정이 아닌 timeout). 그 동안 버튼 라벨은 챕터 2 와
+  // 같은 "편집장이 들여다보는 중…".
+  const submit = async () => {
+    if (completed || judging) return;
     const v = visionInput.trim();
     if (!v) return;
+    setJudging(true);
+    await new Promise((r) => setTimeout(r, 1400));
     patch({ visionLine: v });
+    setJudging(false);
     setCompleted(true);
   };
 
@@ -219,7 +229,7 @@ export function GrowthVisionSynthesisScene({
     else if (typeof spec.next === "function") onAdvance(spec.next(session));
   };
 
-  const canSubmit = visionInput.trim().length > 0 && !completed;
+  const canSubmit = visionInput.trim().length > 0 && !completed && !judging;
   const headlineFill = visionInput || "";
 
   return (
@@ -227,18 +237,9 @@ export function GrowthVisionSynthesisScene({
       className="relative flex min-h-0 flex-1 flex-col overflow-y-auto"
       style={{ fontFamily: "var(--font-ridi-batang)" }}
     >
-      <AnimatePresence>
-        {completed && (
-          <motion.div
-            initial={{ opacity: 0, scale: 1.5, rotate: -16 }}
-            animate={{ opacity: 1, scale: 1, rotate: -8 }}
-            transition={{ duration: 0.45, ease: "easeOut" }}
-            className="pointer-events-none absolute right-4 bottom-4 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.08em] text-[#a13c2a]/90"
-          >
-            CHAPTER 3 · 완성
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* 완성 도장은 Editor's Question 섹션 내부로 이동 — 챕터 2 와 통일된
+          시각적 연결감(질문 옆에 도장)을 위해. 외곽 container 의 bottom-4 에
+          두면 콘텐츠가 길어진 챕터 3 에서는 BEAT 카드 중간에 어색하게 떠 보임. */}
 
       <header className="mb-4 shrink-0 text-center">
         <p className="text-[11px] tracking-[0.2em] text-[#7a5a3a]">STORY · MAGAZINE · CHAPTER 3</p>
@@ -348,7 +349,22 @@ export function GrowthVisionSynthesisScene({
       )}
 
       {/* ── Editor's Question — 앵커 패턴 입력 ──────────────────── */}
-      <section className="mt-12">
+      <section className="relative mt-12">
+        {/* 완성 도장 — 질문 옆 (right-4 top-4) 에 위치해 도장이 질문/입력과
+            시각적으로 연결되도록. 챕터 2 와 같은 톤. */}
+        <AnimatePresence>
+          {completed && (
+            <motion.div
+              initial={{ opacity: 0, scale: 1.5, rotate: -16 }}
+              animate={{ opacity: 1, scale: 1, rotate: -8 }}
+              transition={{ duration: 0.45, ease: "easeOut" }}
+              className="pointer-events-none absolute right-4 top-4 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.08em] text-[#a13c2a]/90"
+            >
+              CHAPTER 3 · 완성
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <p className="mb-4 text-center text-[12px] italic uppercase tracking-[0.2em] text-[#9b8768]">
           Editor&rsquo;s Question
         </p>
@@ -364,7 +380,9 @@ export function GrowthVisionSynthesisScene({
         </p>
 
         {/* 앵커 패턴 — "저는 앞으로 ___ 하는 사람이 되고 싶어요"
-            점선 언더라인 textarea 가 가운데에 들어가고 위·아래로 고정 문구. */}
+            인풋 박스 디자인은 챕터 2 와 통일 (rounded-md / border / bg-white/70
+            / px-4 py-3 / text-center). 한 줄로 안 끝나는 케이스를 위해
+            textarea 는 유지. */}
         <div className="mx-auto mb-7 flex max-w-[560px] flex-col gap-1.5">
           <span className="text-[15px] leading-[1.7] text-[#6b5a3e]">저는 앞으로</span>
           {!completed ? (
@@ -374,16 +392,17 @@ export function GrowthVisionSynthesisScene({
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                   e.preventDefault();
-                  if (canSubmit) submit();
+                  if (canSubmit) void submit();
                 }
               }}
               placeholder="어떤 사람이 되고 싶은지 자유롭게 써주세요"
               rows={2}
-              className="w-full resize-none border-0 border-b border-dashed border-[#b99b6b]/60 bg-transparent py-2 text-[15px] leading-[1.75] text-[#3d2414] outline-none placeholder:italic placeholder:text-[#c4b49a] focus:border-[#3d2414]"
+              disabled={judging}
+              className="w-full resize-none rounded-md border border-[#b99b6b]/50 bg-white/70 px-4 py-3 text-center text-[16px] leading-[1.6] text-[#3d2414] outline-none placeholder:text-[#a18965] focus:border-[#3d2414] disabled:opacity-50"
               style={{ fontFamily: "var(--font-ridi-batang)" }}
             />
           ) : (
-            <p className="border-b border-dashed border-[#3d2414] py-2 text-[15px] font-medium leading-[1.75] text-[#3d2414]">
+            <p className="w-full rounded-md border border-[#b99b6b]/50 bg-white/70 px-4 py-3 text-center text-[16px] font-medium leading-[1.6] text-[#3d2414]">
               {headlineFill}
             </p>
           )}
@@ -409,8 +428,8 @@ export function GrowthVisionSynthesisScene({
         {!completed ? (
           <StoryButtonV3
             key="submit"
-            label={spec.buttonLabel ?? "이렇게 적어볼래요"}
-            onClick={submit}
+            label={judging ? "편집장이 들여다보는 중…" : spec.buttonLabel ?? "이렇게 적어볼래요"}
+            onClick={() => void submit()}
             disabled={!canSubmit}
             ritual
           />

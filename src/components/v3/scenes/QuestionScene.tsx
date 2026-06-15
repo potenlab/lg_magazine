@@ -39,6 +39,7 @@ export function QuestionScene({
   const ritual =
     !spec.buttonLabel ||
     spec.buttonLabel === "전달하기" ||
+    spec.buttonLabel === "건네기" ||
     spec.buttonLabel === "이렇게 부를래요" ||
     spec.buttonLabel === "이렇게 적어봤어요";
 

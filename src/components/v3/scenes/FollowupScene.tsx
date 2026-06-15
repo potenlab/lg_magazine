@@ -178,7 +178,15 @@ export function FollowupScene({
   const submit = () => {
     if (edit.trim().length === 0) return;
     incrementFollowup(spec.id);
-    patch({ [parentSaveTo]: edit.trim() } as Partial<V3Session>);
+    // 원답변 보존: 기존엔 parentSaveTo 를 덮어써서 "기록" / "내 답변 다시 보기"
+    // 패널 + LLM 후속 입력 모두 원답변을 잃어버렸다. 줄바꿈으로 이어붙여
+    // 원답변과 팔로업 답변(들)이 모두 보이도록 한다.
+    // 다음 라운드의 judge 가 답변 풍부도를 다시 평가할 때도 풀 컨텍스트를 본다.
+    const prev = String(
+      (session as unknown as Record<string, unknown>)[parentSaveTo] ?? "",
+    ).trim();
+    const merged = prev ? `${prev}\n\n${edit.trim()}` : edit.trim();
+    patch({ [parentSaveTo]: merged } as Partial<V3Session>);
     onAdvance(spec.id);
   };
 

@@ -66,9 +66,10 @@ export function Ch1KeywordScene({ spec, onAdvance }: { spec: SceneSpec; onAdvanc
 
   const advance = () => {
     if (beat === "narration1") {
-      // Don't allow skipping to the mirror until the LLM has resolved.
-      if (!mirror) return;
-      setBeat("mirror");
+      // narration1 은 LLM 대기 무대지시("편집장이 가만히 들여다본다…").
+      // 명시적 클릭으로 넘어가는 게 아니라 LLM 응답 도착 시 아래 useEffect 가
+      // 자동 진행한다. 클릭 들어와도 silent-drop 처럼 보이지 않도록 캔어드밴스
+      // 자체를 false 로 둬 클릭 핸들러 / 다음 힌트가 표시되지 않게 함.
       return;
     }
     // beat === "mirror" — page through the mirror, then advance the scene.
@@ -79,10 +80,19 @@ export function Ch1KeywordScene({ spec, onAdvance }: { spec: SceneSpec; onAdvanc
     }
     if (typeof spec.next === "string") onAdvance(spec.next);
   };
-  useEnterToAdvance(advance, Boolean(mirror));
+  useEnterToAdvance(advance, beat === "mirror" && Boolean(mirror));
 
-  const canAdvance =
-    beat === "narration1" || (beat === "mirror" && Boolean(mirror));
+  // LLM 응답이 도착하는 즉시 narration1 → mirror 비트로 자동 진행.
+  // narration1 은 사용자 행동이 아닌 LLM 대기 placeholder 이므로, "다음" 버튼이
+  // 회색으로 떠 있는데 안 눌리는 회귀(피드백: "다음 버튼은 있는데 LLM 반향 때문에
+  // 안 넘어가지는 경우가 있어 — 오류처럼 보임")를 근본적으로 차단.
+  useEffect(() => {
+    if (mirror && beat === "narration1") {
+      setBeat("mirror");
+    }
+  }, [mirror, beat]);
+
+  const canAdvance = beat === "mirror" && Boolean(mirror);
 
   return (
     <div

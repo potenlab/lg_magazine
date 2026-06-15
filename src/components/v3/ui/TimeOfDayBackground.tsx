@@ -66,7 +66,7 @@ export function TimeOfDayBackground({
         <AnimatePresence mode="sync">
           <motion.div
             key={`bg-${key}`}
-            className="absolute inset-0"
+            className="fixed inset-0"
             style={{ background: bgColor }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -78,7 +78,7 @@ export function TimeOfDayBackground({
         <AnimatePresence mode="sync">
           <motion.div
             key={`bg-${key}`}
-            className="absolute inset-0"
+            className="fixed inset-0"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -99,7 +99,7 @@ export function TimeOfDayBackground({
       <AnimatePresence mode="sync">
         <motion.div
           key={`tint-${key}`}
-          className="absolute inset-0"
+          className="fixed inset-0"
           style={{ background: tint }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

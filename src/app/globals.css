@@ -462,8 +462,8 @@ body {
 /* ═══════ Ambience Click Hint (cinematic phase 0 — 외투/객실 등 어디를 눌러야
    진행되는지 인지 어렵다는 피드백 → 호흡하듯 부드럽게 깜빡이는 가이드). ═══════ */
 @keyframes ambience-click-hint {
-  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
-  50%      { opacity: 1;    transform: translate(-50%, -50%) scale(1.02); }
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.02); }
 }
 @keyframes ambience-click-hint-corner {
   0%, 100% { opacity: 0.6; }

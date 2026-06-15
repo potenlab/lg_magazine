@@ -78,6 +78,12 @@ export function RitualScene({
         onSettled={(isLastPage) => {
           if (isLastPage) setButtonReady(true);
         }}
+        // 다른 씬들처럼 마지막 페이지의 대화창 클릭만으로도 다음 씬으로
+        // 진행되도록 onAdvance 위임. (기존엔 "네, 준비됐어요" StoryButton 만
+        // 진행 가능해서 "대화창 눌러도 안 넘어감" 피드백 발생.)
+        // PaginatedNarration 내부의 canAdvance 게이트가 dwell 을 처리하므로
+        // 너무 빠른 자동 진행은 방지됨.
+        onAdvance={advance}
       />
       <div
         className={`mt-auto flex justify-end transition-opacity duration-500 ${

@@ -64,8 +64,9 @@ export function ValueReflectionScene({
 
   const advance = () => {
     if (beat === "narration") {
-      if (!reflection) return;
-      setBeat("reflection");
+      // narration 은 LLM 반향 대기 무대지시. 명시적 클릭이 아닌 LLM 응답 도착 시
+      // 아래 useEffect 가 자동 진행한다. 클릭이 들어와도 silent-drop 처럼 보이지
+      // 않도록 canAdvance / "다음" 힌트 / 클릭 핸들러 전부 비활성.
       return;
     }
     // reflection 비트 — 페이지가 나뉜 반향을 먼저 넘긴 뒤 씬 전환.
@@ -76,10 +77,18 @@ export function ValueReflectionScene({
     }
     if (typeof spec.next === "string") onAdvance(spec.next);
   };
-  useEnterToAdvance(advance, Boolean(reflection));
+  useEnterToAdvance(advance, beat === "reflection" && Boolean(reflection));
 
-  const canAdvance =
-    beat === "narration" || (beat === "reflection" && Boolean(reflection));
+  // LLM 응답 도착 즉시 narration → reflection 자동 진행.
+  // narration 은 사용자 행동이 아닌 LLM 대기 placeholder 이므로, "다음" 버튼이
+  // 떠 있는데 안 눌리는 회귀(피드백) 근본 차단.
+  useEffect(() => {
+    if (reflection && beat === "narration") {
+      setBeat("reflection");
+    }
+  }, [reflection, beat]);
+
+  const canAdvance = beat === "reflection" && Boolean(reflection);
 
   return (
     <div

@@ -6,6 +6,7 @@ import { getDeep } from "@/lib/llm/modeContext";
 import { extractIdentityTitle } from "@/lib/v3/scenes/template";
 import type { V3Session } from "@/lib/v3/scenes/types";
 import { ALL_TOOL_OPTIONS } from "@/lib/v3/toolOptions";
+import { cleanArticleField } from "@/lib/v3/llm/articleSanitize";
 
 // ── 객관식 선택지 의미 사전 ─────────────────────────────────────
 // Ch3에서 사용자가 고르는 객관식 라벨들은 4~6자 짧은 phrase("전문성 연결",
@@ -1331,22 +1332,10 @@ BODY: <본문 3문단, 각 문단 2~3문장>
   };
 }
 
-/** LLM chapter article 출력에서 raw markdown 마커(`**`, `[HEADLINE: ...]`,
- *  남은 `BODY:` / `PULL:` 라벨 등) 를 제거. 매거진/PDF 어디서든 같은 결과를
- *  보장하기 위해 export — 재호출/캐시 양쪽에서 재사용. */
-export function cleanArticleField(s: string): string {
-  return s
-    // **bold** → bold (inner content 보존)
-    .replace(/\*\*(.+?)\*\*/g, "$1")
-    // 남은 `**` (짝 없거나 빈 강조) 제거
-    .replace(/\*\*/g, "")
-    // [HEADLINE: ...] 인라인 마커가 본문에 섞여 있는 케이스
-    .replace(/\[HEADLINE:\s*[^\]]*\]/gi, "")
-    // 본문 내부에 라벨이 그대로 박힌 케이스 — 라벨만 떼고 뒤는 보존
-    .replace(/^\s*(?:HEADLINE|BODY|PULL)\s*:\s*/gim, "")
-    .replace(/\n\s*(?:HEADLINE|BODY|PULL)\s*:\s*/gi, "\n")
-    .trim();
-}
+// cleanArticleField 는 client/server 양쪽에서 쓰여야 해서 별도 client-safe
+// 모듈(articleSanitize.ts) 로 분리. 여기서 재사용 import 만.
+// (이 파일은 server-only 의존성을 가져 client 컴포넌트가 직접 임포트하면
+//  Next.js Turbopack 이 node:async_hooks 못 묶어 빌드 실패.)
 
 export async function v3WriteEditorNote(input: { session: V3Session; kind: "intro" | "outro" }): Promise<string> {
   const { session, kind } = input;

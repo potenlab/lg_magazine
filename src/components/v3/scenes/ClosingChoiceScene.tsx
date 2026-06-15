@@ -6,7 +6,7 @@ import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { MagazinePosterScene } from "@/components/v3/scenes/MagazinePosterScene";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
-import { cleanArticleField } from "@/lib/v3/llm/prompts";
+import { cleanArticleField } from "@/lib/v3/llm/articleSanitize";
 import { readUrlConfig } from "@/lib/v3/llm/realLLM";
 import { MagazinePDF, type MagazineData } from "@/lib/v3/pdf/MagazinePDF";
 import { registerPdfFonts } from "@/lib/v3/pdf/fonts";

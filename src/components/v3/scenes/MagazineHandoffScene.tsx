@@ -9,7 +9,7 @@ import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { buildV3ChapterThreads } from "@/lib/v3/session/adminView";
 import { extractIdentityTitle, renderTemplate } from "@/lib/v3/scenes/template";
 import { llm } from "@/lib/v3/llm";
-import { cleanArticleField } from "@/lib/v3/llm/prompts";
+import { cleanArticleField } from "@/lib/v3/llm/articleSanitize";
 import { readUrlConfig } from "@/lib/v3/llm/realLLM";
 import { MagazinePDF, type MagazineData } from "@/lib/v3/pdf/MagazinePDF";
 import { registerPdfFonts } from "@/lib/v3/pdf/fonts";

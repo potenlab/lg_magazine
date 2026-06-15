@@ -2,7 +2,7 @@
 
 import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { firstParagraphWithDropCap } from "@/lib/v3/pdf/dropcap";
-import { cleanArticleField } from "@/lib/v3/llm/prompts";
+import { cleanArticleField } from "@/lib/v3/llm/articleSanitize";
 
 /**
  * 매거진 한 페이지(article) 렌더링 — 챕터 라벨 + 헤드라인 + 드롭캡 본문 + pullQuote.

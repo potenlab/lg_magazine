@@ -69,6 +69,12 @@ export function RitualScene({
     );
   }
 
+  // 명시 CTA(예: "네, 이해했어요") 가 있는 씬은 버튼만으로 진행. 대화창 클릭
+  // 으로는 안 넘어가고, 우하단 "다음" 힌트도 숨김 — 명시 CTA 와 "다음" 힌트가
+  // 한 화면에 겹쳐 보이는 회귀 방지.
+  // 명시 CTA 가 없는 씬은 반대로 대화창 클릭으로만 진행 ("다음" 힌트 노출).
+  const hasExplicitCta = typeof spec.buttonLabel === "string" && spec.buttonLabel.length > 0;
+
   return (
     <div className="flex flex-1 flex-col">
       <PaginatedNarration
@@ -78,20 +84,17 @@ export function RitualScene({
         onSettled={(isLastPage) => {
           if (isLastPage) setButtonReady(true);
         }}
-        // 다른 씬들처럼 마지막 페이지의 대화창 클릭만으로도 다음 씬으로
-        // 진행되도록 onAdvance 위임. (기존엔 "네, 준비됐어요" StoryButton 만
-        // 진행 가능해서 "대화창 눌러도 안 넘어감" 피드백 발생.)
-        // PaginatedNarration 내부의 canAdvance 게이트가 dwell 을 처리하므로
-        // 너무 빠른 자동 진행은 방지됨.
-        onAdvance={advance}
+        onAdvance={hasExplicitCta ? undefined : advance}
       />
-      <div
-        className={`mt-auto flex justify-end transition-opacity duration-500 ${
-          buttonReady ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-      >
-        <StoryButtonV3 label={spec.buttonLabel ?? "네"} onClick={advance} ritual />
-      </div>
+      {hasExplicitCta && (
+        <div
+          className={`mt-auto flex justify-end transition-opacity duration-500 ${
+            buttonReady ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+        >
+          <StoryButtonV3 label={spec.buttonLabel!} onClick={advance} ritual />
+        </div>
+      )}
     </div>
   );
 }

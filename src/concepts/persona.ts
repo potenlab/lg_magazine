@@ -45,7 +45,7 @@ export const personaConcept: Concept = {
     ch2Start: `${CMN}/Chapter02-1.jpg`,
 
     introBackground: `${CMN}/background.jpg`,
-    inviteLetter: `${CMN}/invite_letter.jpg`,
+    inviteLetter: `${CMN}/invite_letter.png`,
     letterUnfold: `${CMN}/letter_unfold.jpg`,
     letterUnfoldWrite: `${CMN}/letter_unfold_write.jpg`,
     bgStation: `${CMN}/bg_station.jpg`,

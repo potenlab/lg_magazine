@@ -51,7 +51,7 @@ export const personaConcept: Concept = {
     bgStation: `${CMN}/bg_station.jpg`,
     bgTrain: `${CMN}/bg_train.jpg`,
     nameTicket: `${CMN}/name_ticket.jpg`,
-    visionTicket: `${CMN}/vision_ticket_new.jpg`,
+    visionTicket: `/ticket.png`,
     brandingBookEffect: `${CMN}/finish_chapter.jpg`,
   },
 };

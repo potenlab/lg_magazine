@@ -876,12 +876,37 @@ export function IntroScene({
                   const today = new Date();
                   const dateStr = today.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
                   const bookingNo = `NO. ${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+                  // 직무 텍스트가 길면(예: "설계/엔지니어링", "커뮤니케이션")
+                  // Journey : 라벨 옆 칸을 넘어 티켓 우측으로 밀려나간다.
+                  // 길이에 따라 글자 크기를 단계적으로 줄이고, max-width 로 안전망.
+                  const jobValue = session.job || finalJob || "—";
+                  const jobLen = jobValue.length;
+                  const jobFontSize =
+                    jobLen >= 9
+                      ? "clamp(8px, 1.1vw, 10px)"
+                      : jobLen >= 7
+                        ? "clamp(9px, 1.3vw, 11px)"
+                        : jobLen >= 5
+                          ? "clamp(10px, 1.4vw, 12px)"
+                          : valueStyle.fontSize;
                   return (
                     <>
                       {/* Journey value — next to "Journey :" label (right column of main ticket).
-                          [2026-05-20] 라벨과 baseline 맞추려 위로. 4px은 안 보여서 12px로. */}
-                      <p className="absolute" style={{ ...valueStyle, top: "57%", left: "62%", transform: "translateY(-12px)" }}>
-                        {session.job || finalJob || "—"}
+                          [2026-05-20] 라벨과 baseline 맞추려 위로. 4px은 안 보여서 12px로.
+                          [2026-06-15] 직무 길이별로 font-size 단계 + max-width 로 우측
+                          밀림 회귀 방지. left 도 60% 로 살짝 당김. */}
+                      <p
+                        className="absolute overflow-hidden text-ellipsis"
+                        style={{
+                          ...valueStyle,
+                          top: "57%",
+                          left: "60%",
+                          maxWidth: "28%",
+                          fontSize: jobFontSize,
+                          transform: "translateY(-12px)",
+                        }}
+                      >
+                        {jobValue}
                       </p>
                       {/* Passenger value — 라벨 옆. -50% baseline + 8px 위로 보정 (기존 4px → 8px). */}
                       <p

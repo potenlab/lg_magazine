@@ -350,15 +350,15 @@ export function GrowthVisionSynthesisScene({
 
       {/* ── Editor's Question — 앵커 패턴 입력 ──────────────────── */}
       <section className="relative mt-12">
-        {/* 완성 도장 — 질문 옆 (right-4 top-4) 에 위치해 도장이 질문/입력과
-            시각적으로 연결되도록. 챕터 2 와 같은 톤. */}
+        {/* 완성 도장 — Editor's Question 문구(질문 텍스트) 라인에 맞춰
+            top-12 정도로 내려 배치. 챕터 2 와 같은 톤. */}
         <AnimatePresence>
           {completed && (
             <motion.div
               initial={{ opacity: 0, scale: 1.5, rotate: -16 }}
               animate={{ opacity: 1, scale: 1, rotate: -8 }}
               transition={{ duration: 0.45, ease: "easeOut" }}
-              className="pointer-events-none absolute right-4 top-4 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.08em] text-[#a13c2a]/90"
+              className="pointer-events-none absolute right-2 top-12 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.08em] text-[#a13c2a]/90"
             >
               CHAPTER 3 · 완성
             </motion.div>

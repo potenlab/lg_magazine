@@ -59,10 +59,6 @@ export function Chapter2MagazineScene({
   const [loaded, setLoaded] = useState<boolean>(Boolean(session.strengthSynthesis));
 
   const [nameInput, setNameInput] = useState<string>(session.identityName ?? "");
-  const [attempts, setAttempts] = useState(0);
-  const MAX_ATTEMPTS = 3;
-  const [judging, setJudging] = useState(false);
-  const [editorHint, setEditorHint] = useState<string | null>(null);
   const [completed, setCompleted] = useState<boolean>(Boolean(session.identityName));
   const [examplesOpen, setExamplesOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -125,42 +121,22 @@ export function Chapter2MagazineScene({
     return { ...lbl, body, headline };
   });
 
-  const submit = async () => {
-    if (judging || completed) return;
+  // 2026-06-15 — judgeBranch retry/hint 제거. 사용자가 적은 표현은 그대로
+  // 받아들이고 완성 도장 + 다음 페이지로 이동. "조금 더 ~다운 표현을 찾아볼까요?"
+  // 같은 재질문 패턴은 사용자가 자기 표현을 의심하게 만들 수 있어 삭제.
+  const submit = () => {
+    if (completed) return;
     const v = nameInput.trim();
     if (!v) return;
-    setJudging(true);
-    setEditorHint(null);
-    try {
-      const r = await llm.judgeBranch({ sceneId: spec.id, answer: v });
-      const next = attempts + 1;
-      setAttempts(next);
-      if (r.branch === "D" || next >= MAX_ATTEMPTS) {
-        patch({ identityName: v });
-        setEditorHint(null);
-        setCompleted(true);
-      } else {
-        const hint =
-          r.branch === "A"
-            ? `조금 더 ${session.name}님다운 표현을 찾아볼까요? 가치 단어가 살짝 들어가도 좋아요.`
-            : `그 표현은 세상에 많아요 — ${session.name}님만의 방식으로 한 번 더 적어볼까요?`;
-        setEditorHint(hint);
-        setTimeout(() => inputRef.current?.focus(), 50);
-      }
-    } catch (err) {
-      console.error("[v3] judgeBranch failed:", err);
-      patch({ identityName: v });
-      setCompleted(true);
-    } finally {
-      setJudging(false);
-    }
+    patch({ identityName: v });
+    setCompleted(true);
   };
 
   const advance = () => {
     if (typeof spec.next === "string") onAdvance(spec.next);
   };
 
-  const canSubmit = nameInput.trim().length > 0 && !judging && !completed;
+  const canSubmit = nameInput.trim().length > 0 && !completed;
   const headlineFill = nameInput || "";
 
   return (
@@ -168,20 +144,6 @@ export function Chapter2MagazineScene({
       className="relative flex min-h-0 flex-1 flex-col overflow-y-auto"
       style={{ fontFamily: "var(--font-ridi-batang)" }}
     >
-      {/* 완성 도장 */}
-      <AnimatePresence>
-        {completed && (
-          <motion.div
-            initial={{ opacity: 0, scale: 1.5, rotate: -16 }}
-            animate={{ opacity: 1, scale: 1, rotate: -8 }}
-            transition={{ duration: 0.45, ease: "easeOut" }}
-            className="pointer-events-none absolute right-4 bottom-4 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.08em] text-[#a13c2a]/90"
-          >
-            CHAPTER 2 · 완성
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* 마스트헤드 */}
       <header className="mb-4 shrink-0 text-center">
         <p className="text-[14px] tracking-[0.2em] text-[#7a5a3a]">STORY · MAGAZINE · CHAPTER 2</p>
@@ -201,7 +163,21 @@ export function Chapter2MagazineScene({
       </div>
 
       {/* 정체성 입력 */}
-      <section className="mt-7 border-t border-[#b99b6b]/30 pt-6">
+      <section className="relative mt-7 border-t border-[#b99b6b]/30 pt-6">
+        {/* 완성 도장 — Editor's Question 라인 높이에 맞춰 섹션 우상단에 anchor. */}
+        <AnimatePresence>
+          {completed && (
+            <motion.div
+              initial={{ opacity: 0, scale: 1.5, rotate: -16 }}
+              animate={{ opacity: 1, scale: 1, rotate: -8 }}
+              transition={{ duration: 0.45, ease: "easeOut" }}
+              className="pointer-events-none absolute right-2 top-12 z-10 rounded-sm border-2 border-[#a13c2a]/80 px-3 py-1 text-[14px] font-semibold tracking-[0.08em] text-[#a13c2a]/90"
+            >
+              CHAPTER 2 · 완성
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <p className="mb-3 text-center text-[14px] uppercase tracking-[0.2em] text-[#7a5a3a]">
           Editor&rsquo;s Question
         </p>
@@ -228,20 +204,6 @@ export function Chapter2MagazineScene({
           <span className="text-[18px] text-[#3d2414]">사람.</span>
         </div>
 
-        <AnimatePresence>
-          {editorHint && !completed && (
-            <motion.p
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="mx-auto mb-3 max-w-[560px] text-center text-[14px] italic leading-[1.6] text-[#8b7050]"
-            >
-              {editorHint}
-            </motion.p>
-          )}
-        </AnimatePresence>
-
         {!completed && (
           <div className="mx-auto max-w-[480px]">
             <input
@@ -251,7 +213,7 @@ export function Chapter2MagazineScene({
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  if (canSubmit) void submit();
+                  if (canSubmit) submit();
                 }
               }}
               className="w-full rounded-md border border-[#b99b6b]/50 bg-white/70 px-4 py-3 text-center text-[16px] text-[#3d2414] outline-none placeholder:text-[#a18965] focus:border-[#3d2414] disabled:opacity-50"
@@ -265,11 +227,6 @@ export function Chapter2MagazineScene({
                 다른 분들은 자신을 어떻게 정의했을까요?
               </button>
             </div>
-            {attempts > 0 && attempts < MAX_ATTEMPTS && (
-              <p className="mt-1.5 text-right text-[14px] text-[#9b8768]/80">
-                남은 시도 {MAX_ATTEMPTS - attempts}회
-              </p>
-            )}
           </div>
         )}
 
@@ -362,7 +319,7 @@ export function Chapter2MagazineScene({
         {!completed ? (
           <StoryButtonV3
             key="submit"
-            label={judging ? "편집장이 들여다보는 중…" : spec.buttonLabel ?? "이렇게 부를래요"}
+            label={spec.buttonLabel ?? "이렇게 부를래요"}
             onClick={submit}
             disabled={!canSubmit}
             ritual

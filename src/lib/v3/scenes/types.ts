@@ -282,6 +282,11 @@ export interface V3Session {
    * cards between the 4 BEAT magazine grid and the visionLine input. Cached
    * here so re-entering the scene doesn't re-trigger a fresh LLM call. */
   growthDirectionRecommendations: string[];
+  /** [3-10 — wireframe Zone B] Job-category-driven trend cards rendered in
+   * the "El Owl's Outside View" section. 3 cards × {direction, context}.
+   * Cached here so re-entering doesn't refetch. Empty when LLM failed and
+   * we don't want to persist a stub. */
+  jobTrendCards: { direction: string; context: string }[];
 
   firstStep: string;
   supportPerson: string;
@@ -339,6 +344,7 @@ export const EMPTY_V3_SESSION: V3Session = {
   growthTool: [],
   contribution: "",
   growthDirectionRecommendations: [],
+  jobTrendCards: [],
   firstStep: "",
   supportPerson: "",
   neededResource: "",

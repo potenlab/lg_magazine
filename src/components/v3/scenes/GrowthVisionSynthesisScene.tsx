@@ -67,6 +67,16 @@ export function GrowthVisionSynthesisScene({
     (session.growthDirectionRecommendations ?? []).length > 0,
   );
 
+  // [wireframe Zone B — 2026-06-15] 직무 기반 트렌드 카드 3개. 6-axis 추천
+  // 그리드 아래 "🦉 El Owl's Outside View" 섹션에 표시. recommendations와
+  // 동일한 캐시 패턴: stub fallback일 땐 patch 생략해 재시도 가능.
+  const [trendCards, setTrendCards] = useState<
+    { direction: string; context: string }[]
+  >(session.jobTrendCards ?? []);
+  const [trendLoaded, setTrendLoaded] = useState<boolean>(
+    (session.jobTrendCards ?? []).length > 0,
+  );
+
   const [visionInput, setVisionInput] = useState<string>(session.visionLine ?? "");
   const [completed, setCompleted] = useState<boolean>(Boolean(session.visionLine));
 
@@ -104,7 +114,8 @@ export function GrowthVisionSynthesisScene({
         if (cancelled) return;
         const text = (r.synthesis ?? "").trim();
         setSynthesis(text);
-        if (text) patch({ growthVisionSynthesis: text });
+        // stub fallback일 때는 캐시 금지 — Chapter2MagazineScene 동일 사유.
+        if (text && !r.fromStub) patch({ growthVisionSynthesis: text });
         setLoaded(true);
       } catch (err) {
         console.error("[v3] synthesizeGrowthVision failed:", err);
@@ -154,9 +165,35 @@ export function GrowthVisionSynthesisScene({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // [wireframe Zone B — 2026-06-15] 직무 기반 트렌드 카드 fetch.
+  // 직무 한 입력만 사용. stub fallback일 땐 캐시 금지 — 다른 합성과 동일 패턴.
+  useEffect(() => {
+    if (trendLoaded) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await llm.generateJobTrendCards({ job: session.job });
+        if (cancelled) return;
+        const cards = (r.cards ?? []).filter((c) => c.direction.trim().length > 0);
+        setTrendCards(cards);
+        if (cards.length > 0 && !r.fromStub) patch({ jobTrendCards: cards });
+        setTrendLoaded(true);
+      } catch (err) {
+        console.error("[v3] generateJobTrendCards failed:", err);
+        if (!cancelled) setTrendLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!loaded || !synthesis) {
     return (
-      <NarrationBlock text="편집장이 그동안의 이야기를 한자리에 모아 매거진으로 엮고 있어요…" />
+      <NarrationBlock
+        text={`편집장이 ${session.name}님이 해주신 이야기를 모아보고 있어요. 잠시만 기다려주세요.`}
+      />
     );
   }
 
@@ -220,35 +257,38 @@ export function GrowthVisionSynthesisScene({
         ))}
       </div>
 
-      {/* ── 추천 성장 방향 (참고용) ─────────────────────────────────
-          매거진 BEAT를 본 뒤 visionLine을 적기 직전, 사용자 데이터에 기반해
-          개인화된 방향 6개를 참고용 카드로 보여준다. 고르는 UI가 아니라
-          참고만 — 클릭/선택 인터랙션 의도적으로 제외. (LLM 실패 시 섹션
-          자체가 비어 자연스럽게 사라진다.) */}
+      {/* ── ZONE A — 내부 발견형 (역할/방법/강점/성장/영향/통합) ────
+          [2026-06-15 와이어프레임 적용]
+          이전: 박스 테두리 + 2-col 카드. "고르는 UI"처럼 읽힌다는 피드백.
+          이후: 박스 제거 + 라벨/본문만의 3-col 타이포 그리드. 상단 ghost
+          라인이 항목을 구분하지만 카드 인상은 주지 않는다. */}
       {recommendations.length > 0 && (
-        <section className="mt-7 border-t border-[#b99b6b]/30 pt-6">
-          <p className="mb-2 text-center text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
-            Editor&rsquo;s Recommendation
-          </p>
-          <p className="mb-1 text-center text-[16px] leading-[1.6] text-[#3d2414]">
+        <section className="mt-8">
+          <p className="mb-2 text-center text-[16px] leading-[1.6] text-[#3d2414]">
             지금까지의 이야기를 모아 — {session.name}님이 향할 수 있는 방향들을 정리해봤어요.
           </p>
-          <p className="mb-5 text-center text-[13px] italic leading-[1.5] text-[#8b7050]">
+          <p className="mb-6 text-center text-[13px] italic leading-[1.5] text-[#8b7050]">
             고르는 게 아니라, {session.name}님만의 한 줄을 적을 때 참고만 해주세요.
           </p>
-          <div className="grid gap-2.5 sm:grid-cols-2">
+          <p className="mb-3 text-[10.5px] uppercase tracking-[0.18em] text-[#9b8768] italic">
+            엘아울이 {session.name}님의 이야기에서 읽은 언어
+          </p>
+          <div className="grid grid-cols-2 gap-x-5 sm:grid-cols-3">
             {recommendations.map((rec, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 6 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.08 * i, duration: 0.4, ease: "easeOut" }}
-                className="rounded-md border border-[#b99b6b]/30 bg-white/40 px-3.5 py-3"
+                transition={{ delay: 0.05 + 0.05 * i, duration: 0.45, ease: "easeOut" }}
+                className="border-t border-[#b99b6b]/40 py-4 pr-2"
               >
-                <p className="text-[10px] uppercase tracking-[0.12em] text-[#9b8768]">
+                <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.14em] text-[#9b8768]">
                   {RECOMMENDATION_AXES[i] ?? `방향 ${i + 1}`}
                 </p>
-                <p className="mt-1 text-[14px] leading-[1.65] text-[#3d2414]">
+                <p
+                  className="text-[14px] leading-[1.7] text-[#3d2414]"
+                  style={{ wordBreak: "keep-all" }}
+                >
                   {rec}
                 </p>
               </motion.div>
@@ -257,56 +297,98 @@ export function GrowthVisionSynthesisScene({
         </section>
       )}
 
-      {/* visionLine 입력 */}
-      <section className="mt-7 border-t border-[#b99b6b]/30 pt-6">
-        <p className="mb-3 text-center text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
+      {/* ── 디바이더 — "내 이야기 → 바깥 시선" 전환 ──────────────── */}
+      {trendCards.length > 0 && (
+        <div className="my-9 flex items-center gap-3">
+          <div className="h-px flex-1 bg-[#b99b6b]/40" />
+          <span className="text-[11px] italic tracking-[0.15em] text-[#9b8768]">
+            🦉 &nbsp;El Owl&rsquo;s Outside View
+          </span>
+          <div className="h-px flex-1 bg-[#b99b6b]/40" />
+        </div>
+      )}
+
+      {/* ── ZONE B — 직무 기반 트렌드 카드 (3개) ─────────────────
+          generateJobTrendCards 결과. 불릿 + 굵은 방향 한 줄 + 이탤릭
+          맥락 한 줄의 에디터 노트 톤. LLM 실패 시 자연스럽게 사라짐. */}
+      {trendCards.length > 0 && (
+        <section>
+          <p className="mb-3 text-[10.5px] uppercase tracking-[0.18em] text-[#9b8768] italic">
+            바깥에서 포착한 시선
+          </p>
+          <ul className="flex flex-col">
+            {trendCards.map((card, i) => (
+              <motion.li
+                key={i}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.08 + 0.08 * i, duration: 0.45, ease: "easeOut" }}
+                className={`flex gap-4 border-t border-[#b99b6b]/40 py-5 ${
+                  i === trendCards.length - 1 ? "border-b" : ""
+                }`}
+              >
+                <span className="mt-[9px] inline-block size-1 shrink-0 rounded-full bg-[#9b8768]" />
+                <div className="flex-1">
+                  <p
+                    className="mb-1 text-[14px] font-medium leading-[1.7] text-[#3d2414]"
+                    style={{ wordBreak: "keep-all" }}
+                  >
+                    {card.direction}
+                  </p>
+                  {card.context && (
+                    <p className="text-[12px] italic leading-[1.6] text-[#6b5a3e]">
+                      {card.context}
+                    </p>
+                  )}
+                </div>
+              </motion.li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* ── Editor's Question — 앵커 패턴 입력 ──────────────────── */}
+      <section className="mt-12">
+        <p className="mb-4 text-center text-[12px] italic uppercase tracking-[0.2em] text-[#9b8768]">
           Editor&rsquo;s Question
         </p>
-        {/* 2-10과 톤 통일 — 엘아울의 따뜻한 멘트로. */}
-        <p className="mb-2 text-center text-[16px] leading-[1.75] text-[#3d2414]">
+        <p className="mb-2 text-center text-[16.5px] font-medium leading-[1.75] text-[#3d2414]">
           이제 {session.name}님의 차례예요.
           <br />
-          {session.name}님은 앞으로 어떤 사람으로 성장하고 싶나요?
+          앞으로 어떤 사람으로 성장하고 싶나요?
         </p>
-        <p className="mb-6 text-center text-[14px] italic leading-[1.6] text-[#8b7050]">
-          주의: 현재의 내가 아니라, 앞으로 어떤 사람이 되고 싶은지를 작성해요.
+        <p className="mb-8 text-center text-[12px] italic leading-[1.6] text-[#9b8768]">
+          현재의 내가 아니라, 앞으로 어떤 사람이 되고 싶은지를 작성해요.
           <br />
-          매거진 카드의 표현을 가져와도 좋고, 합치거나 다시 써도 좋아요.
+          위의 표현을 가져와도 좋고, 합치거나 다시 써도 좋아요.
         </p>
 
-        <div className="mb-6 flex flex-wrap items-baseline justify-center gap-x-2 text-center">
-          <span
-            className={`inline-block min-w-[260px] border-b-2 border-dashed pb-1 text-[18px] font-semibold tracking-wide transition-colors ${
-              completed
-                ? "border-[#3d2414] text-[#3d2414]"
-                : headlineFill
-                  ? "border-[#b99b6b] text-[#3d2414]"
-                  : "border-[#b99b6b]/50 text-[#b99b6b]/50"
-            }`}
-          >
-            {headlineFill || "                "}
-          </span>
-          <span className="text-[18px] text-[#3d2414]">방향.</span>
-        </div>
-
-        {!completed && (
-          <div className="mx-auto max-w-[520px]">
-            <input
+        {/* 앵커 패턴 — "저는 앞으로 ___ 하는 사람이 되고 싶어요"
+            점선 언더라인 textarea 가 가운데에 들어가고 위·아래로 고정 문구. */}
+        <div className="mx-auto mb-7 flex max-w-[560px] flex-col gap-1.5">
+          <span className="text-[15px] leading-[1.7] text-[#6b5a3e]">저는 앞으로</span>
+          {!completed ? (
+            <textarea
               value={visionInput}
               onChange={(e) => setVisionInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                   e.preventDefault();
                   if (canSubmit) submit();
                 }
               }}
-              className="w-full rounded-md border border-[#b99b6b]/50 bg-white/70 px-4 py-3 text-center text-[16px] text-[#3d2414] outline-none placeholder:text-[#a18965] focus:border-[#3d2414] disabled:opacity-50"
+              placeholder="어떤 사람이 되고 싶은지 자유롭게 써주세요"
+              rows={2}
+              className="w-full resize-none border-0 border-b border-dashed border-[#b99b6b]/60 bg-transparent py-2 text-[15px] leading-[1.75] text-[#3d2414] outline-none placeholder:italic placeholder:text-[#c4b49a] focus:border-[#3d2414]"
+              style={{ fontFamily: "var(--font-ridi-batang)" }}
             />
-            {/* [2026-06-09] judgeBranch 기반 retry/hint/카운터 + "다른 사람들은
-                어떤 방향을 그렸을까요?" 모달 모두 제거. 판정 UX가 거슬린다는
-                피드백("너가 뭔데 날 판단해")과 추상 예시 무용 피드백 반영. */}
-          </div>
-        )}
+          ) : (
+            <p className="border-b border-dashed border-[#3d2414] py-2 text-[15px] font-medium leading-[1.75] text-[#3d2414]">
+              {headlineFill}
+            </p>
+          )}
+          <span className="text-[15px] leading-[1.7] text-[#6b5a3e]">하는 사람이 되고 싶어요.</span>
+        </div>
 
         <AnimatePresence>
           {completed && (
@@ -368,7 +450,11 @@ function BeatCard({ beat, delay }: { beat: Beat; delay: number }) {
 }
 
 function BoldInline({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  // LLM이 종종 마침표 직후에 **bold** 강조를 공백 없이 붙여 쓴다
+  // ("것.**두려움보다는...**"). 시작 ** 앞에 공백을 보장해 자연스럽게
+  // 흐르게. (종료 측은 조사가 바로 붙는 경우가 정상이라 건드리지 않음.)
+  const spaced = text.replace(/(\S)(\*\*[^*]+\*\*)/g, "$1 $2");
+  const parts = spaced.split(/(\*\*[^*]+\*\*)/g);
   return (
     <>
       {parts.map((part, i) => {

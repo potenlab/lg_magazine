@@ -12,6 +12,7 @@ import {
   v3SynthesizeStrength,
   v3SynthesizeGrowthVision,
   v3GenerateVisionDirections,
+  v3GenerateJobTrendCards,
   v3GenerateTimeHorizon,
   v3ExtractKeyword,
   v3ObservePattern,
@@ -37,6 +38,7 @@ type Task =
   | "synthesizeStrength"
   | "synthesizeGrowthVision"
   | "generateVisionDirections"
+  | "generateJobTrendCards"
   | "generateTimeHorizon"
   | "extractKeyword"
   | "observePattern"
@@ -72,6 +74,8 @@ async function dispatch(task: Task, payload: Record<string, unknown>): Promise<u
       return v3SynthesizeGrowthVision(payload as Parameters<typeof v3SynthesizeGrowthVision>[0]);
     case "generateVisionDirections":
       return v3GenerateVisionDirections(payload as Parameters<typeof v3GenerateVisionDirections>[0]);
+    case "generateJobTrendCards":
+      return v3GenerateJobTrendCards(payload as Parameters<typeof v3GenerateJobTrendCards>[0]);
     case "generateTimeHorizon":
       return v3GenerateTimeHorizon(payload as Parameters<typeof v3GenerateTimeHorizon>[0]);
     case "extractKeyword":

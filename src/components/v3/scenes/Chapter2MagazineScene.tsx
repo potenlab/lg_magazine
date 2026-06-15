@@ -91,7 +91,10 @@ export function Chapter2MagazineScene({
         if (cancelled) return;
         const text = (r.synthesis ?? "").trim();
         setSynthesis(text);
-        if (text) patch({ strengthSynthesis: text });
+        // stub fallback(`fromStub: true`)일 때는 캐시 금지 — 일반 템플릿이
+        // 세션에 박혀버리면 사용자가 재진입해도 LLM을 다시 호출하지 못하고
+        // 영구히 stub 출력만 보게 됨. 실제 LLM 응답만 저장.
+        if (text && !r.fromStub) patch({ strengthSynthesis: text });
         setLoaded(true);
       } catch (err) {
         console.error("[v3] synthesizeStrength failed:", err);
@@ -105,7 +108,15 @@ export function Chapter2MagazineScene({
   }, []);
 
   if (!loaded || !synthesis) {
-    return <NarrationBlock text={waitMsg} />;
+    // 매거진 도출 직전 버퍼는 LLM synthesis 호출이라 일반 응답보다 훨씬 오래
+    // 걸린다. 풀에서 랜덤한 짧은 멘트(`waitMsg`)를 띄우면 사용자가 멈춘 줄
+    // 알기 쉬워, 명확히 "모으는 중 / 기다려주세요" 톤의 전용 문구로 교체.
+    void waitMsg;
+    return (
+      <NarrationBlock
+        text={`편집장이 ${session.name}님이 해주신 이야기를 모아보고 있어요. 잠시만 기다려주세요.`}
+      />
+    );
   }
 
   const parsed = parseBeats(synthesis, 4);
@@ -393,7 +404,11 @@ function BeatCard({ beat, delay }: { beat: Beat; delay: number }) {
 
 /** `**xxx**` → <strong>, 나머지는 EditorialInline. */
 function BoldInline({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  // LLM이 종종 마침표 직후에 **bold** 강조를 공백 없이 붙여 쓴다
+  // ("것.**두려움보다는...**"). 시작 ** 앞에 공백을 보장해 자연스럽게
+  // 흐르게. (종료 측은 조사가 바로 붙는 경우가 정상이라 건드리지 않음.)
+  const spaced = text.replace(/(\S)(\*\*[^*]+\*\*)/g, "$1 $2");
+  const parts = spaced.split(/(\*\*[^*]+\*\*)/g);
   return (
     <>
       {parts.map((part, i) => {

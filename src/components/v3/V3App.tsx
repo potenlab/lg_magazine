@@ -85,7 +85,7 @@ export default function V3App() {
 }
 
 function V3Inner() {
-  const { session, goto, hydrated, reset } = useV3Session();
+  const { session, patch, goto, hydrated, reset } = useV3Session();
   const { setScene: setBGM } = useBGM();
   const [showResume, setShowResume] = useState(false);
   const [activeId, setActiveId] = useState<SceneId>("intro");
@@ -259,6 +259,27 @@ function V3Inner() {
   };
 
   const handlePrev = () => {
+    // 이전 from a followup scene → clear that followup's tracking state
+    // (total count + per-branch `${id}:Letter` seen flags). Without this,
+    // re-submitting the parent question runs the judge again but the
+    // persisted branchSeenKey from the first visit forces an exit branch,
+    // so the participant skips past the followup instead of re-experiencing
+    // it. See FollowupScene `alreadySeen` / `forcedExit` logic.
+    const current = activeIdRef.current;
+    const currentSpec = SCENES[current];
+    if (currentSpec?.kind === "followup") {
+      const fcs = { ...session.followupCounts };
+      let changed = false;
+      for (const k of Object.keys(fcs)) {
+        if (k === current || k.startsWith(`${current}:`)) {
+          delete fcs[k];
+          changed = true;
+        }
+      }
+      if (changed) {
+        patch({ followupCounts: fcs });
+      }
+    }
     const stack = prevStackRef.current;
     if (stack.length > 0) {
       const target = stack[stack.length - 1];
@@ -272,7 +293,6 @@ function V3Inner() {
     // linear chains this gives the user a working "이전" affordance even
     // without recorded history. Picks the first predecessor when multiple
     // scenes can lead to current (branching).
-    const current = activeIdRef.current;
     const candidates = SCENE_PREDECESSORS[current] ?? [];
     if (candidates.length === 0) return;
     const target = candidates[0];

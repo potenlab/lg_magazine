@@ -1495,6 +1495,59 @@ export async function v3GenerateVisionDirections(input: {
   return { directions: six };
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// [ch3 wireframe Zone B — 2026-06-15] Job-category-driven trend cards.
+// 와이어프레임의 "🦉 El Owl's Outside View" 섹션에 표시되는 3개 카드.
+// 6-axis 추천 카드(내부 발견형) 다음에 와서 "바깥 시선" 시점으로 직무 분야
+// 흐름을 보여준다. 입력은 직무 카테고리 하나만 — 참가자 데이터는 쓰지 않고,
+// 직무 영역에서 주목받는 변화를 엘아울의 관찰자 시점으로 풀어쓴다.
+// ──────────────────────────────────────────────────────────────────────────
+export async function v3GenerateJobTrendCards(input: {
+  job: string;
+}): Promise<{ cards: { direction: string; context: string }[] }> {
+  const job = (input.job || "").trim() || "직장인";
+  const user = `당신은 "아뜰리에 페르소나" 매거진의 에디터 엘아울입니다.
+참가자의 직무 영역을 보고, 그 분야에서 주목할 만한 변화의 방향을
+바깥에서 포착한 시선으로 3가지 제시해주세요.
+
+## 입력값
+직무: ${job}
+
+## 출력 규칙
+- 각 카드는 "~하는 사람" 형태의 방향 문장 1개 + 맥락 문장 1개
+- 방향 문장: 구체적인 행동 동사로 시작, 30자 내외
+- 맥락 문장: 왜 이 방향이 주목받는지, 20자 내외로 담백하게
+- 출처나 기관명 절대 언급하지 않음
+- 엘아울의 관찰자 시선 유지 ("~하고 있어요", "~되고 있어요")
+- 과도한 미래 예측이나 단정적 표현 지양
+
+## 출력 형식 (JSON)
+{
+  "trend_cards": [
+    { "direction": "~하는 사람", "context": "맥락 문장" },
+    { "direction": "~하는 사람", "context": "맥락 문장" },
+    { "direction": "~하는 사람", "context": "맥락 문장" }
+  ]
+}`;
+  const r = await ask(user, 600);
+  const text = r.text.trim();
+  const m = text.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error("v3GenerateJobTrendCards: no JSON in response");
+  const obj = JSON.parse(m[0]) as {
+    trend_cards?: Array<{ direction?: string; context?: string }>;
+  };
+  const cards = (obj.trend_cards ?? [])
+    .map((c) => ({
+      direction: (c.direction ?? "").trim(),
+      context: (c.context ?? "").trim(),
+    }))
+    .filter((c) => c.direction.length > 0);
+  if (cards.length < 3) {
+    throw new Error(`v3GenerateJobTrendCards: expected 3 cards, got ${cards.length}`);
+  }
+  return { cards: cards.slice(0, 3) };
+}
+
 export async function v3GenerateTimeHorizon(input: {
   name: string;
   job: string;

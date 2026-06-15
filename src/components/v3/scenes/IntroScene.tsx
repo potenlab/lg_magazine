@@ -72,9 +72,7 @@ const LETTER_PAGES: LetterLine[][] = [
     { text: "이곳의 모든 기록은 외부에 열리지 않습니다.", delay: 2.2, h: [[4, 23]] },
     { text: "안심하고, 지나온 여정과 앞으로의 시도를 함께 펼쳐보세요.", delay: 2.8 },
     { text: "", delay: 0 },
-    { text: "다만, 답변이 너무 짧으면 편집장이 다시 여쭤볼 수 있어요.", delay: 3.4, h: [[15, 27]] },
-    { text: "", delay: 0 },
-    { text: "오늘 밤, 그 주인공은 바로 당신입니다.", delay: 4.4, h: [[6, 21]] },
+    { text: "오늘 밤, 그 주인공은 바로 당신입니다.", delay: 3.6, h: [[6, 21]] },
   ],
   // Page 4 — 출발 호출 + 승객 명부 서명 버튼 (단독 페이지로 분리해 호흡)
   [
@@ -439,7 +437,23 @@ export function IntroScene({
                     to bottom: 32px). */}
                 <div
                   className="absolute inset-x-0 top-0 overflow-y-auto"
-                  style={{ paddingTop: 56, paddingRight: 60, paddingLeft: 76, bottom: 76 }}
+                  style={{
+                    paddingTop: 56,
+                    paddingRight: 60,
+                    paddingLeft: 76,
+                    bottom: 76,
+                    // 마지막 페이지("그럼 지금 출발해볼까요?")는 한 줄뿐이라
+                    // 기본 좌측 상단 정렬로 두면 빈 공간이 크게 비어 어색하다.
+                    // flex로 가운데(가로/세로) 정렬해 한 줄이 카드 중앙에 놓이게.
+                    ...(letterPage === LETTER_PAGES.length - 1
+                      ? {
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          textAlign: "center" as const,
+                        }
+                      : {}),
+                  }}
                 >
                   {/* Re-key the lines container on letterPage so each new
                       page starts its fade-in from scratch. */}

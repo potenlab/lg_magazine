@@ -233,6 +233,29 @@ export const stubLLM: LLMContract = {
     };
   },
 
+  async generateJobTrendCards() {
+    // Generic-by-design fallback — the real LLM personalizes against `job`.
+    // When the stub fires we deliberately use job-agnostic language so the
+    // section still reads as "바깥에서 포착한 시선" rather than a wrong
+    // domain claim. fromStub flag prevents caching so a retry can run.
+    return {
+      cards: [
+        {
+          direction: "정해진 역할에 머무르지 않고 일의 경계를 다시 그리는 사람",
+          context: "직무 정의가 빠르게 재편되는 흐름이 이어지고 있어요 —",
+        },
+        {
+          direction: "데이터와 현장의 결을 함께 읽어 다음 한 수를 그리는 사람",
+          context: "분석과 감각이 같이 가는 사람이 주목받고 있어요 —",
+        },
+        {
+          direction: "AI를 옆에 두고 사람만이 할 수 있는 일에 더 깊이 들어가는 사람",
+          context: "기술 도입 속에서 사람의 자리가 다시 정의되고 있어요 —",
+        },
+      ],
+    };
+  },
+
   async generateTimeHorizon() {
     // Fixed fallback — mirrors FALLBACK_HORIZON in TimeHorizonScene.
     return {

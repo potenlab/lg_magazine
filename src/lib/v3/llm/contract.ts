@@ -73,7 +73,11 @@ export interface LLMContract {
     strengthCommonAsk: string;
     helpRequests: string;
     othersDescription: string;
-  }): Promise<{ synthesis: string }>;
+    // `fromStub: true` 일 때는 호출자가 결과를 세션에 캐싱하지 말 것
+    // — stub fallback(API 실패·timeout·빈 출력)이 한 번 떴다고 그 일반
+    // 템플릿을 영구 저장해버리면 사용자가 재진입해도 LLM 재호출이 안 되어
+    // 무한히 stub만 보게 됨. 실제 LLM 응답일 때만 캐시.
+  }): Promise<{ synthesis: string; fromStub?: boolean }>;
 
   /** [ch3 wow] Editor growth-vision synthesis — pulls all of ch1/ch2/ch3
    * material together (flow moments, value definitions, identity name,
@@ -100,7 +104,7 @@ export interface LLMContract {
     currentTool: string[];
     growthTool: string[];
     contribution: string;
-  }): Promise<{ synthesis: string }>;
+  }): Promise<{ synthesis: string; fromStub?: boolean }>;
 
   /** From the Ch3 vision inputs plus Ch1/Ch2 carry-over, generate 6 future-
    * direction sentences along distinct axes (role / method / strength /
@@ -120,6 +124,17 @@ export interface LLMContract {
     growthTool: string[];
     contribution: string;
   }): Promise<{ directions: string[] }>;
+
+  /** [ch3 wireframe Zone B — 2026-06-15] Job-category-driven trend cards.
+   * Generates 3 outside-the-self trend observations rooted in the participant's
+   * job category — "역할이 어떻게 재정의되고 있는지" / "어떤 일이 새로 주목
+   * 받는지" 같은 바깥 시선. Each card has a direction sentence ("~하는 사람",
+   * 30자 내외) and a context sentence (20자 내외, 왜 이 방향이 주목받는지).
+   * Renders below the 6-axis recommendation grid as 🦉 "El Owl's Outside View"
+   * section in GrowthVisionSynthesisScene. */
+  generateJobTrendCards(input: {
+    job: string;
+  }): Promise<{ cards: { direction: string; context: string }[]; fromStub?: boolean }>;
 
   /** From the participant's finalized growth-direction line (visionLine) plus
    * carry-over context, generate 3 time-horizon sentences: "1년 안에 …" /

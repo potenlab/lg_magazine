@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vision Express — 방향 레이아웃 와이어프레임</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F0E9D6;
+    --bg-inner: #EDE5CF;
+    --ink: #2A1F0F;
+    --ink-mid: #6B5A3E;
+    --ink-faint: #A08C6E;
+    --ink-ghost: #C4B49A;
+    --accent: #7A6248;
+    --trend-bg: transparent;
+    --serif: 'Noto Serif KR', 'Georgia', serif;
+    --sans: 'Noto Sans KR', sans-serif;
+    --display: 'IM Fell English', 'Georgia', serif;
+  }
+
+  body {
+    background: var(--bg);
+    font-family: var(--serif);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 60px 24px 80px;
+  }
+
+  .wrapper {
+    width: 100%;
+    max-width: 720px;
+  }
+
+  /* ── 페이지 제목 ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .page-header .eyebrow {
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .page-header h1 {
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.7;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  .page-header .sub {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-top: 8px;
+    font-style: italic;
+    font-weight: 300;
+  }
+
+  /* ── 섹션 A: 내부 발견형 ── */
+  .section-label {
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 10.5px;
+    letter-spacing: 0.18em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .inner-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+  }
+
+  .inner-item {
+    padding: 18px 20px 22px 0;
+    border-top: 1px solid var(--ink-ghost);
+    opacity: 0;
+    animation: fadeUp 0.5s ease forwards;
+  }
+
+  .inner-item:nth-child(1) { animation-delay: 0.05s; }
+  .inner-item:nth-child(2) { animation-delay: 0.10s; }
+  .inner-item:nth-child(3) { animation-delay: 0.15s; }
+  .inner-item:nth-child(4) { animation-delay: 0.20s; }
+  .inner-item:nth-child(5) { animation-delay: 0.25s; }
+  .inner-item:nth-child(6) { animation-delay: 0.30s; }
+
+  .inner-item .cat {
+    font-family: var(--sans);
+    font-size: 9.5px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .inner-item .phrase {
+    font-size: 13.5px;
+    font-weight: 400;
+    line-height: 1.75;
+    color: var(--ink);
+    word-break: keep-all;
+  }
+
+  /* ── 구분선 ── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 40px 0 36px;
+    opacity: 0;
+    animation: fadeIn 0.5s ease 0.4s forwards;
+  }
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--ink-ghost);
+  }
+  .divider-owl {
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  /* ── 섹션 B: 트렌드 ── */
+  .trend-section {
+    opacity: 0;
+    animation: fadeUp 0.5s ease 0.5s forwards;
+  }
+
+  .trend-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .trend-item {
+    display: flex;
+    gap: 16px;
+    padding: 20px 0;
+    border-top: 1px solid var(--ink-ghost);
+  }
+  .trend-item:last-child {
+    border-bottom: 1px solid var(--ink-ghost);
+  }
+
+  .trend-bullet {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+    margin-top: 9px;
+    flex-shrink: 0;
+  }
+
+  .trend-content {
+    flex: 1;
+  }
+  .trend-direction {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.7;
+    color: var(--ink);
+    margin-bottom: 5px;
+    word-break: keep-all;
+  }
+  .trend-context {
+    font-family: var(--sans);
+    font-size: 11.5px;
+    font-weight: 300;
+    color: var(--ink-mid);
+    font-style: italic;
+    line-height: 1.6;
+  }
+
+  /* ── 입력 영역 ── */
+  .input-zone {
+    margin-top: 52px;
+    opacity: 0;
+    animation: fadeUp 0.5s ease 0.65s forwards;
+  }
+
+  .input-eyebrow {
+    font-family: var(--display);
+    font-size: 10px;
+    font-style: italic;
+    letter-spacing: 0.2em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .input-question {
+    text-align: center;
+    font-size: 16.5px;
+    font-weight: 500;
+    line-height: 1.75;
+    color: var(--ink);
+    margin-bottom: 6px;
+    text-wrap: balance;
+  }
+
+  .input-note {
+    font-family: var(--sans);
+    font-size: 11.5px;
+    font-weight: 300;
+    color: var(--ink-faint);
+    text-align: center;
+    font-style: italic;
+    line-height: 1.6;
+    margin-bottom: 32px;
+    text-wrap: pretty;
+  }
+
+  .input-anchor {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 32px;
+  }
+  .anchor-pre,
+  .anchor-post {
+    font-family: var(--serif);
+    font-size: 15px;
+    color: var(--ink-mid);
+    font-weight: 400;
+    line-height: 1.7;
+  }
+  .input-anchor textarea {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--ink-ghost);
+    outline: none;
+    font-family: var(--serif);
+    font-size: 15px;
+    color: var(--ink);
+    resize: none;
+    line-height: 1.75;
+    min-height: 56px;
+    padding: 8px 0 10px;
+    width: 100%;
+  }
+  .input-anchor textarea::placeholder {
+    color: var(--ink-ghost);
+    font-style: italic;
+  }
+
+  .submit-btn {
+    display: block;
+    margin: 0 auto;
+    background: var(--accent);
+    color: #F5EDDB;
+    border: none;
+    font-family: var(--serif);
+    font-size: 13.5px;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    padding: 13px 40px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: opacity 0.2s, scale 0.15s;
+  }
+  .submit-btn:hover { opacity: 0.85; }
+  .submit-btn:active { scale: 0.96; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* ── 범례 (와이어프레임 설명) ── */
+  .legend {
+    margin-top: 64px;
+    padding-top: 28px;
+    border-top: 1px solid var(--ink-ghost);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 32px;
+  }
+  .legend-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+  .legend-dot.a { background: #8B7355; }
+  .legend-dot.b { background: #4A6741; }
+  .legend-text {
+    font-family: var(--sans);
+    font-size: 11px;
+    line-height: 1.65;
+    color: var(--ink-mid);
+    font-weight: 300;
+  }
+  .legend-text strong {
+    font-weight: 500;
+    color: var(--ink);
+    display: block;
+    font-size: 11.5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- 페이지 헤더 -->
+  <div class="page-header">
+    <div class="eyebrow">Atelier Persona — Vision Express</div>
+    <h1>지금까지의 이야기를 모아 —<br>이혜원님이 향할 수 있는 방향들을 정리해봤어요.</h1>
+    <p class="sub">고르는 게 아니라, 이혜원님만의 한 줄을 적을 때 참고만 해주세요.</p>
+  </div>
+
+  <!-- ZONE A: 내부 발견형 -->
+  <div class="section-label">엘아울이 당신의 이야기에서 읽은 언어</div>
+
+  <div class="inner-grid">
+    <div class="inner-item">
+      <div class="cat">역할</div>
+      <div class="phrase">이미 가진 것들을 엮어 서비스 기획으로 결과를 만드는 사람</div>
+    </div>
+    <div class="inner-item">
+      <div class="cat">방법</div>
+      <div class="phrase">현장의 목소리를 데이터와 패턴으로 읽어내는 사람</div>
+    </div>
+    <div class="inner-item">
+      <div class="cat">강점</div>
+      <div class="phrase">막막함 앞에서 직접 판을 짜고 끝까지 책임지는 사람</div>
+    </div>
+    <div class="inner-item">
+      <div class="cat">성장</div>
+      <div class="phrase">AI를 활용해 상품기획의 영역까지 넓혀가는 사람</div>
+    </div>
+    <div class="inner-item">
+      <div class="cat">영향</div>
+      <div class="phrase">페인포인트를 실질 보이는 결과물로 바꿔주는 사람</div>
+    </div>
+    <div class="inner-item">
+      <div class="cat">통합</div>
+      <div class="phrase">CX 기획으로 결과를 만들면서, 언젠가 경험의 세계를 넓혀주는 사람</div>
+    </div>
+  </div>
+
+  <!-- 구분선 -->
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-owl">🦉 &nbsp; El Owl's Outside View</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <!-- ZONE B: 트렌드형 -->
+  <div class="trend-section">
+    <div class="section-label">바깥에서 포착한 시선</div>
+    <ul class="trend-list">
+      <li class="trend-item">
+        <div class="trend-bullet"></div>
+        <div class="trend-content">
+          <div class="trend-direction">학습 콘텐츠를 만드는 사람이 아니라, 사람이 성장하는 환경 자체를 설계하는 사람</div>
+          <div class="trend-context">일과 학습의 경계가 사라지는 지금, HRD의 무게중심이 이동하고 있어요 —</div>
+        </div>
+      </li>
+      <li class="trend-item">
+        <div class="trend-bullet"></div>
+        <div class="trend-content">
+          <div class="trend-direction">구성원의 스킬 데이터를 읽고, 조직이 어디로 성장해야 하는지 먼저 그리는 사람</div>
+          <div class="trend-context">교육 담당자가 아닌 조직 성장의 전략가로 역할이 재정의되고 있어요 —</div>
+        </div>
+      </li>
+      <li class="trend-item">
+        <div class="trend-bullet"></div>
+        <div class="trend-content">
+          <div class="trend-direction">AI가 콘텐츠를 대체하는 시대에, 사람만이 만들 수 있는 학습 경험을 설계하는 사람</div>
+          <div class="trend-context">무엇을 가르칠지보다 어떤 순간에 사람이 바뀌는지를 아는 것이 HRD의 새 언어예요 —</div>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- 입력 영역 -->
+  <div class="input-zone">
+    <div class="input-eyebrow">Editor's Question</div>
+    <div class="input-question">이제 이혜원님의 차례예요.<br>앞으로 어떤 사람으로 성장하고 싶나요?</div>
+    <p class="input-note">현재의 내가 아니라, 앞으로 어떤 사람이 되고 싶은지를 작성해요.<br>위의 표현을 가져와도 좋고, 합치거나 다시 써도 좋아요.</p>
+    <div class="input-anchor">
+      <span class="anchor-pre">저는 앞으로</span>
+      <textarea rows="2" placeholder="어떤 사람이 되고 싶은지 자유롭게 써주세요"></textarea>
+      <span class="anchor-post">하는 사람이 되고 싶어요.</span>
+    </div>
+    <button class="submit-btn">이렇게 적어볼래요</button>
+  </div>
+
+  <!-- 범례 -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot a"></div>
+      <div class="legend-text">
+        <strong>Zone A — 내부 발견형 (6개)</strong>
+        박스 없이 레이블+텍스트만. 선택형처럼 읽히지 않도록 테두리 제거. 3열 타이포 그리드.
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot b"></div>
+      <div class="legend-text">
+        <strong>Zone B — 트렌드형 (3개)</strong>
+        불릿 리스트 + 이탤릭 맥락 문장. 에디터 노트 느낌. LLM이 직무명 기반으로 생성.
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#5C4F3A"></div>
+      <div class="legend-text">
+        <strong>Zone 구분</strong>
+        올빼미 아이콘 + 텍스트 디바이더로 "내 이야기 → 바깥 시선" 전환 명확히 표현.
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#2A1F0F"></div>
+      <div class="legend-text">
+        <strong>입력 영역</strong>
+        점선 언더라인 입력창. 버튼은 하단 고정. 두 존과 충분한 여백으로 분리.
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

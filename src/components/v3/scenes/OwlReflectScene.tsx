@@ -54,7 +54,10 @@ export function OwlReflectScene({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div
+      className="flex flex-1 cursor-pointer flex-col"
+      onClick={advance}
+    >
       <div className="flex-1">
         <motion.p
           initial={{ opacity: 0, y: 8 }}

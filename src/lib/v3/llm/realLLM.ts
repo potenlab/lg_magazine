@@ -190,12 +190,14 @@ export const realLLM: LLMContract = {
       // route to stub in that case so the scene always has something to show.
       if (!r.synthesis?.trim()) {
         console.warn("[v3 LLM][STUB-FALLBACK] synthesizeStrength: empty synthesis from server → using generic stub. Output will look general.");
-        return stubLLM.synthesizeStrength(input);
+        const s = await stubLLM.synthesizeStrength(input);
+        return { ...s, fromStub: true };
       }
       return r;
     } catch (err) {
       console.warn("[v3 LLM][STUB-FALLBACK] synthesizeStrength threw → using generic stub:", err);
-      return stubLLM.synthesizeStrength(input);
+      const s = await stubLLM.synthesizeStrength(input);
+      return { ...s, fromStub: true };
     }
   },
 
@@ -204,12 +206,14 @@ export const realLLM: LLMContract = {
       const r = await callTask<{ synthesis: string }>("synthesizeGrowthVision", input);
       if (!r.synthesis?.trim()) {
         console.warn("[v3 LLM][STUB-FALLBACK] synthesizeGrowthVision: empty synthesis from server → using generic stub. Output will look general.");
-        return stubLLM.synthesizeGrowthVision(input);
+        const s = await stubLLM.synthesizeGrowthVision(input);
+        return { ...s, fromStub: true };
       }
       return r;
     } catch (err) {
       console.warn("[v3 LLM][STUB-FALLBACK] synthesizeGrowthVision threw → using generic stub:", err);
-      return stubLLM.synthesizeGrowthVision(input);
+      const s = await stubLLM.synthesizeGrowthVision(input);
+      return { ...s, fromStub: true };
     }
   },
 
@@ -219,6 +223,25 @@ export const realLLM: LLMContract = {
     } catch (err) {
       console.warn("[v3 LLM] generateVisionDirections fell back to stub:", err);
       return stubLLM.generateVisionDirections(input);
+    }
+  },
+
+  async generateJobTrendCards(input) {
+    try {
+      const r = await callTask<{ cards: { direction: string; context: string }[] }>(
+        "generateJobTrendCards",
+        input,
+      );
+      if (!r.cards || r.cards.length < 3) {
+        console.warn("[v3 LLM][STUB-FALLBACK] generateJobTrendCards: insufficient cards → using generic stub.");
+        const s = await stubLLM.generateJobTrendCards(input);
+        return { ...s, fromStub: true };
+      }
+      return r;
+    } catch (err) {
+      console.warn("[v3 LLM][STUB-FALLBACK] generateJobTrendCards threw → using generic stub:", err);
+      const s = await stubLLM.generateJobTrendCards(input);
+      return { ...s, fromStub: true };
     }
   },
 

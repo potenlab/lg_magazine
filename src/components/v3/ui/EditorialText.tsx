@@ -11,6 +11,12 @@ export function polishEditorialText(text: string): string {
     .replace(/__/g, "")
     .replace(/([가-힣])\.(?:에|으로|로|을|를|이|가|은|는)(?=\s|[가-힣])/g, "$1.")
     .replace(/\s+([,.!?。])/g, "$1")
+    // LLM이 종종 마침표·쉼표 직후에 강조 따옴표를 공백 없이 붙여 쓴다
+    // ("거죠.'마음맞는...'") — EditorialInline 이 작은 따옴표 구간을
+    // 강조 굵게 렌더하므로, 시작 따옴표 앞에 공백을 보장해 "...거죠.
+    // '마음맞는...'" 으로 자연스럽게 흐르게 한다. 종료 측은 조사가
+    // 바로 붙는 경우(`'나'를`)가 정상이라 건드리지 않는다.
+    .replace(/(\S)('[^']+')/g, "$1 $2")
     .replace(/[ \t]+/g, " ");
   // NOTE: intentionally no .trim() — EditorialInline is called on segments
   // around **bold** spans by BoldMarkdown; trimming would eat the space

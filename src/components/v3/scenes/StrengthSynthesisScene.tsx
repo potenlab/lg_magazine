@@ -59,7 +59,10 @@ export function StrengthSynthesisScene({
         if (cancelled) return;
         const text = (r.synthesis ?? "").trim();
         setSynthesis(text);
-        if (text) patch({ strengthSynthesis: text });
+        // stub fallback(`fromStub: true`)일 때는 캐시 금지 — 일반 템플릿이
+        // 세션에 박혀버리면 사용자가 재진입해도 LLM을 다시 호출하지 못하고
+        // 영구히 stub 출력만 보게 됨. 실제 LLM 응답만 저장.
+        if (text && !r.fromStub) patch({ strengthSynthesis: text });
         setLoaded(true);
       } catch (err) {
         console.error("[v3] synthesizeStrength failed:", err);
@@ -79,7 +82,15 @@ export function StrengthSynthesisScene({
   useEnterToAdvance(advance, Boolean(loaded && synthesis));
 
   if (!loaded || !synthesis) {
-    return <NarrationBlock text={waitMsg} />;
+    // 매거진 도출 직전 버퍼는 LLM synthesis 호출이라 일반 응답보다 훨씬 오래
+    // 걸린다. 풀에서 랜덤한 짧은 멘트(`waitMsg`)를 띄우면 사용자가 멈춘 줄
+    // 알기 쉬워, 명확히 "모으는 중 / 기다려주세요" 톤의 전용 문구로 교체.
+    void waitMsg;
+    return (
+      <NarrationBlock
+        text={`편집장이 ${session.name}님이 해주신 이야기를 모아보고 있어요. 잠시만 기다려주세요.`}
+      />
+    );
   }
 
   // Split LLM output into separate "beats" — each beat will land in its

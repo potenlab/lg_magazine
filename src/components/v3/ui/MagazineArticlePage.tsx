@@ -2,6 +2,7 @@
 
 import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { firstParagraphWithDropCap } from "@/lib/v3/pdf/dropcap";
+import { cleanArticleField } from "@/lib/v3/llm/prompts";
 
 /**
  * 매거진 한 페이지(article) 렌더링 — 챕터 라벨 + 헤드라인 + 드롭캡 본문 + pullQuote.
@@ -23,23 +24,30 @@ export function MagazineArticlePage({
   article: { headline: string; body: string; pullQuote: string | null };
   showPullQuote?: boolean;
 }) {
+  // 캐시된 stale article(예: 과거 LLM 호출이 `**`, `**PULL:**` 등 raw markdown
+  // 을 흘려보낸 케이스) 도 깔끔히 렌더되도록 클린업 후 사용.
+  const cleanHeadline = cleanArticleField(article.headline);
+  const cleanBody = cleanArticleField(article.body);
+  const cleanPullQuote = article.pullQuote
+    ? cleanArticleField(article.pullQuote) || null
+    : null;
   return (
     <div className="space-y-5">
       <p className="text-[16px] uppercase tracking-[0.14em] text-[#9a7b4c]">
         Chapter {chapter}
       </p>
-      <h2 className="font-serif text-2xl italic text-[#3d2414]">{article.headline}</h2>
+      <h2 className="font-serif text-2xl italic text-[#3d2414]">{cleanHeadline}</h2>
       <div className="my-2 h-px w-12 bg-[#b99b6b]" />
       <div className="text-[#3d2414] leading-[1.95]">
-        {firstParagraphWithDropCap(article.body)}
+        {firstParagraphWithDropCap(cleanBody)}
       </div>
-      {showPullQuote && article.pullQuote && (
+      {showPullQuote && cleanPullQuote && (
         <figure className="relative my-8 mx-auto max-w-md text-center">
           <span aria-hidden className="absolute -top-4 left-0 font-serif text-5xl text-[#b99b6b]/60">
             ❝
           </span>
           <blockquote className="px-8 font-serif text-xl italic leading-[1.6] text-[#3d2414]">
-            {article.pullQuote}
+            {cleanPullQuote}
           </blockquote>
           <span aria-hidden className="absolute -bottom-2 right-0 font-serif text-5xl text-[#b99b6b]/60">
             ❞

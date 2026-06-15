@@ -9,6 +9,7 @@ import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { buildV3ChapterThreads } from "@/lib/v3/session/adminView";
 import { extractIdentityTitle, renderTemplate } from "@/lib/v3/scenes/template";
 import { llm } from "@/lib/v3/llm";
+import { cleanArticleField } from "@/lib/v3/llm/prompts";
 import { readUrlConfig } from "@/lib/v3/llm/realLLM";
 import { MagazinePDF, type MagazineData } from "@/lib/v3/pdf/MagazinePDF";
 import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
@@ -60,13 +61,25 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
         ]);
         if (cancelled) return;
         const today = new Date().toISOString().slice(0, 10);
+        // 캐시된 stale 또는 새 응답 모두 raw markdown(`**`, `**PULL:**`) 노출
+        // 가능 → PDF 직전 sanitize.
+        const cleanArticle = (a: { headline: string; body: string; pullQuote: string | null }) => ({
+          headline: cleanArticleField(a.headline),
+          body: cleanArticleField(a.body),
+          pullQuote: a.pullQuote ? cleanArticleField(a.pullQuote) || null : null,
+        });
         setData({
           name: session.name,
           date: today,
           coverHeadline,
           editorIntro,
           editorOutro,
-          chapters: { 1: ch1, 2: ch2, 3: ch3, 4: ch4 },
+          chapters: {
+            1: cleanArticle(ch1),
+            2: cleanArticle(ch2),
+            3: cleanArticle(ch3),
+            4: cleanArticle(ch4),
+          },
         });
         // Cache fetched articles to session so the next scene (C-2b 합본 매거진
         // 스프레드)이 재호출하지 않도록. 빈 응답(headline/body 비어 있음)은 캐시

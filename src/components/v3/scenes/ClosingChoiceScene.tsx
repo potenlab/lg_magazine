@@ -6,6 +6,7 @@ import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { MagazinePosterScene } from "@/components/v3/scenes/MagazinePosterScene";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { cleanArticleField } from "@/lib/v3/llm/prompts";
 import { readUrlConfig } from "@/lib/v3/llm/realLLM";
 import { MagazinePDF, type MagazineData } from "@/lib/v3/pdf/MagazinePDF";
 import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
@@ -67,13 +68,25 @@ export function ClosingChoiceScene({
           articleFor(4),
         ]);
         if (cancelled) return;
+        // 캐시된 stale 또는 새로 받은 응답 모두 raw markdown(`**`, `**PULL:**`) 을
+        // 흘릴 수 있어 PDF 직전에 일괄 sanitize.
+        const cleanArticle = (a: { headline: string; body: string; pullQuote: string | null }) => ({
+          headline: cleanArticleField(a.headline),
+          body: cleanArticleField(a.body),
+          pullQuote: a.pullQuote ? cleanArticleField(a.pullQuote) || null : null,
+        });
         setData({
           name: session.name,
           date: new Date().toISOString().slice(0, 10),
           coverHeadline,
           editorIntro,
           editorOutro,
-          chapters: { 1: ch1, 2: ch2, 3: ch3, 4: ch4 },
+          chapters: {
+            1: cleanArticle(ch1),
+            2: cleanArticle(ch2),
+            3: cleanArticle(ch3),
+            4: cleanArticle(ch4),
+          },
         });
         setStatus("ready");
       } catch (err) {

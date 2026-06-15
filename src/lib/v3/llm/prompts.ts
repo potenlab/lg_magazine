@@ -1314,15 +1314,38 @@ BODY: <본문 3문단, 각 문단 2~3문장>
     : taskByChapter[chapter];
   const r = await ask(task, deep ? 1800 : 800);
   const text = r.text;
-  const hm = text.match(/HEADLINE:\s*([^\n]+)/);
-  const bm = text.match(/BODY:\s*([\s\S]*?)(?=\n\s*PULL:|$)/);
-  const pm = text.match(/PULL:\s*([^\n]+)/);
+  // LLM 이 라벨을 **HEADLINE:**, **PULL:** 처럼 markdown bold 로 감싸서
+  // 출력하는 경우가 있어 라벨 매칭에 \*{0,2} 허용. 또한 BODY 가 PULL 직전까지
+  // 끝나도록 lookahead 도 동일 패턴 적용.
+  const hm = text.match(/\*{0,2}HEADLINE\*{0,2}:\s*([^\n]+)/);
+  const bm = text.match(/\*{0,2}BODY\*{0,2}:\s*([\s\S]*?)(?=\n\s*\*{0,2}PULL\*{0,2}:|$)/);
+  const pm = text.match(/\*{0,2}PULL\*{0,2}:\s*([^\n]+)/);
+  // 본문/헤드라인/풀쿼트에 남은 `**` bold marker 와 헤드라인 marker 제거.
+  // 캐싱된 stale 데이터에도 동일 sanitize 가 필요해 MagazineArticlePage 에도
+  // 같은 함수를 재사용.
   return {
-    headline: (hm?.[1] || "").trim(),
-    body: (bm?.[1] || "").trim(),
+    headline: cleanArticleField(hm?.[1] || ""),
+    body: cleanArticleField(bm?.[1] || ""),
     // v3.8 11.4: Chapter 4는 풀쿼트 없음 — LLM이 혹시 출력해도 무시
-    pullQuote: chapter === 4 ? null : (pm?.[1].trim() || null),
+    pullQuote: chapter === 4 ? null : (cleanArticleField(pm?.[1] || "") || null),
   };
+}
+
+/** LLM chapter article 출력에서 raw markdown 마커(`**`, `[HEADLINE: ...]`,
+ *  남은 `BODY:` / `PULL:` 라벨 등) 를 제거. 매거진/PDF 어디서든 같은 결과를
+ *  보장하기 위해 export — 재호출/캐시 양쪽에서 재사용. */
+export function cleanArticleField(s: string): string {
+  return s
+    // **bold** → bold (inner content 보존)
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    // 남은 `**` (짝 없거나 빈 강조) 제거
+    .replace(/\*\*/g, "")
+    // [HEADLINE: ...] 인라인 마커가 본문에 섞여 있는 케이스
+    .replace(/\[HEADLINE:\s*[^\]]*\]/gi, "")
+    // 본문 내부에 라벨이 그대로 박힌 케이스 — 라벨만 떼고 뒤는 보존
+    .replace(/^\s*(?:HEADLINE|BODY|PULL)\s*:\s*/gim, "")
+    .replace(/\n\s*(?:HEADLINE|BODY|PULL)\s*:\s*/gi, "\n")
+    .trim();
 }
 
 export async function v3WriteEditorNote(input: { session: V3Session; kind: "intro" | "outro" }): Promise<string> {

@@ -27,16 +27,12 @@ export function ClosingChoiceScene({
   spec: SceneSpec;
   onAdvance: (n: SceneId) => void;
 }) {
-  const { session, patch, reset } = useV3Session();
+  const { session, reset } = useV3Session();
   const [data, setData] = useState<MagazineData | null>(null);
   const [status, setStatus] = useState<PdfStatus>("loading");
   const [downloading, setDownloading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [magazineOpen, setMagazineOpen] = useState(false);
-  const [feedback, setFeedback] = useState<string>(session.closingFeedback ?? "");
-  const [feedbackSent, setFeedbackSent] = useState<boolean>(
-    !!(session.closingFeedback && session.closingFeedback.trim().length > 0),
-  );
 
   useEffect(() => {
     registerPdfFonts();
@@ -106,22 +102,7 @@ export function ClosingChoiceScene({
     }
   };
 
-  const persistFeedback = () => {
-    const trimmed = feedback.trim();
-    if (trimmed !== (session.closingFeedback ?? "")) {
-      patch({ closingFeedback: trimmed });
-    }
-  };
-
-  const sendFeedback = () => {
-    const trimmed = feedback.trim();
-    if (trimmed.length === 0) return;
-    patch({ closingFeedback: trimmed });
-    setFeedbackSent(true);
-  };
-
   const handleRestartConfirm = () => {
-    persistFeedback();
     reset();
     onAdvance("intro");
   };
@@ -136,49 +117,17 @@ export function ClosingChoiceScene({
   return (
     <div className="flex flex-1 flex-col">
       <div className="grid flex-1 gap-6 md:grid-cols-2 md:gap-10">
-        {/* 좌측 — 플레이 소감 */}
-        <section className="flex flex-col">
-          <h2
-            className="text-center text-[20px] font-semibold leading-[1.55] text-[#3d2414] md:text-[22px]"
+        {/* 좌측 — 매거진 다시 보기 / 다운받기 */}
+        <section className="flex flex-col items-center justify-center text-center">
+          <p
+            className="text-[18px] font-semibold leading-[1.55] text-[#3d2414] md:text-[20px]"
             style={{ fontFamily: "var(--font-ridi-batang)" }}
           >
-            나를 돌아보는 기차 여정
+            나의 매거진은 언제든
             <br />
-            MVP Vision Express, 어떠셨나요?
-          </h2>
-          <p className="mt-3 text-center text-[16px] leading-[1.6] text-[#3d2414]">
-            자유로운 플레이 소감을 남겨주세요.
+            다시 볼 수 있어요.
           </p>
-          <textarea
-            value={feedback}
-            onChange={(e) => {
-              setFeedback(e.target.value);
-              if (feedbackSent) setFeedbackSent(false);
-            }}
-            onBlur={persistFeedback}
-            placeholder="좋았던 점, 아쉬웠던 점, 운영진에게 전하고 싶은 말 등 자유롭게 작성해주세요 :)"
-            className="mt-5 min-h-[160px] w-full flex-1 resize-none rounded-md border border-[#b99b6b]/40 bg-[#ede1c6]/55 px-4 py-3 text-[15px] leading-[1.6] text-[#3d2414] outline-none placeholder:text-[#8b7050]/80 focus:border-[#3d2414]"
-            style={{ fontFamily: "var(--font-ridi-batang)" }}
-          />
-          <div className="mt-3 flex items-center justify-end gap-3">
-            {feedbackSent && (
-              <span className="text-[14px] italic text-[#8b7050]">전송됐어요 :)</span>
-            )}
-            <StoryButtonV3
-              label={feedbackSent ? "다시 보내기" : "소감 보내기"}
-              onClick={sendFeedback}
-              disabled={feedback.trim().length === 0}
-              ritual
-            />
-          </div>
-        </section>
-
-        {/* 우측 — 매거진 다시 보기 / 다시 플레이하기 */}
-        <section className="relative flex flex-col md:border-l md:border-[#b99b6b]/30 md:pl-10">
-          <p className="text-center text-[18px] font-semibold leading-[1.55] text-[#3d2414] md:text-[20px]">
-            나의 매거진은 언제든 다시 볼 수 있어요.
-          </p>
-          <div className="mt-5 flex justify-center">
+          <div className="mt-6 flex justify-center">
             <StoryButtonV3
               label="내 매거진 펼쳐보기"
               onClick={() => setMagazineOpen(true)}
@@ -198,26 +147,27 @@ export function ClosingChoiceScene({
               {downloadLabel}
             </button>
           </div>
+        </section>
 
-          <div className="mt-10 border-t border-[#b99b6b]/30 pt-6">
-            <p className="text-center text-[17px] font-semibold leading-[1.55] text-[#3d2414] md:text-[18px]">
-              시간이 흘러 다시 나를 잃어버린 것 같다면,
-              <br />
-              괜찮아요. 언제든 다시 떠날 수 있어요.
-            </p>
-            <p className="mt-2 text-center text-[13px] italic text-[#8b7050]">
-              ※단, 다시 시작하면 지금까지의 기록은 사라져요.
-            </p>
-            <div className="mt-4 flex justify-center">
-              <StoryButtonV3
-                label="다시 플레이하기"
-                onClick={() => {
-                  persistFeedback();
-                  setConfirmOpen(true);
-                }}
-                ritual
-              />
-            </div>
+        {/* 우측 — 다시 플레이하기 */}
+        <section className="relative flex flex-col items-center justify-center text-center md:border-l md:border-[#b99b6b]/30 md:pl-10">
+          <p
+            className="text-[17px] font-semibold leading-[1.55] text-[#3d2414] md:text-[18px]"
+            style={{ fontFamily: "var(--font-ridi-batang)" }}
+          >
+            시간이 흘러 다시 나를 잃어버린 것 같다면,
+            <br />
+            괜찮아요. 언제든 다시 떠날 수 있어요.
+          </p>
+          <p className="mt-2 text-[13px] italic text-[#8b7050]">
+            ※단, 다시 시작하면 지금까지의 기록은 사라져요.
+          </p>
+          <div className="mt-6 flex justify-center">
+            <StoryButtonV3
+              label="다시 플레이하기"
+              onClick={() => setConfirmOpen(true)}
+              ritual
+            />
           </div>
         </section>
       </div>

@@ -41,7 +41,13 @@ function fmtAlignment(v: string): string {
 //   본문
 // 각 BEAT 사이 빈 줄 한 줄. HEADLINE 접두/볼드/따옴표 기호 모두 제거.
 const STRENGTH_BEAT_TOPICS = ["두 장면을 잇는 것", "공통의 결", "타인의 시선", "가치의 뿌리"];
-function fmtStrengthSynthesis(raw: string | undefined): string {
+const GROWTH_VISION_BEAT_TOPICS = [
+  "내면의 부름",
+  "이미 시작된 움직임",
+  "안개를 걷어낼 도구",
+  "종착지의 풍경",
+];
+function fmtBeatSynthesis(raw: string | undefined, topics: string[]): string {
   if (!raw) return "";
   const stripMarks = (s: string) =>
     s.replace(/\*\*(.+?)\*\*/g, "$1").replace(/[""""''‘’`]/g, "").trim();
@@ -50,7 +56,7 @@ function fmtStrengthSynthesis(raw: string | undefined): string {
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
     .map((line, i) => {
-      const topic = STRENGTH_BEAT_TOPICS[i] ?? "";
+      const topic = topics[i] ?? "";
       const topicLine = topic ? `~${topic}~\n` : "";
       const m = line.match(/^\[HEADLINE:\s*([^\]]+)\]\s*(.*)$/);
       if (!m) return `${topicLine}${stripMarks(line)}`;
@@ -59,6 +65,12 @@ function fmtStrengthSynthesis(raw: string | undefined): string {
       return `${topicLine}[${headline}]\n${body}`;
     })
     .join("\n\n");
+}
+function fmtStrengthSynthesis(raw: string | undefined): string {
+  return fmtBeatSynthesis(raw, STRENGTH_BEAT_TOPICS);
+}
+function fmtGrowthVisionSynthesis(raw: string | undefined): string {
+  return fmtBeatSynthesis(raw, GROWTH_VISION_BEAT_TOPICS);
 }
 
 /** Build the per-chapter conversation threads for a v3 session, mirroring the
@@ -138,6 +150,7 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
         { label: "지금 잘 쓰는 도구", tone: "answer", text: s.currentTool?.join(", ") },
         { label: "더 키우고 싶은 도구", tone: "answer", text: s.growthTool?.join(", ") },
         { label: "기여하고 싶은 것", tone: "answer", text: s.contribution, fieldKey: "contribution" },
+        { label: "엘아울의 발견", tone: "result", text: fmtGrowthVisionSynthesis(s.growthVisionSynthesis) },
         { label: "나의 성장 비전 문장", tone: "result", text: s.visionLine },
         { label: "시간 지평 (1년/3년/언젠가)", tone: "answer", text: s.timeHorizon?.join("\n") },
         ...articleEntry(3),

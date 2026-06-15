@@ -43,15 +43,20 @@ export function ClosingChoiceScene({
     (async () => {
       try {
         const cached = session.chapterArticles ?? {};
+        // 캐시에 있어도 body/headline 이 비어 있으면 stale 로 간주하고 재호출 —
+        // 빈 챕터 회귀(매거진 모달·PDF Ch3 빈칸) 회복.
+        const isUsable = (a: { headline: string; body: string } | undefined) =>
+          !!a && !!a.headline?.trim() && !!a.body?.trim();
         const articleFor = (n: 1 | 2 | 3 | 4) =>
-          cached[n] ??
-          llm.writeChapterArticle({
-            name: session.name,
-            gender: session.gender,
-            job: session.job,
-            chapter: n,
-            session,
-          });
+          isUsable(cached[n])
+            ? cached[n]
+            : llm.writeChapterArticle({
+                name: session.name,
+                gender: session.gender,
+                job: session.job,
+                chapter: n,
+                session,
+              });
         const [coverHeadline, editorIntro, editorOutro, ch1, ch2, ch3, ch4] = await Promise.all([
           llm.writeCoverHeadline({ session }),
           llm.writeEditorNote({ session, kind: "intro" }),

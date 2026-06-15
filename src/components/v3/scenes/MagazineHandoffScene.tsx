@@ -34,15 +34,20 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
         // matches the text the participant saw in the chapter pages. Fetch fresh
         // only for chapters whose record page wasn't visited.
         const cached = session.chapterArticles ?? {};
+        // 캐시에 있어도 body/headline 이 비어 있으면 stale 로 간주하고 다시 호출.
+        // 과거 LLM 호출이 빈 응답이었거나 캐시 logic 가 잘못 저장한 케이스 회복.
+        const isUsable = (a: { headline: string; body: string } | undefined) =>
+          !!a && !!a.headline?.trim() && !!a.body?.trim();
         const articleFor = (n: 1 | 2 | 3 | 4) =>
-          cached[n] ??
-          llm.writeChapterArticle({
-            name: session.name,
-            gender: session.gender,
-            job: session.job,
-            chapter: n,
-            session,
-          });
+          isUsable(cached[n])
+            ? cached[n]
+            : llm.writeChapterArticle({
+                name: session.name,
+                gender: session.gender,
+                job: session.job,
+                chapter: n,
+                session,
+              });
 
         const [coverHeadline, editorIntro, editorOutro, ch1, ch2, ch3, ch4] = await Promise.all([
           llm.writeCoverHeadline({ session }),
@@ -64,11 +69,12 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
           chapters: { 1: ch1, 2: ch2, 3: ch3, 4: ch4 },
         });
         // Cache fetched articles to session so the next scene (C-2b 합본 매거진
-        // 스프레드)이 재호출하지 않도록. 캐시에 이미 있던 챕터는 그대로 유지.
+        // 스프레드)이 재호출하지 않도록. 빈 응답(headline/body 비어 있음)은 캐시
+        // 금지 — 다음 진입 때 다시 호출되도록.
         const newlyFetched: Record<number, { headline: string; body: string; pullQuote: string | null }> = {};
         const chaptersToCache: [1 | 2 | 3 | 4, typeof ch1][] = [[1, ch1], [2, ch2], [3, ch3], [4, ch4]];
         for (const [c, art] of chaptersToCache) {
-          if (!cached[c] && art) newlyFetched[c] = art;
+          if (!isUsable(cached[c]) && isUsable(art)) newlyFetched[c] = art;
         }
         if (Object.keys(newlyFetched).length > 0) {
           patch({ chapterArticles: { ...cached, ...newlyFetched } });

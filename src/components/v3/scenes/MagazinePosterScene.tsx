@@ -68,9 +68,16 @@ export function MagazinePosterScene({
   }, [setStage]);
 
   // Fetch only missing chapters. Already-cached chapters render immediately.
+  // 빈 body 가 캐시된 경우(과거 LLM 호출이 빈 응답이었거나 캐시 logic 가 잘못
+  // 저장된 케이스)에도 missing 으로 간주해 재호출 — 매거진/PDF 에서 한 챕터만
+  // 비어 나오는 회귀 방지.
   useEffect(() => {
     let cancelled = false;
-    const missing: Chapter[] = ([1, 2, 3, 4] as Chapter[]).filter((c) => !articles[c]);
+    const isEmpty = (a: Article | undefined) =>
+      !a || !a.headline?.trim() || !a.body?.trim();
+    const missing: Chapter[] = ([1, 2, 3, 4] as Chapter[]).filter((c) =>
+      isEmpty(articles[c]),
+    );
     if (missing.length === 0) return;
     (async () => {
       const results = await Promise.all(
@@ -91,14 +98,15 @@ export function MagazinePosterScene({
         }),
       );
       if (cancelled) return;
-      // 세션 캐시 타입은 Record<number, Article>(non-undefined). 빈 값은
-      // 빼고 모은다.
+      // 빈 응답(headline/body 비어 있음) 은 캐시 금지 — 다음 진입 때 다시 호출되도록.
       const patchArticles: Record<number, Article> = {};
       for (const [c, r] of results) {
-        if (r) patchArticles[c] = r;
+        if (r && r.headline?.trim() && r.body?.trim()) patchArticles[c] = r;
       }
       setArticles({ ...articles, ...patchArticles });
-      patch({ chapterArticles: { ...session.chapterArticles, ...patchArticles } });
+      if (Object.keys(patchArticles).length > 0) {
+        patch({ chapterArticles: { ...session.chapterArticles, ...patchArticles } });
+      }
     })();
     return () => {
       cancelled = true;

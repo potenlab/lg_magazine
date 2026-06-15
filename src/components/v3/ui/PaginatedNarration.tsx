@@ -193,26 +193,27 @@ export function PaginatedNarration({
         </AnimatePresence>
       </div>
 
-      {!tight && (
-        // Absolute-anchored to the dialog's bottom-right (positions itself
-        // against the nearest positioned ancestor — i.e. the V3App dialog
-        // motion.div which is `relative`). Matches the 이전 button's
-        // `absolute bottom-6 left-6` baseline so the two sit at the same
-        // height. Previously this used `mt-auto`, which got pushed UP
-        // whenever a sibling (e.g. RitualScene's primary action button)
-        // reserved space at the dialog bottom.
-        <div className="absolute bottom-6 right-6 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
-          <span
-            className={`italic transition-opacity duration-300 ${hintOpacity}`}
-          >
-            {isLastPage
-              ? onAdvance
-                ? "다음"
-                : ""
-              : "다음"}
-          </span>
-        </div>
-      )}
+      {!tight && (() => {
+        // 마지막 페이지에서 onAdvance 가 없으면 "다음" 힌트를 아예 미렌더 —
+        // 부모 씬의 CTA 버튼(같은 bottom-right 좌표) 영역을 가리거나 클릭을
+        // 가로채는 회귀 방지.
+        const hintText = isLastPage ? (onAdvance ? "다음" : "") : "다음";
+        if (!hintText) return null;
+        return (
+          // Absolute-anchored to the dialog's bottom-right (positions itself
+          // against the nearest positioned ancestor — i.e. the V3App dialog
+          // motion.div which is `relative`). Matches the 이전 button's
+          // `absolute bottom-6 left-6` baseline so the two sit at the same
+          // height. Previously this used `mt-auto`, which got pushed UP
+          // whenever a sibling (e.g. RitualScene's primary action button)
+          // reserved space at the dialog bottom.
+          <div className="pointer-events-none absolute bottom-6 right-6 z-10 flex h-[44px] items-center text-[16px] text-[#8b7050]">
+            <span className={`italic transition-opacity duration-300 ${hintOpacity}`}>
+              {hintText}
+            </span>
+          </div>
+        );
+      })()}
     </div>
   );
 }

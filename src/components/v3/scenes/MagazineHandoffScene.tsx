@@ -227,11 +227,11 @@ function ChapterAttachment({ session }: { session: import("@/lib/v3/scenes/types
         aria-expanded={open}
       >
         <div>
-          <p className="text-[12px] uppercase tracking-[0.14em] text-[#8b7050]">Appendix</p>
+          <p className="text-[14px] uppercase tracking-[0.14em] text-[#8b7050]">Appendix</p>
           <p className="mt-1 text-[16px] font-semibold text-[#3d2414]">
             별첨 — 내가 적은 기록과 챕터별 요약 전체 보기
           </p>
-          <p className="mt-1 text-[13px] italic text-[#8b7050]">
+          <p className="mt-1 text-[14px] italic text-[#8b7050]">
             네 챕터에서 주고받은 질문·답변·편집장 요약을 한 자리에 모아둔 페이지예요.
           </p>
         </div>
@@ -256,7 +256,7 @@ function ChapterAttachment({ session }: { session: import("@/lib/v3/scenes/types
             return (
               <div key={thread.chapter} className="space-y-3">
                 <div className="border-b border-[#b99b6b]/30 pb-2">
-                  <p className="text-[11px] uppercase tracking-[0.1em] text-[#9b8768]">
+                  <p className="text-[14px] uppercase tracking-[0.1em] text-[#9b8768]">
                     {thread.chapter}
                   </p>
                   <h4 className="mt-0.5 text-[16px] font-semibold text-[#3d2414]">
@@ -273,8 +273,8 @@ function ChapterAttachment({ session }: { session: import("@/lib/v3/scenes/types
                         ? "rounded-md border border-[#d7bd83]/40 bg-[#ede1c6]/40 px-3 py-2.5"
                         : "rounded-md border border-[#b99b6b]/30 bg-white/55 px-3 py-2.5";
                     const labelClass = isQuestion
-                      ? "text-[11px] uppercase tracking-[0.08em] text-[#9b8768]"
-                      : "text-[12px] tracking-wide text-[#8b7050]";
+                      ? "text-[14px] uppercase tracking-[0.08em] text-[#9b8768]"
+                      : "text-[14px] tracking-wide text-[#8b7050]";
                     const textClass = isQuestion
                       ? "mt-1 whitespace-pre-wrap text-[14px] italic leading-[1.55] text-[#6b5337]"
                       : "mt-1.5 whitespace-pre-wrap text-[14px] leading-[1.65] text-[#3d2414]";

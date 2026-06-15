@@ -120,10 +120,10 @@ export function ValueCardScene({
                   {/* Category header chip — emoji + Korean label, original
                       taxonomy. EN label retained in data only (was used in
                       a one-off mock; participants prefer the Korean copy).
-                      text-[12px] + whitespace-nowrap: "즐거움·표현" (6자)이
+                      text-[14px] + whitespace-nowrap: "즐거움·표현" (6자)이
                       한 칸(~107px) 안에서 한 줄로 들어가도록 — 14px에선 줄바꿈. */}
                   <div
-                    className="flex items-center justify-center gap-1 whitespace-nowrap rounded-sm px-1 py-1 text-center text-[12px] font-semibold tracking-[0.05em] text-white shadow-sm"
+                    className="flex items-center justify-center gap-1 whitespace-nowrap rounded-sm px-1 py-1 text-center text-[14px] font-semibold tracking-[0.05em] text-white shadow-sm"
                     style={{ background: cat.accent }}
                   >
                     <span>{cat.emoji}</span>
@@ -221,13 +221,13 @@ export function ValueCardScene({
 
         {settled && picked.length > 0 && (
           <div className="relative mt-3 flex shrink-0 flex-wrap items-center gap-2 px-2">
-            <span className="text-xs text-[#d4b88a]">선택:</span>
+            <span className="text-[14px] text-[#d4b88a]">선택:</span>
             {picked.map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setPicked((prev) => prev.filter((c) => c !== p))}
-                className="group inline-flex items-center gap-1.5 rounded-full border border-[#d4b88a]/40 bg-[#f6efdf]/10 px-3 py-1 text-xs text-[#f6efdf] transition hover:border-[#f5d97a] hover:bg-[#f6efdf]/20"
+                className="group inline-flex items-center gap-1.5 rounded-full border border-[#d4b88a]/40 bg-[#f6efdf]/10 px-3 py-1 text-[14px] text-[#f6efdf] transition hover:border-[#f5d97a] hover:bg-[#f6efdf]/20"
                 title="클릭하면 빼요"
               >
                 {p}

@@ -84,7 +84,7 @@ export function ChapterReviewOverlay({
                 ? "rounded-md border border-[#d7bd83]/40 bg-[#ede1c6]/40 px-4 py-3"
                 : "rounded-md border border-[#b99b6b]/30 bg-white/55 px-4 py-3";
               const labelClass = isQuestion
-                ? "text-[11px] uppercase tracking-[0.08em] text-[#9b8768]"
+                ? "text-[14px] uppercase tracking-[0.08em] text-[#9b8768]"
                 : "text-[16px] tracking-wide text-[#8b7050]";
               const textClass = isQuestion
                 ? "mt-1 whitespace-pre-wrap text-[16px] italic leading-[1.6] text-[#6b5337]"
@@ -144,7 +144,7 @@ function renderEntryRuns(text: string) {
       out.push(
         <em
           key={out.length}
-          className={`block text-[12px] italic tracking-wide text-[#8b7050] ${i === 0 ? "" : "mt-2"}`}
+          className={`block text-[14px] italic tracking-wide text-[#8b7050] ${i === 0 ? "" : "mt-2"}`}
         >
           {m[1]}
         </em>

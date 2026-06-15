@@ -797,7 +797,7 @@ export function IntroScene({
                         <p className="text-[14px] uppercase tracking-[0.08em] text-[#7a5a3a]">
                           From other passengers
                         </p>
-                        <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414]">
+                        <h2 className="mt-1 text-[18px] font-semibold text-[#3d2414]">
                           다른 승객들은 주로 어떤 생각을 가졌을까요?
                         </h2>
                       </div>

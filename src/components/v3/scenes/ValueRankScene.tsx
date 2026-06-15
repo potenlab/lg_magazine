@@ -39,7 +39,7 @@ export function ValueRankScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance
                   }`}
                 >
                   <p className="font-medium">{v}</p>
-                  {def && <p className="mt-2 line-clamp-3 text-xs opacity-80">{def}</p>}
+                  {def && <p className="mt-2 line-clamp-3 text-[14px] opacity-80">{def}</p>}
                 </button>
               );
             })}

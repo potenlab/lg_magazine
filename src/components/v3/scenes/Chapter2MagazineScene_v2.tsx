@@ -222,7 +222,7 @@ export function Chapter2MagazineSceneV2({
 
       {/* ── 매거진 마스트헤드 ──────────────────────────────────────── */}
       <header className="mb-3 shrink-0 text-center">
-        <p className="text-[11px] tracking-[0.2em] text-[#7a5a3a]">
+        <p className="text-[14px] tracking-[0.2em] text-[#7a5a3a]">
           STORY · MAGAZINE · CHAPTER 2
         </p>
         <h1 className="mt-1 text-[18px] font-semibold tracking-wide text-[#3d2414]">
@@ -230,7 +230,7 @@ export function Chapter2MagazineSceneV2({
         </h1>
         <div className="mt-2 flex items-center justify-center gap-3">
           <div className="h-px w-8 bg-[#b99b6b]/55" />
-          <span className="text-[12px] tracking-[0.14em] text-[#9a7b4c]">{pageIndicator}</span>
+          <span className="text-[14px] tracking-[0.14em] text-[#9a7b4c]">{pageIndicator}</span>
           <div className="h-px w-8 bg-[#b99b6b]/55" />
         </div>
       </header>
@@ -348,7 +348,7 @@ function IdentityPage({
 }) {
   return (
     <section className="mx-auto max-w-[640px] py-2">
-      <p className="mb-5 text-center text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
+      <p className="mb-5 text-center text-[14px] uppercase tracking-[0.2em] text-[#7a5a3a]">
         Editor&rsquo;s Question
       </p>
       <h2
@@ -406,7 +406,7 @@ function IdentityPage({
             style={{ fontFamily: "var(--font-ridi-batang)" }}
           />
           {attempts > 0 && attempts < maxAttempts && (
-            <p className="mt-1.5 text-right text-[12px] text-[#9b8768]/80">
+            <p className="mt-1.5 text-right text-[14px] text-[#9b8768]/80">
               남은 시도 {maxAttempts - attempts}회
             </p>
           )}

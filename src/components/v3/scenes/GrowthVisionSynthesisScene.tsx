@@ -242,11 +242,11 @@ export function GrowthVisionSynthesisScene({
           두면 콘텐츠가 길어진 챕터 3 에서는 BEAT 카드 중간에 어색하게 떠 보임. */}
 
       <header className="mb-4 shrink-0 text-center">
-        <p className="text-[11px] tracking-[0.2em] text-[#7a5a3a]">STORY · MAGAZINE · CHAPTER 3</p>
+        <p className="text-[14px] tracking-[0.2em] text-[#7a5a3a]">STORY · MAGAZINE · CHAPTER 3</p>
         <h1 className="mt-1 text-[18px] font-semibold tracking-wide text-[#3d2414]">향하는 길</h1>
         <div className="mt-2 flex items-center justify-center gap-3">
           <div className="h-px w-8 bg-[#b99b6b]/55" />
-          <span className="text-[12px] tracking-[0.14em] text-[#9a7b4c]">EDITOR&rsquo;S SUMMARY</span>
+          <span className="text-[14px] tracking-[0.14em] text-[#9a7b4c]">EDITOR&rsquo;S SUMMARY</span>
           <div className="h-px w-8 bg-[#b99b6b]/55" />
         </div>
       </header>
@@ -268,7 +268,7 @@ export function GrowthVisionSynthesisScene({
           <p className="mb-2 text-center text-[16px] leading-[1.6] text-[#3d2414]">
             지금까지의 이야기를 모아 — {session.name}님이 향할 수 있는 방향들을 정리해봤어요.
           </p>
-          <p className="mb-6 text-center text-[13px] italic leading-[1.5] text-[#8b7050]">
+          <p className="mb-6 text-center text-[14px] italic leading-[1.5] text-[#8b7050]">
             고르는 게 아니라, {session.name}님만의 한 줄을 적을 때 참고만 해주세요.
           </p>
           <p className="mb-3 text-[10.5px] uppercase tracking-[0.18em] text-[#9b8768] italic">
@@ -283,7 +283,7 @@ export function GrowthVisionSynthesisScene({
                 transition={{ delay: 0.05 + 0.05 * i, duration: 0.45, ease: "easeOut" }}
                 className="border-t border-[#b99b6b]/40 py-4 pr-2"
               >
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.14em] text-[#9b8768]">
+                <p className="mb-2 text-[14px] font-medium uppercase tracking-[0.14em] text-[#9b8768]">
                   {RECOMMENDATION_AXES[i] ?? `방향 ${i + 1}`}
                 </p>
                 <p
@@ -302,7 +302,7 @@ export function GrowthVisionSynthesisScene({
       {trendCards.length > 0 && (
         <div className="my-9 flex items-center gap-3">
           <div className="h-px flex-1 bg-[#b99b6b]/40" />
-          <span className="text-[11px] italic tracking-[0.15em] text-[#9b8768]">
+          <span className="text-[14px] italic tracking-[0.15em] text-[#9b8768]">
             🦉 &nbsp;El Owl&rsquo;s Outside View
           </span>
           <div className="h-px flex-1 bg-[#b99b6b]/40" />
@@ -337,7 +337,7 @@ export function GrowthVisionSynthesisScene({
                     {card.direction}
                   </p>
                   {card.context && (
-                    <p className="text-[12px] italic leading-[1.6] text-[#6b5a3e]">
+                    <p className="text-[14px] italic leading-[1.6] text-[#6b5a3e]">
                       {card.context}
                     </p>
                   )}
@@ -365,7 +365,7 @@ export function GrowthVisionSynthesisScene({
           )}
         </AnimatePresence>
 
-        <p className="mb-4 text-center text-[12px] italic uppercase tracking-[0.2em] text-[#9b8768]">
+        <p className="mb-4 text-center text-[14px] italic uppercase tracking-[0.2em] text-[#9b8768]">
           Editor&rsquo;s Question
         </p>
         <p className="mb-2 text-center text-[16.5px] font-medium leading-[1.75] text-[#3d2414]">
@@ -373,7 +373,7 @@ export function GrowthVisionSynthesisScene({
           <br />
           다가오는 5년, 앞으로 어떤 사람으로 성장하고 싶나요?
         </p>
-        <p className="mb-8 text-center text-[12px] italic leading-[1.6] text-[#9b8768]">
+        <p className="mb-8 text-center text-[14px] italic leading-[1.6] text-[#9b8768]">
           위의 표현을 가져와도 좋고, 합치거나 다시 써도 좋아요.
         </p>
 
@@ -448,7 +448,7 @@ function BeatCard({ beat, delay }: { beat: Beat; delay: number }) {
       transition={{ delay, duration: 0.5, ease: "easeOut" }}
       className="rounded-md border border-[#b99b6b]/40 bg-white/55 px-4 py-4"
     >
-      <p className="text-[11px] uppercase tracking-[0.1em] text-[#9b8768]">
+      <p className="text-[14px] uppercase tracking-[0.1em] text-[#9b8768]">
         {beat.number} · {beat.category}
       </p>
       {beat.headline ? (

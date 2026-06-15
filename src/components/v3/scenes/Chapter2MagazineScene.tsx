@@ -184,11 +184,11 @@ export function Chapter2MagazineScene({
 
       {/* 마스트헤드 */}
       <header className="mb-4 shrink-0 text-center">
-        <p className="text-[11px] tracking-[0.2em] text-[#7a5a3a]">STORY · MAGAZINE · CHAPTER 2</p>
+        <p className="text-[14px] tracking-[0.2em] text-[#7a5a3a]">STORY · MAGAZINE · CHAPTER 2</p>
         <h1 className="mt-1 text-[18px] font-semibold tracking-wide text-[#3d2414]">발견</h1>
         <div className="mt-2 flex items-center justify-center gap-3">
           <div className="h-px w-8 bg-[#b99b6b]/55" />
-          <span className="text-[12px] tracking-[0.14em] text-[#9a7b4c]">EDITOR&rsquo;S SUMMARY</span>
+          <span className="text-[14px] tracking-[0.14em] text-[#9a7b4c]">EDITOR&rsquo;S SUMMARY</span>
           <div className="h-px w-8 bg-[#b99b6b]/55" />
         </div>
       </header>
@@ -202,7 +202,7 @@ export function Chapter2MagazineScene({
 
       {/* 정체성 입력 */}
       <section className="mt-7 border-t border-[#b99b6b]/30 pt-6">
-        <p className="mb-3 text-center text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
+        <p className="mb-3 text-center text-[14px] uppercase tracking-[0.2em] text-[#7a5a3a]">
           Editor&rsquo;s Question
         </p>
         {/* 터세한 "님은 어떤 사람입니까?" 대신 엘아울의 따뜻한 원래 멘트(구 2-8). */}
@@ -266,7 +266,7 @@ export function Chapter2MagazineScene({
               </button>
             </div>
             {attempts > 0 && attempts < MAX_ATTEMPTS && (
-              <p className="mt-1.5 text-right text-[12px] text-[#9b8768]/80">
+              <p className="mt-1.5 text-right text-[14px] text-[#9b8768]/80">
                 남은 시도 {MAX_ATTEMPTS - attempts}회
               </p>
             )}
@@ -307,7 +307,7 @@ export function Chapter2MagazineScene({
                     <p className="text-[14px] uppercase tracking-[0.08em] text-[#7a5a3a]">
                       From other passengers
                     </p>
-                    <h2 className="mt-1 text-[16px] font-semibold text-[#3d2414]">
+                    <h2 className="mt-1 text-[18px] font-semibold text-[#3d2414]">
                       다른 분들은 자신을 어떻게 정의했을까요?
                     </h2>
                   </div>
@@ -384,7 +384,7 @@ function BeatCard({ beat, delay }: { beat: Beat; delay: number }) {
       transition={{ delay, duration: 0.5, ease: "easeOut" }}
       className="rounded-md border border-[#b99b6b]/40 bg-white/55 px-4 py-4"
     >
-      <p className="text-[11px] uppercase tracking-[0.1em] text-[#9b8768]">
+      <p className="text-[14px] uppercase tracking-[0.1em] text-[#9b8768]">
         {beat.number} · {beat.category}
       </p>
       {beat.headline ? (

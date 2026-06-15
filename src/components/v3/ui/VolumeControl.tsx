@@ -71,7 +71,7 @@ export function VolumeControl() {
             {/* Volume Slider */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs tracking-wider text-[#d7bd83]">음량</label>
+                <label className="text-[14px] tracking-wider text-[#d7bd83]">음량</label>
                 <span className="text-sm text-[#e9d5a8]">{volumePercent}%</span>
               </div>
               <input
@@ -91,25 +91,25 @@ export function VolumeControl() {
             <div className="flex gap-2 pt-2">
               <button
                 onClick={() => setVolume(0)}
-                className="flex-1 px-2 py-1 rounded text-xs bg-[#3d2414] hover:bg-[#5a4a42] text-[#d7bd83] transition"
+                className="flex-1 px-2 py-1 rounded text-[14px] bg-[#3d2414] hover:bg-[#5a4a42] text-[#d7bd83] transition"
               >
                 끔
               </button>
               <button
                 onClick={() => setVolume(0.33)}
-                className="flex-1 px-2 py-1 rounded text-xs bg-[#3d2414] hover:bg-[#5a4a42] text-[#d7bd83] transition"
+                className="flex-1 px-2 py-1 rounded text-[14px] bg-[#3d2414] hover:bg-[#5a4a42] text-[#d7bd83] transition"
               >
                 낮음
               </button>
               <button
                 onClick={() => setVolume(0.66)}
-                className="flex-1 px-2 py-1 rounded text-xs bg-[#3d2414] hover:bg-[#5a4a42] text-[#d7bd83] transition"
+                className="flex-1 px-2 py-1 rounded text-[14px] bg-[#3d2414] hover:bg-[#5a4a42] text-[#d7bd83] transition"
               >
                 중간
               </button>
               <button
                 onClick={() => setVolume(1)}
-                className="flex-1 px-2 py-1 rounded text-xs bg-[#3d2414] hover:bg-[#5a4a42] text-[#d7bd83] transition"
+                className="flex-1 px-2 py-1 rounded text-[14px] bg-[#3d2414] hover:bg-[#5a4a42] text-[#d7bd83] transition"
               >
                 높음
               </button>

@@ -103,7 +103,7 @@ export function MagazineBeatPage({
         {number}
       </p>
       <div className="h-px w-12 bg-[#b99b6b]" />
-      <p className="text-[11px] uppercase tracking-[0.08em] text-[#9b8768]">
+      <p className="text-[14px] uppercase tracking-[0.08em] text-[#9b8768]">
         {category}
       </p>
       {headline && (

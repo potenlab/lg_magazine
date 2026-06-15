@@ -141,12 +141,12 @@ export function MagazinePosterScene({
     <div className="flex h-full w-full flex-1 flex-col">
       {/* ── 매거진 마스트헤드 (정적) ─────────────────────────────────── */}
       <header className="shrink-0 text-center">
-        <p className="text-[11px] tracking-[0.2em] text-[#7a5a3a]">
+        <p className="text-[14px] tracking-[0.2em] text-[#7a5a3a]">
           MAGAZINE STORY · VOL. {session.name.toUpperCase() || "?"}
         </p>
         <div className="mt-2 flex items-center justify-center gap-3">
           <div className="h-px w-8 bg-[#b99b6b]/55" />
-          <span className="text-[12px] tracking-[0.14em] text-[#9a7b4c]">{pageIndicator}</span>
+          <span className="text-[14px] tracking-[0.14em] text-[#9a7b4c]">{pageIndicator}</span>
           <div className="h-px w-8 bg-[#b99b6b]/55" />
         </div>
       </header>
@@ -253,7 +253,7 @@ function CardsSpread({ session }: { session: V3Session }) {
     <article className="flex h-full min-h-full flex-col justify-center space-y-5">
       {/* 표제 — Editor's Cards. 정체성 → 가치 → 5년 비전이 한 문장 흐름으로 이어진다. */}
       <header className="text-center">
-        <p className="text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
+        <p className="text-[14px] uppercase tracking-[0.2em] text-[#7a5a3a]">
           Editor&rsquo;s Cards
         </p>
 
@@ -291,7 +291,7 @@ function CardsSpread({ session }: { session: V3Session }) {
       </header>
 
       <section className="mt-4 border-t border-[#b99b6b]/35 pt-4 text-center">
-        <p className="text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">
+        <p className="text-[14px] uppercase tracking-[0.2em] text-[#7a5a3a]">
           Editor&rsquo;s Note
         </p>
         <p
@@ -331,14 +331,14 @@ function AppendixSpread({ session }: { session: V3Session }) {
   return (
     <article className="space-y-6">
       <header className="text-center">
-        <p className="text-[12px] uppercase tracking-[0.2em] text-[#7a5a3a]">Appendix</p>
+        <p className="text-[14px] uppercase tracking-[0.2em] text-[#7a5a3a]">Appendix</p>
         <h2
           className="mt-2 text-[20px] font-medium text-[#3d2414] md:text-[22px]"
           style={{ fontFamily: "var(--font-ridi-batang), serif" }}
         >
           내가 적은 기록
         </h2>
-        <p className="mt-2 text-[13px] italic leading-[1.7] text-[#8b7050]">
+        <p className="mt-2 text-[14px] italic leading-[1.7] text-[#8b7050]">
           네 챕터에서 주고받은 질문 · 답변 · 편집장 요약을 한 자리에 모아둔 페이지예요.
         </p>
         <div className="mx-auto mt-4 h-px w-20 bg-[#b99b6b]/40" />
@@ -365,7 +365,7 @@ function AppendixSpread({ session }: { session: V3Session }) {
             return (
               <section key={thread.chapter} className="space-y-3">
                 <div className="border-b border-[#b99b6b]/30 pb-2">
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-[#9b8768]">
+                  <p className="text-[14px] uppercase tracking-[0.14em] text-[#9b8768]">
                     {thread.chapter}
                   </p>
                   <h3
@@ -385,8 +385,8 @@ function AppendixSpread({ session }: { session: V3Session }) {
                         ? "rounded-md border border-[#d7bd83]/40 bg-[#ede1c6]/40 px-3 py-2.5"
                         : "rounded-md border border-[#b99b6b]/30 bg-white/55 px-3 py-2.5";
                     const labelClass = isQuestion
-                      ? "text-[11px] uppercase tracking-[0.08em] text-[#9b8768]"
-                      : "text-[12px] tracking-wide text-[#8b7050]";
+                      ? "text-[14px] uppercase tracking-[0.08em] text-[#9b8768]"
+                      : "text-[14px] tracking-wide text-[#8b7050]";
                     const textClass = isQuestion
                       ? "mt-1 whitespace-pre-wrap text-[14px] italic leading-[1.55] text-[#6b5337]"
                       : isResult
@@ -409,7 +409,7 @@ function AppendixSpread({ session }: { session: V3Session }) {
       {/* 매거진 후면 마무리 — 페이지 닫힘 톤 */}
       <footer className="mt-6 border-t border-[#b99b6b]/35 pt-4 text-center">
         <p
-          className="text-[13px] italic text-[#8b7050]"
+          className="text-[14px] italic text-[#8b7050]"
           style={{ fontFamily: "var(--font-ridi-batang), serif" }}
         >
           — {session.name}님이 직접 적어주신 기록 —

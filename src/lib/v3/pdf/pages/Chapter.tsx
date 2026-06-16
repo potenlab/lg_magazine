@@ -99,13 +99,31 @@ function TopHeader({ name, variant }: { name: string; variant: "vol" | "story" }
   );
 }
 
+/** Hero 이미지 모서리 와인 색 삼각 액센트 (액자 효과).
+ *  Ch1 등에서 <CornerAccent corner="tr|tl|br|bl" /> 로 사용. */
+function CornerAccent({ corner }: { corner: "tl" | "tr" | "bl" | "br" }) {
+  const base = {
+    position: "absolute" as const,
+    width: 0,
+    height: 0,
+    borderTopColor: "transparent",
+    borderBottomColor: "transparent",
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+  };
+  const size = 18;
+  if (corner === "tl") return <View style={{ ...base, top: 0, left: 0, borderBottomWidth: size, borderRightWidth: size, borderBottomColor: WINE }} />;
+  if (corner === "tr") return <View style={{ ...base, top: 0, right: 0, borderBottomWidth: size, borderLeftWidth: size, borderBottomColor: WINE }} />;
+  if (corner === "bl") return <View style={{ ...base, bottom: 0, left: 0, borderTopWidth: size, borderRightWidth: size, borderTopColor: WINE }} />;
+  return <View style={{ ...base, bottom: 0, right: 0, borderTopWidth: size, borderLeftWidth: size, borderTopColor: WINE }} />;
+}
+
 
 // ── Ch1 ─────────────────────────────────────────────────────────
 // 1-col + Page wrap. 본문이 길면 자동으로 다음 페이지로 흘러감.
 // paper.jpg + Vol.{name} 헤더는 `fixed` 로 모든 페이지에 반복.
 // Hero / Title / Subtitle 은 첫 페이지 상단(flow), PullQuote 는 body 뒤 flow.
 function Chapter1Page({ name, body, pullQuote, sub }: { name: string; body: string; pullQuote: string | null; sub: string }) {
-  const [leftCol, rightCol] = splitBodyIntoColumns(body);
   return (
     <Page size="A4" wrap style={{ padding: 0 }}>
       {/* paper bg — 모든 페이지 반복 */}
@@ -123,8 +141,8 @@ function Chapter1Page({ name, body, pullQuote, sub }: { name: string; body: stri
         </View>
 
         {/* Hero — 첫 페이지에만 (flow) */}
-        <View style={{ marginTop: 24, height: 260, overflow: "hidden", position: "relative" }}>
-          <Image src={HERO[1]} style={{ width: 503, height: 260, objectFit: "cover" }} />
+        <View style={{ marginTop: 24, height: 157, overflow: "hidden", position: "relative" }}>
+          <Image src={HERO[1]} style={{ width: 503, height: 157, objectFit: "cover" }} />
           <CornerAccent corner="tr" />
           <CornerAccent corner="bl" />
         </View>
@@ -144,15 +162,10 @@ function Chapter1Page({ name, body, pullQuote, sub }: { name: string; body: stri
           {sub || SUBTITLE[1]}
         </Text>
 
-        {/* Body 2-col — Ch2/3/4 와 동일 패턴 */}
-        <View style={{ flexDirection: "row", gap: 22, marginTop: 18 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{leftCol}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{rightCol}</Text>
-          </View>
-        </View>
+        {/* Body 1-col — wrap 가능 (본문 길면 다음 페이지로) */}
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT, marginTop: 18 }}>
+          {body}
+        </Text>
 
         {/* PullQuote — body 뒤 flow. wrap={false} 로 quote 자체는 한 페이지에 통째 유지. */}
         {pullQuote && (
@@ -219,8 +232,8 @@ function Chapter2Page({ name, body, pullQuote, sub }: { name: string; body: stri
 
         {/* 하단: 좌 hero + 우 pullQuote. wrap={false} 로 둘이 같은 페이지 유지. */}
         <View wrap={false} style={{ marginTop: 24, flexDirection: "row", gap: 22 }}>
-          <View style={{ width: 250, height: 200, overflow: "hidden" }}>
-            <Image src={HERO[2]} style={{ width: 250, height: 200, objectFit: "cover" }} />
+          <View style={{ width: 250, height: 155, overflow: "hidden" }}>
+            <Image src={HERO[2]} style={{ width: 250, height: 155, objectFit: "cover" }} />
           </View>
           {pullQuote && (
             <View style={{ flex: 1 }}>
@@ -272,8 +285,8 @@ function Chapter3MainPage({ name, body, sub }: { name: string; body: string; sub
         </Text>
 
         {/* 하단 hero — wrap={false} 로 한 페이지에 통째로 */}
-        <View wrap={false} style={{ marginTop: 28, height: 220, overflow: "hidden" }}>
-          <Image src={HERO[3]} style={{ width: 503, height: 220, objectFit: "cover" }} />
+        <View wrap={false} style={{ marginTop: 28, height: 167, overflow: "hidden" }}>
+          <Image src={HERO[3]} style={{ width: 503, height: 167, objectFit: "cover" }} />
         </View>
       </View>
     </Page>

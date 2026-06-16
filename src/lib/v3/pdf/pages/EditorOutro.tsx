@@ -23,7 +23,7 @@ const PAPER = "/paper.jpg";
 
 export function EditorOutro({ body, name }: Props) {
   return (
-    <Page size="A4" wrap={false} style={{ padding: 0 }}>
+    <Page size="A4" style={{ padding: 0 }}>
       <View style={{ position: "relative", flexGrow: 1, width: 595 }}>
       {/* paper bg */}
       <Image

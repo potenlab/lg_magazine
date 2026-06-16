@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { Image, Page, Text, View } from "@react-pdf/renderer";
+import { sanitizeBody } from "../sanitize";
 
 /**
  * Chapter pages — 챕터별 시안이 달라 단일 컴포넌트 안에서 chapter 번호에
@@ -100,42 +101,73 @@ function TopHeader({ name, variant }: { name: string; variant: "vol" | "story" }
 
 
 // ── Ch1 ─────────────────────────────────────────────────────────
+// 1-col + Page wrap. 본문이 길면 자동으로 다음 페이지로 흘러감.
+// paper.jpg + Vol.{name} 헤더는 `fixed` 로 모든 페이지에 반복.
+// Hero / Title / Subtitle 은 첫 페이지 상단(flow), PullQuote 는 body 뒤 flow.
 function Chapter1Page({ name, body, pullQuote }: { name: string; body: string; pullQuote: string | null }) {
-  const [leftCol, rightCol] = splitBodyIntoColumns(body);
   return (
-    <Page size="A4" style={{ padding: 0 }}>
-      <View style={{ position: "relative", flexGrow: 1, width: 595 }}>
-      <PaperBg />
-      <TopHeader name={name} variant="vol" />
+    <Page size="A4" wrap style={{ padding: 0 }}>
+      {/* paper bg — 모든 페이지 반복 */}
+      <Image
+        src={PAPER}
+        fixed
+        style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
+      />
 
-      {/* Hero */}
-      <View style={{ position: "absolute", top: 96, left: 46, right: 46, height: 260, overflow: "hidden" }}>
-        <Image src={HERO[1]} style={{ width: 503, height: 260, objectFit: "cover" }} />
-      </View>
-
-      {/* Title row — 왼쪽 큰 KOR_TITLE / 오른쪽 작은 CHAPTER 1. */}
-      <View style={{ position: "absolute", top: 376, left: 46, right: 46, flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" }}>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 30, fontWeight: 700, color: TEXT }}>{KOR_TITLE[1]}</Text>
-        <View style={{ alignItems: "flex-end" }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 2 }}>CHAPTER 1.</Text>
-          <View style={{ height: 1, backgroundColor: RULE, marginTop: 4, width: 110 }} />
+      <View style={{ paddingHorizontal: 46, paddingTop: 40, paddingBottom: 50 }}>
+        {/* Header — fixed: Vol. {name} + 와인 룰 (모든 페이지에) */}
+        <View fixed>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
+          <View style={{ height: 1, backgroundColor: WINE, marginTop: 18 }} />
         </View>
-      </View>
-      <View style={{ position: "absolute", top: 420, left: 46, width: 80, height: 1, backgroundColor: RULE }} />
 
-      {/* Subtitle */}
-      <View style={{ position: "absolute", top: 448, left: 46, right: 46 }}>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, fontWeight: 700, color: TEXT }}>{SUBTITLE[1]}</Text>
-      </View>
+        {/* Hero — 첫 페이지에만 (flow) */}
+        <View style={{ marginTop: 24, height: 260, overflow: "hidden", position: "relative" }}>
+          <Image src={HERO[1]} style={{ width: 503, height: 260, objectFit: "cover" }} />
+          <CornerAccent corner="tr" />
+          <CornerAccent corner="bl" />
+        </View>
 
-      {/* Body 2-col */}
-      <View style={{ position: "absolute", top: 482, left: 46, right: 46, bottom: pullQuote ? 160 : 60, flexDirection: "row", gap: 22 }}>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{leftCol}</Text></View>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{rightCol}</Text></View>
-      </View>
+        {/* Title row */}
+        <View style={{ marginTop: 24, flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" }}>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 30, fontWeight: 700, color: TEXT }}>{KOR_TITLE[1]}</Text>
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 1.</Text>
+            <View style={{ height: 1, backgroundColor: RULE, marginTop: 4, width: 110 }} />
+          </View>
+        </View>
+        <View style={{ height: 1, backgroundColor: RULE, marginTop: 6, width: 80 }} />
 
-      {pullQuote && <PullQuoteCenter text={pullQuote} />}
-    </View>
+        {/* Subtitle */}
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, fontWeight: 700, marginTop: 22, color: TEXT }}>
+          {SUBTITLE[1]}
+        </Text>
+
+        {/* Body 1-col — wrap 가능 (본문 길면 다음 페이지로) */}
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, lineHeight: 1.75, color: TEXT, marginTop: 18 }}>
+          {body}
+        </Text>
+
+        {/* PullQuote — body 뒤 flow. wrap={false} 로 quote 자체는 한 페이지에 통째 유지. */}
+        {pullQuote && (
+          <View
+            wrap={false}
+            style={{ marginTop: 36, flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+          >
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 40, color: MUTED, marginRight: 14, marginTop: -10 }}>
+              &#x201C;
+            </Text>
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: TEXT, textAlign: "center", lineHeight: 1.6 }}>
+                {pullQuote}
+              </Text>
+            </View>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 40, color: MUTED, marginLeft: 14, marginBottom: -16 }}>
+              &#x201D;
+            </Text>
+          </View>
+        )}
+      </View>
     </Page>
   );
 }
@@ -151,7 +183,7 @@ function Chapter2Page({ name, body, pullQuote }: { name: string; body: string; p
 
       {/* 중앙 타이틀: CHAPTER 2. + 나는 누구인가 + 룰 (centered) */}
       <View style={{ position: "absolute", top: 100, left: 0, right: 0, alignItems: "center" }}>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 2 }}>CHAPTER 2.</Text>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 2.</Text>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 30, fontWeight: 700, color: TEXT, marginTop: 8 }}>{KOR_TITLE[2]}</Text>
         <View style={{ marginTop: 12, width: 70, height: 1, backgroundColor: RULE }} />
       </View>
@@ -162,9 +194,9 @@ function Chapter2Page({ name, body, pullQuote }: { name: string; body: string; p
       </View>
 
       {/* Body 2-col */}
-      <View style={{ position: "absolute", top: 264, left: 46, right: 46, height: 280, flexDirection: "row", gap: 22 }}>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{leftCol}</Text></View>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{rightCol}</Text></View>
+      <View style={{ position: "absolute", top: 264, left: 46, right: 46, height: 280, flexDirection: "row", gap: 22, overflow: "hidden" }}>
+        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 10.5, lineHeight: 1.6, color: TEXT }}>{leftCol}</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 10.5, lineHeight: 1.6, color: TEXT }}>{rightCol}</Text></View>
       </View>
 
       {/* 중간 가로 룰 */}
@@ -199,7 +231,7 @@ function Chapter3MainPage({ name, body }: { name: string; body: string }) {
       <TopHeader name={name} variant="vol" />
 
       <View style={{ position: "absolute", top: 100, left: 0, right: 0, alignItems: "center" }}>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 2 }}>CHAPTER 3.</Text>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 3.</Text>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 30, fontWeight: 700, color: TEXT, marginTop: 8 }}>{KOR_TITLE[3]}</Text>
         <View style={{ marginTop: 12, width: 70, height: 1, backgroundColor: RULE }} />
       </View>
@@ -209,9 +241,9 @@ function Chapter3MainPage({ name, body }: { name: string; body: string }) {
       </View>
 
       {/* Body 2-col */}
-      <View style={{ position: "absolute", top: 264, left: 46, right: 46, height: 290, flexDirection: "row", gap: 22 }}>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{leftCol}</Text></View>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{rightCol}</Text></View>
+      <View style={{ position: "absolute", top: 264, left: 46, right: 46, height: 290, flexDirection: "row", gap: 22, overflow: "hidden" }}>
+        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 10.5, lineHeight: 1.6, color: TEXT }}>{leftCol}</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 10.5, lineHeight: 1.6, color: TEXT }}>{rightCol}</Text></View>
       </View>
 
       {/* 하단 hero full width */}
@@ -266,24 +298,24 @@ function Chapter4Page({ name, body }: { name: string; body: string }) {
         <Image src={HERO[4]} style={{ width: 290, height: 230, objectFit: "cover" }} />
       </View>
 
-      {/* 우상 타이틀 블록 */}
-      <View style={{ position: "absolute", top: 150, left: 360, right: 46 }}>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 2 }}>CHAPTER 4.</Text>
+      {/* 우상 타이틀 블록 — hero(top:96~326) 세로 중앙(≈211) 에 맞춰 살짝 내림 */}
+      <View style={{ position: "absolute", top: 180, left: 360, right: 46 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 4.</Text>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 28, fontWeight: 700, color: TEXT, marginTop: 10, lineHeight: 1.3 }}>
           {KOR_TITLE[4]}
         </Text>
         <View style={{ marginTop: 14, width: 110, height: 1, backgroundColor: RULE }} />
       </View>
 
-      {/* 부제 (왼쪽 정렬, hero 아래) */}
-      <View style={{ position: "absolute", top: 360, left: 46, right: 46 }}>
+      {/* 부제 (왼쪽 정렬, hero 아래) — hero 바닥(326) → 부제 사이 64pt 공백 */}
+      <View style={{ position: "absolute", top: 390, left: 46, right: 46 }}>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 15, fontWeight: 700, color: TEXT }}>{SUBTITLE[4]}</Text>
       </View>
 
-      {/* Body 2-col */}
-      <View style={{ position: "absolute", top: 400, left: 46, right: 46, bottom: 60, flexDirection: "row", gap: 22 }}>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{leftCol}</Text></View>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{rightCol}</Text></View>
+      {/* Body 2-col — 부제 → body 40pt 공백 */}
+      <View style={{ position: "absolute", top: 440, left: 46, right: 46, bottom: 60, flexDirection: "row", gap: 22, overflow: "hidden" }}>
+        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 10.5, lineHeight: 1.6, color: TEXT }}>{leftCol}</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 10.5, lineHeight: 1.6, color: TEXT }}>{rightCol}</Text></View>
       </View>
     </View>
     </Page>
@@ -304,18 +336,21 @@ function PullQuoteCenter({ text }: { text: string }) {
 }
 
 export function Chapter({ chapter, body, pullQuote, name, deep }: Props) {
-  if (chapter === 1) return <Chapter1Page name={name} body={body} pullQuote={pullQuote} />;
-  if (chapter === 2) return <Chapter2Page name={name} body={body} pullQuote={pullQuote} />;
+  // '', **, () 같은 마크다운/특수기호가 LLM 본문에 섞여 들어오는 케이스 제거.
+  const cleanBody = sanitizeBody(body);
+  const cleanPull = pullQuote ? sanitizeBody(pullQuote) : null;
+  if (chapter === 1) return <Chapter1Page name={name} body={cleanBody} pullQuote={cleanPull} />;
+  if (chapter === 2) return <Chapter2Page name={name} body={cleanBody} pullQuote={cleanPull} />;
   if (chapter === 3) {
-    if (deep && pullQuote) {
+    if (deep && cleanPull) {
       return (
         <Fragment>
-          <Chapter3MainPage name={name} body={body} />
-          <Chapter3DeepPage name={name} pullQuote={pullQuote} />
+          <Chapter3MainPage name={name} body={cleanBody} />
+          <Chapter3DeepPage name={name} pullQuote={cleanPull} />
         </Fragment>
       );
     }
-    return <Chapter3MainPage name={name} body={body} />;
+    return <Chapter3MainPage name={name} body={cleanBody} />;
   }
-  return <Chapter4Page name={name} body={body} />;
+  return <Chapter4Page name={name} body={cleanBody} />;
 }

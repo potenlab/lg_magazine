@@ -96,7 +96,16 @@ export default function PdfPreviewPage() {
         case "cover":
           return <Cover name={SAMPLE.name} date={SAMPLE.date} headline={SAMPLE.coverHeadline} />;
         case "toc":
-          return <TOC name={SAMPLE.name} deep={false} />;
+          return <TOC
+                name={SAMPLE.name}
+                chapterHeadlines={[
+                  SAMPLE.chapters[1].headline,
+                  SAMPLE.chapters[2].headline,
+                  SAMPLE.chapters[3].headline,
+                  SAMPLE.chapters[4].headline,
+                ]}
+                deep={false}
+              />;
         case "editorIntro":
           return <EditorIntro body={SAMPLE.editorIntro} name={SAMPLE.name} />;
         case "ch1":
@@ -116,7 +125,16 @@ export default function PdfPreviewPage() {
             <>
               <Cover name={SAMPLE.name} date={SAMPLE.date} headline={SAMPLE.coverHeadline} />
               <EditorIntro body={SAMPLE.editorIntro} name={SAMPLE.name} />
-              <TOC name={SAMPLE.name} deep={false} />
+              <TOC
+                name={SAMPLE.name}
+                chapterHeadlines={[
+                  SAMPLE.chapters[1].headline,
+                  SAMPLE.chapters[2].headline,
+                  SAMPLE.chapters[3].headline,
+                  SAMPLE.chapters[4].headline,
+                ]}
+                deep={false}
+              />
               {ch(1)}
               {ch(2)}
               {ch(3)}

@@ -1,4 +1,5 @@
 import { Image, Page, Text, View } from "@react-pdf/renderer";
+import { sanitizeBody } from "../sanitize";
 
 /**
  * Editor's Note — 매거진 후반 한 페이지.
@@ -55,14 +56,10 @@ export function EditorOutro({ body, name }: Props) {
       {/* Body */}
       <View style={{ position: "absolute", top: 580, left: 46, right: 46 }}>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT, lineHeight: 1.85 }}>
-          {body}
+          {sanitizeBody(body)}
         </Text>
       </View>
 
-      {/* 발신자 — 본문 끝, 작게. */}
-      <Text style={{ position: "absolute", bottom: 56, right: 46, fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>
-        Vol. {name}
-      </Text>
     </View>
     </Page>
   );

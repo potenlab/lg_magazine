@@ -1,11 +1,13 @@
 import { Image, Page, Text, View } from "@react-pdf/renderer";
 import { COLORS } from "../styles";
 
-const CHAPTERS = [
-  { num: "CHAPTER 1.", title: "내가 지나온 길", sub: "숫자로 증명받는 순간들" },
-  { num: "CHAPTER 2.", title: "나는 누구인가", sub: "삶의 항로를 직접 그리는 사람" },
-  { num: "CHAPTER 3.", title: "내가 그리는 미래", sub: "살아있음을 느끼는 지도" },
-  { num: "CHAPTER 4.", title: "내일로 향하는 한 걸음", sub: "매일, 한 줄씩 항로를 긋는다" },
+// 각 챕터의 라벨/한글 타이틀은 매거진 전반에 공통이고,
+// sub 는 해당 챕터의 dynamic headline (Chapter.tsx 에 동일 값 전달됨) 을 그대로 사용.
+const CHAPTER_META: { num: string; title: string }[] = [
+  { num: "CHAPTER 1.", title: "내가 지나온 길" },
+  { num: "CHAPTER 2.", title: "나는 누구인가" },
+  { num: "CHAPTER 3.", title: "내가 그리는 미래" },
+  { num: "CHAPTER 4.", title: "내일로 향하는 한 걸음" },
 ];
 
 // Cover.tsx 패턴과 동일하게 — paper bg + 모든 콘텐츠 블록을 Page 직속 자식으로
@@ -19,11 +21,19 @@ const TITLE_TOP = 100;
 const TITLE_FS = 56;
 const TITLE_GAP = 40;
 const CHAPTERS_TOP = TITLE_TOP + TITLE_FS + TITLE_GAP; // 196
-// 챕터 블록 1개 = 라벨 16 + mb 6 + 제목 22 + mb 6 + sub 14 = 64pt
-// 챕터 사이 시각적 공백 = 40pt → 사이클 = 104pt
-const CHAPTER_GAP = 104;
+// 챕터 사이 사이클 간격 (top 좌표 차이) — 사용자 지정 60pt.
+const CHAPTER_GAP = 60;
 
-export function TOC({ name, deep: _deep }: { name: string; deep: boolean }) {
+export function TOC({
+  name,
+  chapterHeadlines,
+  deep: _deep,
+}: {
+  name: string;
+  /** Chapter 1~4 의 dynamic headline. 인덱스 0 → Ch1. */
+  chapterHeadlines: [string, string, string, string];
+  deep: boolean;
+}) {
   return (
     <Page size={[PAGE_W, PAGE_H]} style={{ padding: 0, position: "relative", width: PAGE_W, height: PAGE_H, fontFamily: "Noto Serif KR", color: COLORS.text }}>
       {/* paper bg — EditorIntro 등 다른 페이지와 공통 */}
@@ -67,7 +77,7 @@ export function TOC({ name, deep: _deep }: { name: string; deep: boolean }) {
       </Text>
 
       {/* 챕터 목록 */}
-      {CHAPTERS.map((c, i) => {
+      {CHAPTER_META.map((c, i) => {
         const top = CHAPTERS_TOP + i * CHAPTER_GAP;
         return (
           <View key={c.num} style={{ position: "absolute", top, left: PAD, right: PAD }}>
@@ -78,7 +88,7 @@ export function TOC({ name, deep: _deep }: { name: string; deep: boolean }) {
               style={{
                 fontFamily: "Noto Serif KR",
                 fontWeight: 700,
-                fontSize: 22,
+                fontSize: 20,
                 color: COLORS.text,
                 marginBottom: 6,
               }}
@@ -86,7 +96,7 @@ export function TOC({ name, deep: _deep }: { name: string; deep: boolean }) {
               {c.title}
             </Text>
             <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: COLORS.muted }}>
-              {c.sub}
+              {chapterHeadlines[i]}
             </Text>
           </View>
         );

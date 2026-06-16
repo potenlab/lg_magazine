@@ -25,7 +25,16 @@ export function MagazinePDF({ data, deep = false }: { data: MagazineData; deep?:
     <Document title={`STORY Vol. ${data.name}`} author="Magazine STORY 편집부">
       <Cover name={data.name} date={data.date} headline={data.coverHeadline} />
       <EditorIntro body={data.editorIntro} name={data.name} />
-      <TOC name={data.name} deep={deep} />
+      <TOC
+        name={data.name}
+        chapterHeadlines={[
+          data.chapters[1].headline,
+          data.chapters[2].headline,
+          data.chapters[3].headline,
+          data.chapters[4].headline,
+        ]}
+        deep={deep}
+      />
       <Chapter chapter={1} headline={data.chapters[1].headline} body={data.chapters[1].body} pullQuote={data.chapters[1].pullQuote} name={data.name} />
       <Chapter chapter={2} headline={data.chapters[2].headline} body={data.chapters[2].body} pullQuote={data.chapters[2].pullQuote} name={data.name} />
       <Chapter chapter={3} headline={data.chapters[3].headline} body={data.chapters[3].body} pullQuote={data.chapters[3].pullQuote} name={data.name} deep={deep} />

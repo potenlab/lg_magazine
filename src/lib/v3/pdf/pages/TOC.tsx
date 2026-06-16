@@ -1,36 +1,93 @@
-import { Page, Text, View } from "@react-pdf/renderer";
-import { styles } from "../styles";
+import { Image, Page, Text, View } from "@react-pdf/renderer";
+import { COLORS } from "../styles";
 
-const SECTIONS = [
-  "From the Editor",
-  "Chapter 1. 내가 지나온 길",
-  "Chapter 2. 나는 누구인가",
-  "Chapter 3. 내가 그리는 미래",
-  "Chapter 4. 내일로 향하는 한 걸음",
-  "Editor's Note",
+const CHAPTERS = [
+  { num: "CHAPTER 1.", title: "내가 지나온 길", sub: "숫자로 증명받는 순간들" },
+  { num: "CHAPTER 2.", title: "나는 누구인가", sub: "삶의 항로를 직접 그리는 사람" },
+  { num: "CHAPTER 3.", title: "내가 그리는 미래", sub: "살아있음을 느끼는 지도" },
+  { num: "CHAPTER 4.", title: "내일로 향하는 한 걸음", sub: "매일, 한 줄씩 항로를 긋는다" },
 ];
 
-// 비-deep 매거진은 8페이지 고정이라 각 섹션 시작 페이지가 항상 같다 → 번호 표기.
-// deep 모드는 챕터가 2페이지로 넘칠 수 있어 시작 페이지를 렌더 전에 알 수 없으므로
-// 번호를 생략하고 섹션명만 나열한다.
-const FIXED_PAGES = ["03", "04", "05", "06", "07", "08"];
-
-export function TOC({ deep }: { deep: boolean }) {
+export function TOC({ deep: _deep }: { deep: boolean }) {
   return (
-    <Page size="A5" style={styles.page}>
-      <Text style={styles.pageHeader}>Contents</Text>
-      <View style={{ marginTop: 12 }}>
-        {SECTIONS.map((label, i) => (
-          <Text key={label} style={styles.tocItem}>
-            {deep ? label : `${FIXED_PAGES[i]}   ${label}`}
-          </Text>
-        ))}
-      </View>
-      <Text
-        style={styles.pageFooter}
-        render={({ pageNumber }) => `${pageNumber}`}
-        fixed
+    <Page size="A4" wrap={false} style={{ padding: 0, position: "relative", color: COLORS.text, fontFamily: "Noto Serif KR" }}>
+      {/* paper bg */}
+      <Image
+        src="/paper.jpg"
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%" }}
       />
+      <View style={{ padding: 46 }}>
+      {/* 상단: magazine STORY + 구분선 */}
+      <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+        <Text style={{ fontSize: 10, color: COLORS.wine, letterSpacing: 0.3 }}>
+          magazine <Text style={{ fontWeight: 700 }}>STORY</Text>
+        </Text>
+      </View>
+      <View
+        style={{
+          marginTop: 6,
+          height: 0.8,
+          backgroundColor: COLORS.wine,
+        }}
+      />
+
+      {/* Contents 타이틀 */}
+      <Text
+        style={{
+          marginTop: 38,
+          fontFamily: "Noto Serif KR",
+          fontWeight: 700,
+          fontSize: 56,
+          color: COLORS.wine,
+          letterSpacing: -1,
+        }}
+      >
+        Contents
+      </Text>
+
+      {/* 챕터 목록 */}
+      <View style={{ marginTop: 32 }}>
+        {CHAPTERS.map((c) => (
+          <View key={c.num} style={{ marginBottom: 22 }}>
+            <Text
+              style={{
+                fontSize: 10,
+                color: COLORS.wine,
+                letterSpacing: 1.2,
+                marginBottom: 4,
+              }}
+            >
+              {c.num}
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Noto Serif KR",
+                fontWeight: 700,
+                fontSize: 18,
+                color: COLORS.text,
+                marginBottom: 4,
+              }}
+            >
+              {c.title}
+            </Text>
+            <Text style={{ fontSize: 10.5, color: COLORS.muted }}>
+              {c.sub}
+            </Text>
+          </View>
+        ))}
+
+        <Text
+          style={{
+            marginTop: 6,
+            fontSize: 10,
+            color: COLORS.wine,
+            letterSpacing: 1.2,
+          }}
+        >
+          EDITOR&apos;S NOTE
+        </Text>
+      </View>
+      </View>
     </Page>
   );
 }

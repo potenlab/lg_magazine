@@ -17,6 +17,13 @@ export const config = {
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
+  // Dev-only PDF 라이브 프리뷰 — 매거진 PDF 페이지별 라이브 렌더 (Cover/TOC/
+  // EditorIntro/Ch1~4/EditorOutro) 를 풀 세션 거치지 않고 보기 위함.
+  // production 에서는 매처를 통해서도 도달 불가하도록 NODE_ENV 가드.
+  if (pathname.startsWith("/pdf-preview") && process.env.NODE_ENV === "development") {
+    return NextResponse.next();
+  }
+
   // Verify the session cryptographically (not just cookie presence) so a
   // forged or expired cookie cannot slip past the gate.
   const token = request.cookies.get(QRIUS_SESSION_COOKIE)?.value;

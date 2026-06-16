@@ -5,6 +5,7 @@ export const COLORS = {
   text: "#3d2414",
   muted: "#7a5a3a",
   gold: "#b99b6b",
+  wine: "#6b2a26",
 };
 
 export const styles = StyleSheet.create({

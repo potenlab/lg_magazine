@@ -310,39 +310,48 @@ function Chapter3DeepPage({ name, pullQuote }: { name: string; pullQuote: string
 }
 
 // ── Ch4 ─────────────────────────────────────────────────────────
+// Page wrap. hero+title 블록은 wrap={false} 로 묶어 통째 유지,
+// 그 아래 부제 + 1-col 본문이 자연 흐름. 본문 길면 다음 페이지로.
 function Chapter4Page({ name, body, sub }: { name: string; body: string; sub: string }) {
-  const [leftCol, rightCol] = splitBodyIntoColumns(body);
   return (
-    <Page size="A4" style={{ padding: 0 }}>
-      <View style={{ position: "relative", flexGrow: 1, width: 595 }}>
-      <PaperBg />
-      <TopHeader name={name} variant="vol" />
+    <Page size="A4" wrap style={{ padding: 0 }}>
+      <Image
+        src={PAPER}
+        fixed
+        style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
+      />
 
-      {/* 좌상 hero (절반 폭) */}
-      <View style={{ position: "absolute", top: 96, left: 46, width: 290, height: 230, overflow: "hidden" }}>
-        <Image src={HERO[4]} style={{ width: 290, height: 230, objectFit: "cover" }} />
-      </View>
+      <View style={{ paddingHorizontal: 46, paddingTop: 40, paddingBottom: 50 }}>
+        {/* fixed header */}
+        <View fixed>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
+          <View style={{ height: 1, backgroundColor: WINE, marginTop: 18 }} />
+        </View>
 
-      {/* 우상 타이틀 블록 — hero(top:96~326) 세로 중앙(≈211) 에 맞춰 살짝 내림 */}
-      <View style={{ position: "absolute", top: 180, left: 360, right: 46 }}>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 4.</Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 28, fontWeight: 700, color: TEXT, marginTop: 10, lineHeight: 1.3 }}>
-          {KOR_TITLE[4]}
+        {/* hero + title 행 — wrap={false} 로 페이지 중간에 잘리지 않게 */}
+        <View wrap={false} style={{ marginTop: 24, flexDirection: "row", gap: 24, alignItems: "center" }}>
+          <View style={{ width: 290, height: 230, overflow: "hidden" }}>
+            <Image src={HERO[4]} style={{ width: 290, height: 230, objectFit: "cover" }} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 4.</Text>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 28, fontWeight: 700, color: TEXT, marginTop: 10, lineHeight: 1.3 }}>
+              {KOR_TITLE[4]}
+            </Text>
+            <View style={{ marginTop: 14, width: 110, height: 1, backgroundColor: RULE }} />
+          </View>
+        </View>
+
+        {/* 부제 */}
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 15, fontWeight: 700, color: TEXT, marginTop: 40 }}>
+          {sub || SUBTITLE[4]}
         </Text>
-        <View style={{ marginTop: 14, width: 110, height: 1, backgroundColor: RULE }} />
-      </View>
 
-      {/* 부제 (왼쪽 정렬, hero 아래) — hero 바닥(326) → 부제 사이 64pt 공백 */}
-      <View style={{ position: "absolute", top: 390, left: 46, right: 46 }}>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 15, fontWeight: 700, color: TEXT }}>{sub || SUBTITLE[4]}</Text>
+        {/* Body 1-col flow */}
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT, marginTop: 24 }}>
+          {body}
+        </Text>
       </View>
-
-      {/* Body 2-col — 부제 → body 40pt 공백 */}
-      <View style={{ position: "absolute", top: 440, left: 46, right: 46, bottom: 60, flexDirection: "row", gap: 22, overflow: "hidden" }}>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.7, color: TEXT }}>{leftCol}</Text></View>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.7, color: TEXT }}>{rightCol}</Text></View>
-      </View>
-    </View>
     </Page>
   );
 }
@@ -360,7 +369,7 @@ function PullQuoteCenter({ text }: { text: string }) {
   );
 }
 
-export function Chapter({ chapter, headline, body, pullQuote, name, deep }: Props) {
+export function Chapter({ chapter, headline, body, pullQuote, name, deep: _deep }: Props) {
   // '', **, () 같은 마크다운/특수기호가 LLM 본문에 섞여 들어오는 케이스 제거.
   const cleanBody = sanitizeBody(body);
   const cleanPull = pullQuote ? sanitizeBody(pullQuote) : null;
@@ -370,15 +379,14 @@ export function Chapter({ chapter, headline, body, pullQuote, name, deep }: Prop
   if (chapter === 1) return <Chapter1Page name={name} body={cleanBody} pullQuote={cleanPull} sub={sub} />;
   if (chapter === 2) return <Chapter2Page name={name} body={cleanBody} pullQuote={cleanPull} sub={sub} />;
   if (chapter === 3) {
-    if (deep && cleanPull) {
-      return (
-        <Fragment>
-          <Chapter3MainPage name={name} body={cleanBody} sub={sub} />
-          <Chapter3DeepPage name={name} pullQuote={cleanPull} />
-        </Fragment>
-      );
-    }
-    return <Chapter3MainPage name={name} body={cleanBody} sub={sub} />;
+    // pullQuote 가 있으면 Ch3 deep page 를 항상 추가 (Ch3 ↔ Ch4 사이).
+    // 내용은 data.chapters[3].pullQuote 그대로 사용.
+    return (
+      <Fragment>
+        <Chapter3MainPage name={name} body={cleanBody} sub={sub} />
+        {cleanPull && <Chapter3DeepPage name={name} pullQuote={cleanPull} />}
+      </Fragment>
+    );
   }
   return <Chapter4Page name={name} body={cleanBody} sub={sub} />;
 }

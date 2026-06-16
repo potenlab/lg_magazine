@@ -21,8 +21,8 @@ const TITLE_TOP = 100;
 const TITLE_FS = 56;
 const TITLE_GAP = 40;
 const CHAPTERS_TOP = TITLE_TOP + TITLE_FS + TITLE_GAP; // 196
-// 챕터 사이 사이클 간격 (top 좌표 차이) — 사용자 지정 60pt.
-const CHAPTER_GAP = 60;
+// 챕터 사이 사이클 간격 (top 좌표 차이) — 사용자 지정 100pt.
+const CHAPTER_GAP = 100;
 
 export function TOC({
   name,
@@ -81,7 +81,7 @@ export function TOC({
         const top = CHAPTERS_TOP + i * CHAPTER_GAP;
         return (
           <View key={c.num} style={{ position: "absolute", top, left: PAD, right: PAD }}>
-            <Text style={{ fontSize: 16, color: COLORS.wine, letterSpacing: 0, marginBottom: 6 }}>
+            <Text style={{ fontSize: 14, color: COLORS.wine, letterSpacing: 0, marginBottom: 6 }}>
               {c.num}
             </Text>
             <Text

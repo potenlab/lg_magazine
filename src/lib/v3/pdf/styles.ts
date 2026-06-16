@@ -5,8 +5,12 @@ export const COLORS = {
   text: "#3d2414",
   muted: "#7a5a3a",
   gold: "#b99b6b",
-  wine: "#6b2a26",
+  wine: "#59282E",
 };
+
+// 라인(룰) 통일 토큰 — 모든 PDF 페이지가 같은 색·굵기 쓰도록.
+export const RULE_COLOR = "#59282E";
+export const RULE_WEIGHT = 1;
 
 export const styles = StyleSheet.create({
   page: {
@@ -15,12 +19,12 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 36,
     paddingVertical: 48,
     fontFamily: "Noto Serif KR",
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 1.85,
   },
   pageHeader: {
     marginBottom: 18,
-    fontSize: 9,
+    fontSize: 12,
     color: COLORS.muted,
     letterSpacing: 1.4,
   },
@@ -29,7 +33,7 @@ export const styles = StyleSheet.create({
     bottom: 22,
     left: 36,
     right: 36,
-    fontSize: 8,
+    fontSize: 12,
     color: COLORS.muted,
     textAlign: "center",
   },
@@ -48,11 +52,11 @@ export const styles = StyleSheet.create({
   },
   coverMeta: {
     marginTop: 18,
-    fontSize: 10,
+    fontSize: 12,
     color: COLORS.muted,
   },
   chapterLabel: {
-    fontSize: 9,
+    fontSize: 12,
     color: COLORS.muted,
     letterSpacing: 1.4,
     textTransform: "uppercase",
@@ -66,7 +70,7 @@ export const styles = StyleSheet.create({
     marginBottom: 22,
   },
   body: {
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 2.0,
     marginBottom: 8,
   },
@@ -81,12 +85,12 @@ export const styles = StyleSheet.create({
     color: COLORS.text,
   },
   tocItem: {
-    fontSize: 11,
+    fontSize: 12,
     marginBottom: 8,
   },
   colophon: {
     marginTop: 28,
-    fontSize: 9,
+    fontSize: 12,
     color: COLORS.muted,
     lineHeight: 1.7,
   },

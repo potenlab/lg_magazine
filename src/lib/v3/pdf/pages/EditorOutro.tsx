@@ -16,17 +16,18 @@ interface Props {
 }
 
 const TEXT = "#3d2414";
-const WINE = "#6b2a26";
-const RULE = "#b89e6c";
+const WINE = "#59282E";
+const RULE = "#59282E";
 const PAPER = "/paper.jpg";
 
 export function EditorOutro({ body, name }: Props) {
   return (
-    <Page size="A4" wrap={false} style={{ padding: 0, position: "relative" }}>
+    <Page size="A4" style={{ padding: 0 }}>
+      <View style={{ position: "relative", flexGrow: 1, width: 595 }}>
       {/* paper bg */}
       <Image
         src={PAPER}
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%" }}
+        style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
       />
 
       {/* 상단 헤더 — magazine STORY (우측) + 와인 룰 */}
@@ -39,7 +40,7 @@ export function EditorOutro({ body, name }: Props) {
       <View style={{ position: "absolute", top: 96, left: 46, right: 46, height: 380, overflow: "hidden" }}>
         <Image
           src="/Editor's Note.jpg"
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          style={{ width: 503, height: 380, objectFit: "cover" }}
         />
       </View>
 
@@ -48,7 +49,7 @@ export function EditorOutro({ body, name }: Props) {
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 34, fontWeight: 700, color: TEXT, letterSpacing: 1 }}>
           EDITOR&apos;S NOTE
         </Text>
-        <View style={{ marginTop: 14, width: 110, height: 0.6, backgroundColor: RULE }} />
+        <View style={{ marginTop: 14, width: 110, height: 1, backgroundColor: RULE }} />
       </View>
 
       {/* Body */}
@@ -59,9 +60,10 @@ export function EditorOutro({ body, name }: Props) {
       </View>
 
       {/* 발신자 — 본문 끝, 작게. */}
-      <Text style={{ position: "absolute", bottom: 56, right: 46, fontFamily: "Noto Serif KR", fontSize: 10, color: WINE }}>
+      <Text style={{ position: "absolute", bottom: 56, right: 46, fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>
         Vol. {name}
       </Text>
+    </View>
     </Page>
   );
 }

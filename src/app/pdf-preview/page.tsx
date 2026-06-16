@@ -16,6 +16,7 @@ import { TOC } from "@/lib/v3/pdf/pages/TOC";
 import { EditorIntro } from "@/lib/v3/pdf/pages/EditorIntro";
 import { Chapter } from "@/lib/v3/pdf/pages/Chapter";
 import { EditorOutro } from "@/lib/v3/pdf/pages/EditorOutro";
+import { BackPage } from "@/lib/v3/pdf/pages/BackPage";
 import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
 
 const PDFViewer = dynamic(
@@ -28,44 +29,45 @@ const SAMPLE = {
   date: "2026-06-01",
   coverHeadline: "항로를 그리는 사람의 지도",
   editorIntro:
-    "지난 한 시간 동안 들려주신 이야기를 모았어요. 이 호는 오직 한 사람, 홍길동님을 위한 단 한 권의 매거진입니다.",
+    "지난 한 시간 동안 들려주신 이야기를 모았어요. 이 호는 오직 한 사람, 홍길동님을 위한 단 한 권의 매거진입니다. 페이지를 펼치는 순간 그날의 대화가 다시 살아나길 바라며, 한 줄 한 줄에 그 시간을 담았습니다.",
   editorOutro:
-    "매거진을 닫으며 — 다시 길을 잃은 듯한 날에는 이 호를 펼쳐 보세요.",
+    "우리는 묵묵히 자기 빛을 쌓아온 한 사람을 만났다. 그의 이야기를 들으며, 우리는 그가 이미 '삶의 주인공은 나여야 한다'는 자기만의 답을 가지고 있음을 깨달았다. 다만 그 답이 아직 매일의 습관으로 내려앉지 못했을 뿐이라는 걸. 이 한 호가 그의 다음 여정에 작은 등불이 되기를.",
   chapters: {
     1: {
       headline: "내가 지나온 길",
-      body: "샘플 본문입니다. 실제 세션에서는 LLM 이 합성한 본문이 들어옵니다. 두세 단락 정도 분량으로 페이지를 채우게 됩니다.\n\n두 번째 단락. 챕터별 분위기와 톤을 미리 확인하는 용도.",
-      pullQuote: "한 줄 인용 — 챕터의 키워드.",
+      body: "홍길동님은 스무 살 여름, 일산 호수공원에서 자전거 대여 사업을 시작했다. 당시 시급이 4천 원도 안 되던 시절, 하루에 50만 원을 벌어본 경험이 있었다. 그날 그는 '사업가의 피가 흐른다'는 것을 처음으로 느꼈다.\n\n몇 년 후, 200명이 넘는 대외활동 참가자 중 4명의 우수활동자로 선정되었다. 장학금을 받고 중국 탐방을 다녀온 그는 자신이 '생각보다 특별한 사람'이라는 사실을 깨달았다고 말했다.\n\n두 장면은 서로 연결된 느낌을 주었다. 막연한 자신감이 아닌, 명확한 숫자와 성과로 자신의 존재를 확실히 느끼는 순간이었다. 그에게 증명은 단순한 결과가 아니라, 자신이 누구인지 확인하는 방법처럼 보였다.",
+      pullQuote: "하루에 50만원 벌어본 적도 있어. 그래서 나도 사업가의 피가 흐른다는 것을 느꼈지",
     },
     2: {
       headline: "나는 누구인가",
-      body: "샘플 본문. Ch2 는 강점·가치 합성 톤.",
-      pullQuote: null,
+      body: "홍길동님은 자신을 '자신의 길을 개척하는 사람'이라고 표현했다. 그 이름은 단순한 수식어가 아니라, 매일 자신에게 던지는 질문의 다른 표현이었다.\n\n그에게 '주도성'은 추상적인 개념이 아니라 '삶 그 자체'였다. '내가 좋아하는 것과 나의 철학에 따라 행동해야 한다'는 그의 정의는, 스스로 삶의 방향을 정하지 않으면 의미가 없다는 선언처럼 들렸다.\n\n'그게 없으면 단순한 NPC에 불과하죠'라는 말에서, 그는 타인이 쓴 각본을 거부하는 사람의 모습을 드러냈다. '내 삶의 주인공은 나여야 해요'라는 문장은 그가 매일 감사일기를 쓰기로 한 이유이기도 했다.",
+      pullQuote: "내 삶의 주인공은 나여야해요",
     },
     3: {
       headline: "내가 그리는 미래",
-      body: "샘플 본문. Ch3 은 비전·방향 합성 톤.",
-      pullQuote: "내가 향하는 길의 한 줄.",
+      body: "홍길동님은 자신의 경험을 바탕으로 사람들에게 방향성을 제시하는 교육 사업을 구상하고 있었다. 유튜브를 통해 사람들과 소통하며 강의를 진행하는 지금도, 그는 자신의 교육철학을 더욱 확고히 하고 있었다. '주도성'을 삶의 본질로 여기는 그에게, 이 준비는 단순한 커리어 설계가 아니라 '내 삶의 주인공은 나여야 한다'는 원칙을 실천하는 과정이었다.\n\n그가 이 길을 선택한 이유는 분명했다. '결국 살아있음을 느껴야 하니까.' 자신이 좋아하는 일을 하며 누군가에게 긍정적인 영향을 주고, 그로 인해 수익을 얻는 것이 '가장 좋은 일'이라고 그는 말했다.\n\n그는 자신의 교육철학과 사업철학을 책이나 지침서로 만들고 싶어 했다. 그리고 그것이 사람들이 '90% 이상 공감해줬으면' 좋겠다고 덧붙였다. 세상에 남기고 싶은 것은 화려한 성과가 아니라, 누군가가 자신의 삶의 방향을 설계할 때 참고할 수 있는 한 장의 지도 같은 것이었다.",
+      pullQuote: "나는 방향을 설계하는 지도자처럼, 누군가의 항로에 나침반 하나를 남기고 싶다.",
     },
     4: {
       headline: "내일로 향하는 한 걸음",
-      body: "샘플 본문. Ch4 는 도구·실천 합성 톤.",
+      body: "홍길동님은 내일 아침부터 감사일기를 쓰기로 했다. '주도성은 삶 그 자체'라고 말했던 그는 일기를 단순한 기록이 아닌, 자신이 무엇을 좋아하고 어떤 철학으로 움직였는지를 확인하는 항해일지로 여겼다. 매일 한 줄씩 자신의 선택을 돌아보는 일이 그를 'NPC'가 아닌 '주인공'으로 만드는 첫 걸음이라고 믿었다.\n\n그는 혼자 이 길을 가지 않을 생각이었다. 교육 크리에이터들의 콘텐츠를 통해 클로드와 시간 관리, 개발 공부를 차근차근 익히고, 함께 루틴을 만들어갈 사람들을 곁에 두기로 했다. 지도자처럼 방향을 설계하는 삶은 결국 자신이 선택한 자원과 사람들과 함께 매일을 채워가는 과정이었다.\n\n그가 펜을 들었을 때, 그는 이미 출발선에 서 있었다. 내일 아침 첫 문장은 아마도 '오늘, 나는 내 삶의 항로를 그리기 시작했다'일지도 모른다는 생각이 들었다.",
       pullQuote: null,
     },
   },
 } as const;
 
-type PageKey = "cover" | "toc" | "editorIntro" | "ch1" | "ch2" | "ch3" | "ch4" | "editorOutro" | "all";
+type PageKey = "cover" | "toc" | "editorIntro" | "ch1" | "ch2" | "ch3" | "ch4" | "editorOutro" | "backPage" | "all";
 
 const TABS: { key: PageKey; label: string }[] = [
   { key: "cover", label: "Cover" },
-  { key: "toc", label: "TOC" },
   { key: "editorIntro", label: "Editor Intro" },
+  { key: "toc", label: "TOC" },
   { key: "ch1", label: "Ch 1" },
   { key: "ch2", label: "Ch 2" },
   { key: "ch3", label: "Ch 3" },
   { key: "ch4", label: "Ch 4" },
   { key: "editorOutro", label: "Editor Outro" },
+  { key: "backPage", label: "Back Page" },
   { key: "all", label: "전체" },
 ];
 
@@ -86,6 +88,7 @@ export default function PdfPreviewPage() {
         headline={SAMPLE.chapters[n].headline}
         body={SAMPLE.chapters[n].body}
         pullQuote={SAMPLE.chapters[n].pullQuote}
+        name={SAMPLE.name}
       />
     );
     const pages = (() => {
@@ -93,7 +96,7 @@ export default function PdfPreviewPage() {
         case "cover":
           return <Cover name={SAMPLE.name} date={SAMPLE.date} headline={SAMPLE.coverHeadline} />;
         case "toc":
-          return <TOC deep={false} />;
+          return <TOC name={SAMPLE.name} deep={false} />;
         case "editorIntro":
           return <EditorIntro body={SAMPLE.editorIntro} name={SAMPLE.name} />;
         case "ch1":
@@ -105,18 +108,21 @@ export default function PdfPreviewPage() {
         case "ch4":
           return ch(4);
         case "editorOutro":
-          return <EditorOutro body={SAMPLE.editorOutro} name={SAMPLE.name} date={SAMPLE.date} />;
+          return <EditorOutro body={SAMPLE.editorOutro} name={SAMPLE.name} />;
+        case "backPage":
+          return <BackPage name={SAMPLE.name} date={SAMPLE.date} />;
         case "all":
           return (
             <>
               <Cover name={SAMPLE.name} date={SAMPLE.date} headline={SAMPLE.coverHeadline} />
-              <TOC deep={false} />
               <EditorIntro body={SAMPLE.editorIntro} name={SAMPLE.name} />
+              <TOC name={SAMPLE.name} deep={false} />
               {ch(1)}
               {ch(2)}
               {ch(3)}
               {ch(4)}
-              <EditorOutro body={SAMPLE.editorOutro} name={SAMPLE.name} date={SAMPLE.date} />
+              <EditorOutro body={SAMPLE.editorOutro} name={SAMPLE.name} />
+              <BackPage name={SAMPLE.name} date={SAMPLE.date} />
             </>
           );
       }
@@ -152,7 +158,7 @@ export default function PdfPreviewPage() {
       </header>
       <div style={{ flex: 1, minHeight: 0 }}>
         {doc && (
-          <PDFViewer width="100%" height="100%" style={{ border: "none" }} showToolbar>
+          <PDFViewer key={page} width="100%" height="100%" style={{ border: "none" }} showToolbar>
             {doc}
           </PDFViewer>
         )}

@@ -20,32 +20,34 @@ function formatDate(raw: string): string {
 
 export function BackPage({ name, date }: Props) {
   return (
-    <Page size="A4" wrap={false} style={{ padding: 0, position: "relative" }}>
+    <Page size="A4" style={{ padding: 0 }}>
+      <View style={{ position: "relative", flexGrow: 1, width: 595 }}>
       {/* back page.jpg — 와인 배경 + 로고 + 기차 + 하단 cream strip 까지 베이크. */}
       <Image
         src="/back page.jpg"
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%" }}
+        style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
       />
 
       {/* 하단 cream strip 위 콜로폰 텍스트.
           back page.jpg 하단 ~150pt 가 cream strip 으로 베이크됐다는 전제. */}
       <View style={{ position: "absolute", bottom: 110, left: 52, right: 52 }}>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: TEXT, lineHeight: 1.8 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT, lineHeight: 1.8 }}>
           Magazine STORY
         </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: TEXT, lineHeight: 1.8 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT, lineHeight: 1.8 }}>
           Vol. {name}
         </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: TEXT, lineHeight: 1.8 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT, lineHeight: 1.8 }}>
           발행일 {formatDate(date)}  ·  인쇄부수 1부
         </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: TEXT, lineHeight: 1.8 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT, lineHeight: 1.8 }}>
           오직 한 사람을 위해 만들어진 특집호.
         </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: TEXT, lineHeight: 1.8 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT, lineHeight: 1.8 }}>
           — 매거진 STORY 편집부
         </Text>
       </View>
+    </View>
     </Page>
   );
 }

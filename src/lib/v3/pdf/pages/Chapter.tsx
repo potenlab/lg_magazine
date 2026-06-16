@@ -26,8 +26,8 @@ interface Props {
 
 const TEXT = "#3d2414";
 const MUTED = "#7a5a3a";
-const WINE = "#6b2a26";
-const RULE = "#b89e6c";
+const WINE = "#59282E";
+const RULE = "#59282E";
 const PAPER = "/paper.jpg";
 
 const KOR_TITLE: Record<1 | 2 | 3 | 4, string> = {
@@ -78,7 +78,7 @@ function PaperBg() {
   return (
     <Image
       src={PAPER}
-      style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%" }}
+      style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
     />
   );
 }
@@ -98,29 +98,19 @@ function TopHeader({ name, variant }: { name: string; variant: "vol" | "story" }
   );
 }
 
-/** 와인 색 삼각 코너 액센트 — 사진 모서리에 끼워 박는 액자 효과. */
-function CornerAccent({ corner }: { corner: "tl" | "tr" | "bl" | "br" }) {
-  const base = { position: "absolute" as const, width: 0, height: 0, borderTopColor: "transparent", borderBottomColor: "transparent", borderLeftColor: "transparent", borderRightColor: "transparent" };
-  const size = 18;
-  if (corner === "tl") return <View style={{ ...base, top: 0, left: 0, borderBottomWidth: size, borderRightWidth: size, borderBottomColor: WINE }} />;
-  if (corner === "tr") return <View style={{ ...base, top: 0, right: 0, borderBottomWidth: size, borderLeftWidth: size, borderBottomColor: WINE }} />;
-  if (corner === "bl") return <View style={{ ...base, bottom: 0, left: 0, borderTopWidth: size, borderRightWidth: size, borderTopColor: WINE }} />;
-  return <View style={{ ...base, bottom: 0, right: 0, borderTopWidth: size, borderLeftWidth: size, borderTopColor: WINE }} />;
-}
 
 // ── Ch1 ─────────────────────────────────────────────────────────
 function Chapter1Page({ name, body, pullQuote }: { name: string; body: string; pullQuote: string | null }) {
   const [leftCol, rightCol] = splitBodyIntoColumns(body);
   return (
-    <Page size="A4" wrap={false} style={{ padding: 0, position: "relative" }}>
+    <Page size="A4" style={{ padding: 0 }}>
+      <View style={{ position: "relative", flexGrow: 1, width: 595 }}>
       <PaperBg />
       <TopHeader name={name} variant="vol" />
 
       {/* Hero */}
       <View style={{ position: "absolute", top: 96, left: 46, right: 46, height: 260, overflow: "hidden" }}>
-        <Image src={HERO[1]} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        <CornerAccent corner="tr" />
-        <CornerAccent corner="bl" />
+        <Image src={HERO[1]} style={{ width: 503, height: 260, objectFit: "cover" }} />
       </View>
 
       {/* Title row — 왼쪽 큰 KOR_TITLE / 오른쪽 작은 CHAPTER 1. */}
@@ -128,10 +118,10 @@ function Chapter1Page({ name, body, pullQuote }: { name: string; body: string; p
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 30, fontWeight: 700, color: TEXT }}>{KOR_TITLE[1]}</Text>
         <View style={{ alignItems: "flex-end" }}>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 2 }}>CHAPTER 1.</Text>
-          <View style={{ height: 0.6, backgroundColor: RULE, marginTop: 4, width: 110 }} />
+          <View style={{ height: 1, backgroundColor: RULE, marginTop: 4, width: 110 }} />
         </View>
       </View>
-      <View style={{ position: "absolute", top: 420, left: 46, width: 80, height: 0.6, backgroundColor: RULE }} />
+      <View style={{ position: "absolute", top: 420, left: 46, width: 80, height: 1, backgroundColor: RULE }} />
 
       {/* Subtitle */}
       <View style={{ position: "absolute", top: 448, left: 46, right: 46 }}>
@@ -140,11 +130,12 @@ function Chapter1Page({ name, body, pullQuote }: { name: string; body: string; p
 
       {/* Body 2-col */}
       <View style={{ position: "absolute", top: 482, left: 46, right: 46, bottom: pullQuote ? 160 : 60, flexDirection: "row", gap: 22 }}>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 10.5, lineHeight: 1.75, color: TEXT }}>{leftCol}</Text></View>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 10.5, lineHeight: 1.75, color: TEXT }}>{rightCol}</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{leftCol}</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{rightCol}</Text></View>
       </View>
 
       {pullQuote && <PullQuoteCenter text={pullQuote} />}
+    </View>
     </Page>
   );
 }
@@ -153,7 +144,8 @@ function Chapter1Page({ name, body, pullQuote }: { name: string; body: string; p
 function Chapter2Page({ name, body, pullQuote }: { name: string; body: string; pullQuote: string | null }) {
   const [leftCol, rightCol] = splitBodyIntoColumns(body);
   return (
-    <Page size="A4" wrap={false} style={{ padding: 0, position: "relative" }}>
+    <Page size="A4" style={{ padding: 0 }}>
+      <View style={{ position: "relative", flexGrow: 1, width: 595 }}>
       <PaperBg />
       <TopHeader name={name} variant="story" />
 
@@ -161,7 +153,7 @@ function Chapter2Page({ name, body, pullQuote }: { name: string; body: string; p
       <View style={{ position: "absolute", top: 100, left: 0, right: 0, alignItems: "center" }}>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 2 }}>CHAPTER 2.</Text>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 30, fontWeight: 700, color: TEXT, marginTop: 8 }}>{KOR_TITLE[2]}</Text>
-        <View style={{ marginTop: 12, width: 70, height: 0.6, backgroundColor: RULE }} />
+        <View style={{ marginTop: 12, width: 70, height: 1, backgroundColor: RULE }} />
       </View>
 
       {/* 부제 (centered) */}
@@ -171,18 +163,16 @@ function Chapter2Page({ name, body, pullQuote }: { name: string; body: string; p
 
       {/* Body 2-col */}
       <View style={{ position: "absolute", top: 264, left: 46, right: 46, height: 280, flexDirection: "row", gap: 22 }}>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 10.5, lineHeight: 1.75, color: TEXT }}>{leftCol}</Text></View>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 10.5, lineHeight: 1.75, color: TEXT }}>{rightCol}</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{leftCol}</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{rightCol}</Text></View>
       </View>
 
       {/* 중간 가로 룰 */}
-      <View style={{ position: "absolute", top: 568, left: 46, right: 46, height: 0.6, backgroundColor: RULE }} />
+      <View style={{ position: "absolute", top: 568, left: 46, right: 46, height: 1, backgroundColor: RULE }} />
 
       {/* 좌하 hero (절반 폭) */}
       <View style={{ position: "absolute", top: 592, left: 46, width: 250, height: 200, overflow: "hidden" }}>
-        <Image src={HERO[2]} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        <CornerAccent corner="tr" />
-        <CornerAccent corner="bl" />
+        <Image src={HERO[2]} style={{ width: 250, height: 200, objectFit: "cover" }} />
       </View>
 
       {/* 우하 pullQuote + by. {name} */}
@@ -191,9 +181,10 @@ function Chapter2Page({ name, body, pullQuote }: { name: string; body: string; p
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 16, fontWeight: 700, color: TEXT, lineHeight: 1.5 }}>
             {pullQuote}
           </Text>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: MUTED, marginTop: 12 }}>by. {name}</Text>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, marginTop: 12 }}>by. {name}</Text>
         </View>
       )}
+    </View>
     </Page>
   );
 }
@@ -202,14 +193,15 @@ function Chapter2Page({ name, body, pullQuote }: { name: string; body: string; p
 function Chapter3MainPage({ name, body }: { name: string; body: string }) {
   const [leftCol, rightCol] = splitBodyIntoColumns(body);
   return (
-    <Page size="A4" wrap={false} style={{ padding: 0, position: "relative" }}>
+    <Page size="A4" style={{ padding: 0 }}>
+      <View style={{ position: "relative", flexGrow: 1, width: 595 }}>
       <PaperBg />
       <TopHeader name={name} variant="vol" />
 
       <View style={{ position: "absolute", top: 100, left: 0, right: 0, alignItems: "center" }}>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 2 }}>CHAPTER 3.</Text>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 30, fontWeight: 700, color: TEXT, marginTop: 8 }}>{KOR_TITLE[3]}</Text>
-        <View style={{ marginTop: 12, width: 70, height: 0.6, backgroundColor: RULE }} />
+        <View style={{ marginTop: 12, width: 70, height: 1, backgroundColor: RULE }} />
       </View>
 
       <View style={{ position: "absolute", top: 224, left: 0, right: 0, alignItems: "center" }}>
@@ -218,14 +210,15 @@ function Chapter3MainPage({ name, body }: { name: string; body: string }) {
 
       {/* Body 2-col */}
       <View style={{ position: "absolute", top: 264, left: 46, right: 46, height: 290, flexDirection: "row", gap: 22 }}>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 10.5, lineHeight: 1.75, color: TEXT }}>{leftCol}</Text></View>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 10.5, lineHeight: 1.75, color: TEXT }}>{rightCol}</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{leftCol}</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{rightCol}</Text></View>
       </View>
 
       {/* 하단 hero full width */}
       <View style={{ position: "absolute", top: 580, left: 46, right: 46, height: 220, overflow: "hidden" }}>
-        <Image src={HERO[3]} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <Image src={HERO[3]} style={{ width: 503, height: 220, objectFit: "cover" }} />
       </View>
+    </View>
     </Page>
   );
 }
@@ -233,7 +226,8 @@ function Chapter3MainPage({ name, body }: { name: string; body: string }) {
 // ── Ch3 deep page 2 ────────────────────────────────────────────
 function Chapter3DeepPage({ name, pullQuote }: { name: string; pullQuote: string }) {
   return (
-    <Page size="A4" wrap={false} style={{ padding: 0, position: "relative" }}>
+    <Page size="A4" style={{ padding: 0 }}>
+      <View style={{ position: "relative", flexGrow: 1, width: 595 }}>
       <PaperBg />
       <TopHeader name={name} variant="story" />
 
@@ -247,13 +241,13 @@ function Chapter3DeepPage({ name, pullQuote }: { name: string; pullQuote: string
       </View>
 
       {/* 하단 가로 룰 */}
-      <View style={{ position: "absolute", top: 416, left: 46, right: 46, height: 0.6, backgroundColor: RULE }} />
+      <View style={{ position: "absolute", top: 416, left: 46, right: 46, height: 1, backgroundColor: RULE }} />
 
       {/* 하단 hero — Chapter 3-2.jpg */}
       <View style={{ position: "absolute", top: 444, left: 46, right: 46, bottom: 46, overflow: "hidden" }}>
-        <Image src="/Chapter 3-2.jpg" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        <CornerAccent corner="br" />
+        <Image src="/Chapter 3-2.jpg" style={{ width: 503, height: 352, objectFit: "cover" }} />
       </View>
+    </View>
     </Page>
   );
 }
@@ -262,15 +256,14 @@ function Chapter3DeepPage({ name, pullQuote }: { name: string; pullQuote: string
 function Chapter4Page({ name, body }: { name: string; body: string }) {
   const [leftCol, rightCol] = splitBodyIntoColumns(body);
   return (
-    <Page size="A4" wrap={false} style={{ padding: 0, position: "relative" }}>
+    <Page size="A4" style={{ padding: 0 }}>
+      <View style={{ position: "relative", flexGrow: 1, width: 595 }}>
       <PaperBg />
       <TopHeader name={name} variant="vol" />
 
       {/* 좌상 hero (절반 폭) */}
       <View style={{ position: "absolute", top: 96, left: 46, width: 290, height: 230, overflow: "hidden" }}>
-        <Image src={HERO[4]} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        <CornerAccent corner="tl" />
-        <CornerAccent corner="br" />
+        <Image src={HERO[4]} style={{ width: 290, height: 230, objectFit: "cover" }} />
       </View>
 
       {/* 우상 타이틀 블록 */}
@@ -279,7 +272,7 @@ function Chapter4Page({ name, body }: { name: string; body: string }) {
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 28, fontWeight: 700, color: TEXT, marginTop: 10, lineHeight: 1.3 }}>
           {KOR_TITLE[4]}
         </Text>
-        <View style={{ marginTop: 14, width: 110, height: 0.6, backgroundColor: RULE }} />
+        <View style={{ marginTop: 14, width: 110, height: 1, backgroundColor: RULE }} />
       </View>
 
       {/* 부제 (왼쪽 정렬, hero 아래) */}
@@ -289,9 +282,10 @@ function Chapter4Page({ name, body }: { name: string; body: string }) {
 
       {/* Body 2-col */}
       <View style={{ position: "absolute", top: 400, left: 46, right: 46, bottom: 60, flexDirection: "row", gap: 22 }}>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 10.5, lineHeight: 1.75, color: TEXT }}>{leftCol}</Text></View>
-        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 10.5, lineHeight: 1.75, color: TEXT }}>{rightCol}</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{leftCol}</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT }}>{rightCol}</Text></View>
       </View>
+    </View>
     </Page>
   );
 }

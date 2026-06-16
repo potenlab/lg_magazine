@@ -8,25 +8,44 @@ const CHAPTERS = [
   { num: "CHAPTER 4.", title: "내일로 향하는 한 걸음", sub: "매일, 한 줄씩 항로를 긋는다" },
 ];
 
-export function TOC({ deep: _deep }: { deep: boolean }) {
+// Cover.tsx 패턴과 동일하게 — paper bg + 모든 콘텐츠 블록을 Page 직속 자식으로
+// position:absolute 두면 react-pdf 가 추가 페이지를 만들지 않는다.
+// View 래퍼를 두면 그 안의 자식이 flow 로 처리돼 두 번째 페이지가 생긴다.
+const PAGE_W = 595;
+const PAGE_H = 842;
+const PAD = 46;
+const RULE_TOP = 60;
+const TITLE_TOP = 100;
+const TITLE_FS = 56;
+const TITLE_GAP = 40;
+const CHAPTERS_TOP = TITLE_TOP + TITLE_FS + TITLE_GAP; // 196
+// 챕터 블록 1개 = 라벨 16 + mb 6 + 제목 22 + mb 6 + sub 14 = 64pt
+// 챕터 사이 시각적 공백 = 40pt → 사이클 = 104pt
+const CHAPTER_GAP = 104;
+
+export function TOC({ name, deep: _deep }: { name: string; deep: boolean }) {
   return (
-    <Page size="A4" wrap={false} style={{ padding: 0, position: "relative", color: COLORS.text, fontFamily: "Noto Serif KR" }}>
-      {/* paper bg */}
+    <Page size={[PAGE_W, PAGE_H]} style={{ padding: 0, position: "relative", width: PAGE_W, height: PAGE_H, fontFamily: "Noto Serif KR", color: COLORS.text }}>
+      {/* paper bg — EditorIntro 등 다른 페이지와 공통 */}
       <Image
         src="/paper.jpg"
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%" }}
+        style={{ position: "absolute", top: 0, left: 0, width: PAGE_W, height: PAGE_H }}
       />
-      <View style={{ padding: 46 }}>
-      {/* 상단: magazine STORY + 구분선 */}
-      <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-        <Text style={{ fontSize: 10, color: COLORS.wine, letterSpacing: 0.3 }}>
-          magazine <Text style={{ fontWeight: 700 }}>STORY</Text>
-        </Text>
-      </View>
+
+      {/* 상단 마스트헤드 — 좌: Vol. {name} / 우: magazine STORY, 같은 사이즈 10pt */}
+      <Text style={{ position: "absolute", top: 40, left: PAD, fontSize: 12, color: COLORS.wine, letterSpacing: 0 }}>
+        Vol. {name}
+      </Text>
+      <Text style={{ position: "absolute", top: 40, right: PAD, fontSize: 12, color: COLORS.wine, letterSpacing: 0 }}>
+        magazine <Text style={{ fontWeight: 700 }}>STORY</Text>
+      </Text>
       <View
         style={{
-          marginTop: 6,
-          height: 0.8,
+          position: "absolute",
+          top: RULE_TOP,
+          left: PAD,
+          right: PAD,
+          height: 1,
           backgroundColor: COLORS.wine,
         }}
       />
@@ -34,60 +53,58 @@ export function TOC({ deep: _deep }: { deep: boolean }) {
       {/* Contents 타이틀 */}
       <Text
         style={{
-          marginTop: 38,
+          position: "absolute",
+          top: TITLE_TOP,
+          left: PAD,
           fontFamily: "Noto Serif KR",
           fontWeight: 700,
-          fontSize: 56,
+          fontSize: TITLE_FS,
           color: COLORS.wine,
-          letterSpacing: -1,
+          letterSpacing: 0,
         }}
       >
         Contents
       </Text>
 
       {/* 챕터 목록 */}
-      <View style={{ marginTop: 32 }}>
-        {CHAPTERS.map((c) => (
-          <View key={c.num} style={{ marginBottom: 22 }}>
-            <Text
-              style={{
-                fontSize: 10,
-                color: COLORS.wine,
-                letterSpacing: 1.2,
-                marginBottom: 4,
-              }}
-            >
+      {CHAPTERS.map((c, i) => {
+        const top = CHAPTERS_TOP + i * CHAPTER_GAP;
+        return (
+          <View key={c.num} style={{ position: "absolute", top, left: PAD, right: PAD }}>
+            <Text style={{ fontSize: 16, color: COLORS.wine, letterSpacing: 0, marginBottom: 6 }}>
               {c.num}
             </Text>
             <Text
               style={{
                 fontFamily: "Noto Serif KR",
                 fontWeight: 700,
-                fontSize: 18,
+                fontSize: 22,
                 color: COLORS.text,
-                marginBottom: 4,
+                marginBottom: 6,
               }}
             >
               {c.title}
             </Text>
-            <Text style={{ fontSize: 10.5, color: COLORS.muted }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: COLORS.muted }}>
               {c.sub}
             </Text>
           </View>
-        ))}
+        );
+      })}
 
-        <Text
-          style={{
-            marginTop: 6,
-            fontSize: 10,
-            color: COLORS.wine,
-            letterSpacing: 1.2,
-          }}
-        >
-          EDITOR&apos;S NOTE
-        </Text>
-      </View>
-      </View>
+      {/* EDITOR'S NOTE */}
+      <Text
+        style={{
+          position: "absolute",
+          top: CHAPTERS_TOP + 4 * CHAPTER_GAP + 12,
+          left: PAD,
+          fontSize: 16,
+          color: COLORS.wine,
+          letterSpacing: 0,
+        }}
+      >
+        EDITOR&apos;S NOTE
+      </Text>
     </Page>
   );
 }

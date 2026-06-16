@@ -127,7 +127,7 @@ export function ClosingChoiceScene({
 
   const downloadLabel =
     status === "loading"
-      ? "잠시만요…"
+      ? "매거진 생성중.."
       : downloading
         ? "다운로드 중…"
         : "내 매거진 다운받기";

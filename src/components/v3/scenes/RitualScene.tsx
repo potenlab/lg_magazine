@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { PaginatedNarration } from "@/components/v3/ui/PaginatedNarration";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
@@ -73,7 +74,13 @@ export function RitualScene({
   // 으로는 안 넘어가고, 우하단 "다음" 힌트도 숨김 — 명시 CTA 와 "다음" 힌트가
   // 한 화면에 겹쳐 보이는 회귀 방지.
   // 명시 CTA 가 없는 씬은 반대로 대화창 클릭으로만 진행 ("다음" 힌트 노출).
-  const hasExplicitCta = typeof spec.buttonLabel === "string" && spec.buttonLabel.length > 0;
+  // buttonLabel 이 그냥 "다음" 인 경우는 "별다른 의미 없이 다음으로" — 박스
+  // 버튼이 아니라 이전 라벨과 같은 italic 텍스트 힌트 + 대화창 클릭 advance
+  // 가 더 자연스럽다 (사용자 피드백: "다음이 버튼일 필요 없음").
+  const hasExplicitCta =
+    typeof spec.buttonLabel === "string" &&
+    spec.buttonLabel.length > 0 &&
+    spec.buttonLabel !== "다음";
 
   return (
     <div className="flex flex-1 flex-col">
@@ -86,14 +93,15 @@ export function RitualScene({
         }}
         onAdvance={hasExplicitCta ? undefined : advance}
       />
-      {hasExplicitCta && (
-        <div
-          className={`mt-auto flex justify-end transition-opacity duration-500 ${
-            buttonReady ? "opacity-100" : "pointer-events-none opacity-0"
-          }`}
+      {hasExplicitCta && buttonReady && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="mt-auto flex justify-end"
         >
           <StoryButtonV3 label={spec.buttonLabel!} onClick={advance} ritual />
-        </div>
+        </motion.div>
       )}
     </div>
   );

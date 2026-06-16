@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { AutoFlowText } from "@/components/v3/ui/AutoFlowText";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
@@ -130,19 +131,24 @@ export function ValueDefSingleScene({
         </div>
       </div>
       {/* Absolute-anchored to dialog bottom-right — mirrors the "이전" button
-          (absolute bottom-6 left-6) so the two sit at the same height. */}
-      <div
-        className={`absolute bottom-6 right-6 z-10 flex h-[44px] items-center transition-opacity duration-500 ${
-          settled ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-      >
-        <StoryButtonV3
-          label={spec.buttonLabel ?? "전달하기"}
-          onClick={submit}
-          disabled={!allFilled}
-          ritual
-        />
-      </div>
+          (absolute bottom-6 left-6) so the two sit at the same height.
+          settled false 면 아예 미렌더 — 씬 전환 중 박스 버튼 한 프레임
+          깜빡임 회귀 차단. */}
+      {settled && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="absolute bottom-6 right-6 z-10 flex h-[44px] items-center"
+        >
+          <StoryButtonV3
+            label={spec.buttonLabel ?? "전달하기"}
+            onClick={submit}
+            disabled={!allFilled}
+            ritual
+          />
+        </motion.div>
+      )}
     </div>
   );
 }

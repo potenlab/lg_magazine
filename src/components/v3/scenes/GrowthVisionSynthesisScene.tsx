@@ -67,16 +67,6 @@ export function GrowthVisionSynthesisScene({
     (session.growthDirectionRecommendations ?? []).length > 0,
   );
 
-  // [wireframe Zone B — 2026-06-15] 직무 기반 트렌드 카드 3개. 6-axis 추천
-  // 그리드 아래 "🦉 El Owl's Outside View" 섹션에 표시. recommendations와
-  // 동일한 캐시 패턴: stub fallback일 땐 patch 생략해 재시도 가능.
-  const [trendCards, setTrendCards] = useState<
-    { direction: string; context: string }[]
-  >(session.jobTrendCards ?? []);
-  const [trendLoaded, setTrendLoaded] = useState<boolean>(
-    (session.jobTrendCards ?? []).length > 0,
-  );
-
   const [visionInput, setVisionInput] = useState<string>(session.visionLine ?? "");
   const [completed, setCompleted] = useState<boolean>(Boolean(session.visionLine));
   // 챕터 2 와 통일: "이렇게 적어볼래요" 클릭 → 짧은 대기 비트 ("편집장이
@@ -170,30 +160,6 @@ export function GrowthVisionSynthesisScene({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // [wireframe Zone B — 2026-06-15] 직무 기반 트렌드 카드 fetch.
-  // 직무 한 입력만 사용. stub fallback일 땐 캐시 금지 — 다른 합성과 동일 패턴.
-  useEffect(() => {
-    if (trendLoaded) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const r = await llm.generateJobTrendCards({ job: session.job });
-        if (cancelled) return;
-        const cards = (r.cards ?? []).filter((c) => c.direction.trim().length > 0);
-        setTrendCards(cards);
-        if (cards.length > 0 && !r.fromStub) patch({ jobTrendCards: cards });
-        setTrendLoaded(true);
-      } catch (err) {
-        console.error("[v3] generateJobTrendCards failed:", err);
-        if (!cancelled) setTrendLoaded(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   if (!loaded || !synthesis) {
     return (
       <NarrationBlock
@@ -271,7 +237,7 @@ export function GrowthVisionSynthesisScene({
           <p className="mb-6 text-center text-[14px] italic leading-[1.5] text-[#8b7050]">
             고르는 게 아니라, {session.name}님만의 한 줄을 적을 때 참고만 해주세요.
           </p>
-          <p className="mb-3 text-[10.5px] uppercase tracking-[0.18em] text-[#9b8768] italic">
+          <p className="mb-3 text-[13px] tracking-[0.12em] text-[#9b8768] italic">
             엘아울이 {session.name}님의 이야기에서 읽은 언어
           </p>
           <div className="grid grid-cols-2 gap-x-5 sm:grid-cols-3">
@@ -298,55 +264,6 @@ export function GrowthVisionSynthesisScene({
         </section>
       )}
 
-      {/* ── 디바이더 — "내 이야기 → 바깥 시선" 전환 ──────────────── */}
-      {trendCards.length > 0 && (
-        <div className="my-9 flex items-center gap-3">
-          <div className="h-px flex-1 bg-[#b99b6b]/40" />
-          <span className="text-[14px] italic tracking-[0.15em] text-[#9b8768]">
-            🦉 &nbsp;El Owl&rsquo;s Outside View
-          </span>
-          <div className="h-px flex-1 bg-[#b99b6b]/40" />
-        </div>
-      )}
-
-      {/* ── ZONE B — 직무 기반 트렌드 카드 (3개) ─────────────────
-          generateJobTrendCards 결과. 불릿 + 굵은 방향 한 줄 + 이탤릭
-          맥락 한 줄의 에디터 노트 톤. LLM 실패 시 자연스럽게 사라짐. */}
-      {trendCards.length > 0 && (
-        <section>
-          <p className="mb-3 text-[10.5px] uppercase tracking-[0.18em] text-[#9b8768] italic">
-            바깥에서 포착한 시선
-          </p>
-          <ul className="flex flex-col">
-            {trendCards.map((card, i) => (
-              <motion.li
-                key={i}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.08 + 0.08 * i, duration: 0.45, ease: "easeOut" }}
-                className={`flex gap-4 border-t border-[#b99b6b]/40 py-5 ${
-                  i === trendCards.length - 1 ? "border-b" : ""
-                }`}
-              >
-                <span className="mt-[9px] inline-block size-1 shrink-0 rounded-full bg-[#9b8768]" />
-                <div className="flex-1">
-                  <p
-                    className="mb-1 text-[14px] font-medium leading-[1.7] text-[#3d2414]"
-                    style={{ wordBreak: "keep-all" }}
-                  >
-                    {card.direction}
-                  </p>
-                  {card.context && (
-                    <p className="text-[14px] italic leading-[1.6] text-[#6b5a3e]">
-                      {card.context}
-                    </p>
-                  )}
-                </div>
-              </motion.li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       {/* ── Editor's Question — 앵커 패턴 입력 ──────────────────── */}
       <section className="relative mt-12">

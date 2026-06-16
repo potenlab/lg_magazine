@@ -202,7 +202,7 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
             downloading
               ? "전달 중…"
               : status === "loading"
-                ? "잠시만요…"
+                ? "매거진 생성중.."
                 : (spec.buttonLabel ?? "PDF 받기")
           }
           onClick={() => {

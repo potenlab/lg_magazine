@@ -139,19 +139,24 @@ export function QuestionScene({
       {/* Absolute-anchored to dialog bottom-right (mirrors the "이전" button
           which sits absolute bottom-6 left-6). Keeps button position fixed
           regardless of content height so short questions don't leave a big
-          empty gap between the input and the action button. */}
-      <div
-        className={`absolute bottom-6 right-6 z-10 flex h-[44px] items-center transition-opacity duration-500 ${
-          inputVisible ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-      >
-        <StoryButtonV3
-          label={spec.buttonLabel ?? "전달하기"}
-          onClick={submit}
-          disabled={value.trim().length === 0}
-          ritual={ritual}
-        />
-      </div>
+          empty gap between the input and the action button.
+          inputVisible false 면 아예 미렌더 — 씬 전환 중 박스 버튼 한 프레임
+          깜빡임 회귀 차단. */}
+      {inputVisible && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="absolute bottom-6 right-6 z-10 flex h-[44px] items-center"
+        >
+          <StoryButtonV3
+            label={spec.buttonLabel ?? "전달하기"}
+            onClick={submit}
+            disabled={value.trim().length === 0}
+            ritual={ritual}
+          />
+        </motion.div>
+      )}
       {inputVisible && spec.reviewFields && spec.reviewFields.length > 0 && (
         <>
           <button

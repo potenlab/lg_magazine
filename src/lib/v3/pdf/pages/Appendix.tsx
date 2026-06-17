@@ -60,8 +60,10 @@ export function Appendix({ name, threads }: Props) {
       />
 
       <View style={{ paddingHorizontal: 46, paddingTop: 20, paddingBottom: 50 }}>
-        {/* fixed header — Vol.{name} 좌 + magazine STORY 우 + 와인 룰 */}
-        <View fixed>
+        {/* fixed header — Vol.{name} 좌 + magazine STORY 우 + 와인 룰.
+            marginBottom 24 — 페이지 wrap 시에도 헤더 아래에 동일한
+            breathing room 확보 (다른 본문 페이지의 첫 콘텐츠 marginTop 과 통일). */}
+        <View fixed style={{ marginBottom: 24 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
             <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
@@ -69,10 +71,9 @@ export function Appendix({ name, threads }: Props) {
           <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
         </View>
 
-        {/* #1 — Title 블록. Ch1~4 와 동일 리듬:
-            라벨 12pt MUTED letterSpacing 0 → 타이틀 26pt bold marginTop 8
-            → 짧은 룰 80pt marginTop 20. */}
-        <View style={{ marginTop: 24 }}>
+        {/* #1 — Title 블록. 헤더 marginBottom 24 가 이미 갭을 줘서
+            여기서는 자체 marginTop 제거. */}
+        <View>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>
             APPENDIX
           </Text>

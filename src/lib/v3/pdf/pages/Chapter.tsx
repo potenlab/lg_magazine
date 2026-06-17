@@ -1,5 +1,6 @@
 import { Image, Page, Text, View } from "@react-pdf/renderer";
 import { sanitizeBody } from "../sanitize";
+import { getChapterImage, type ImageVariant } from "../imageSets";
 
 /**
  * Chapter pages — 챕터별 시안이 달라 단일 컴포넌트 안에서 chapter 번호에
@@ -19,6 +20,7 @@ interface Props {
   body: string;
   pullQuote: string | null;
   name: string;
+  variant: ImageVariant;
 }
 
 const TEXT = "#3d2414";
@@ -39,12 +41,8 @@ const SUBTITLE: Record<1 | 2 | 3 | 4, string> = {
   3: "살아있음을 느끼는 지도",
   4: "매일, 한 줄씩 항로를 긋는다",
 };
-const HERO: Record<1 | 2 | 3 | 4, string> = {
-  1: "/Chapter 1.jpg",
-  2: "/Chapter 2(1).jpg",
-  3: "/Chapter 3(1).jpg",
-  4: "/Chapter 4.jpg",
-};
+// 이미지 세트는 imageSets.getChapterImage(chapter, variant) 로 resolve.
+// Ch1·Ch4 는 variant 무관 단일 자산.
 
 /** Hero 이미지 모서리 와인 색 삼각 액센트 (액자 효과).
  *  Ch1 등에서 <CornerAccent corner="tr|tl|br|bl" /> 로 사용. */
@@ -70,7 +68,7 @@ function CornerAccent({ corner }: { corner: "tl" | "tr" | "bl" | "br" }) {
 // 1-col + Page wrap. 본문이 길면 자동으로 다음 페이지로 흘러감.
 // paper.jpg + Vol.{name} 헤더는 `fixed` 로 모든 페이지에 반복.
 // Hero / Title / Subtitle 은 첫 페이지 상단(flow), PullQuote 는 body 뒤 flow.
-function Chapter1Page({ name, body, pullQuote, sub }: { name: string; body: string; pullQuote: string | null; sub: string }) {
+function Chapter1Page({ name, body, pullQuote, sub, variant }: { name: string; body: string; pullQuote: string | null; sub: string; variant: ImageVariant }) {
   return (
     <Page size="A4" wrap style={{ padding: 0 }}>
       {/* paper bg — 모든 페이지 반복 */}
@@ -92,7 +90,7 @@ function Chapter1Page({ name, body, pullQuote, sub }: { name: string; body: stri
 
         {/* Hero — 첫 페이지에만 (flow). CornerAccent 제거. */}
         <View style={{ marginTop: 24, height: 157, overflow: "hidden", position: "relative" }}>
-          <Image src={HERO[1]} style={{ width: 503, height: 157, objectFit: "cover" }} />
+          <Image src={getChapterImage(1, variant)} style={{ width: 503, height: 157, objectFit: "cover" }} />
         </View>
 
         {/* Title row — flex-start (상단 정렬). 룰·부제 간격 20 으로 통일. */}
@@ -146,7 +144,7 @@ function Chapter1Page({ name, body, pullQuote, sub }: { name: string; body: stri
 // ── Ch2 ─────────────────────────────────────────────────────────
 // Page wrap. 본문이 길면 자동으로 다음 페이지로 흐름.
 // 헤더(paper bg + magazine STORY 룰)는 fixed 로 모든 페이지에 반복.
-function Chapter2Page({ name, body, pullQuote, sub }: { name: string; body: string; pullQuote: string | null; sub: string }) {
+function Chapter2Page({ name, body, pullQuote, sub, variant }: { name: string; body: string; pullQuote: string | null; sub: string; variant: ImageVariant }) {
   return (
     <Page size="A4" wrap style={{ padding: 0 }}>
       <Image
@@ -191,7 +189,7 @@ function Chapter2Page({ name, body, pullQuote, sub }: { name: string; body: stri
           alignItems: "flex-end" → pullQuote 텍스트가 hero 높이 하단에 정렬. */}
       <View style={{ position: "absolute", left: 46, right: 46, bottom: 46, flexDirection: "row", gap: 22, alignItems: "flex-end" }}>
         <View style={{ width: 250, height: 155, overflow: "hidden" }}>
-          <Image src={HERO[2]} style={{ width: 250, height: 155, objectFit: "cover" }} />
+          <Image src={getChapterImage(2, variant)} style={{ width: 250, height: 155, objectFit: "cover" }} />
         </View>
         {pullQuote && (
           <View style={{ flex: 1 }}>
@@ -212,7 +210,7 @@ function Chapter2Page({ name, body, pullQuote, sub }: { name: string; body: stri
 //   - 타이틀 행: alignItems flex-end 로 큰 타이틀과 작은 라벨이 baseline 동선
 //   - 본문 ↔ hero 사이 wrap={false} 분리, hero ↔ pullQuote 도 통째 유지
 //   - pullQuote 좌·우 따옴표는 페이지 양 끝 가까이 큼직하게 (시안의 큰 ", ")
-function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: string; pullQuote: string | null; sub: string }) {
+function Chapter3MainPage({ name, body, pullQuote, sub, variant }: { name: string; body: string; pullQuote: string | null; sub: string; variant: ImageVariant }) {
   return (
     <Page size="A4" wrap style={{ padding: 0 }}>
       <Image
@@ -259,7 +257,7 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
           - pullQuote: 컨테이너 안에서 좌·우 46 padding */}
       <View style={{ position: "absolute", left: 0, right: 0, bottom: 46 }}>
         <View style={{ width: 403, height: 155, overflow: "hidden", marginBottom: 24 }}>
-          <Image src={HERO[3]} style={{ width: 403, height: 155, objectFit: "cover" }} />
+          <Image src={getChapterImage(3, variant)} style={{ width: 403, height: 155, objectFit: "cover" }} />
         </View>
 
         {pullQuote && (
@@ -295,7 +293,7 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
 // 시안 (2026-06-17): 헤더 텍스트 우측 + 와인 룰 → 좌 (CHAPTER 4. /
 // 큰 타이틀 / 짧은 룰) + 우 hero → 부제 → 본문.
 // 기존 요소 그대로 두고 좌·우 위치만 시안에 맞춰 swap.
-function Chapter4Page({ name, body, sub }: { name: string; body: string; sub: string }) {
+function Chapter4Page({ name, body, sub, variant }: { name: string; body: string; sub: string; variant: ImageVariant }) {
   return (
     <Page size="A4" wrap style={{ padding: 0 }}>
       <Image
@@ -328,7 +326,7 @@ function Chapter4Page({ name, body, sub }: { name: string; body: string; sub: st
           {/* Chapter 4.jpg 세로형 (ratio 0.67). 시안보다 작았어서 키우고,
               우측 pad 0 — marginRight -46 으로 paddingHorizontal 보정해 페이지 우측 끝까지. */}
           <View style={{ width: 220, height: 328, overflow: "hidden", marginRight: -46 }}>
-            <Image src={HERO[4]} style={{ width: 220, height: 328, objectFit: "cover" }} />
+            <Image src={getChapterImage(4, variant)} style={{ width: 220, height: 328, objectFit: "cover" }} />
           </View>
         </View>
 
@@ -359,18 +357,18 @@ function PullQuoteCenter({ text }: { text: string }) {
   );
 }
 
-export function Chapter({ chapter, headline, body, pullQuote, name }: Props) {
+export function Chapter({ chapter, headline, body, pullQuote, name, variant }: Props) {
   // '', **, () 같은 마크다운/특수기호가 LLM 본문에 섞여 들어오는 케이스 제거.
   const cleanBody = sanitizeBody(body);
   const cleanPull = pullQuote ? sanitizeBody(pullQuote) : null;
   // sub = LLM 이 생성한 챕터 headline. TOC 의 sub 와 동일 값.
   // headline 이 비면 SUBTITLE 상수가 fallback (각 챕터 page 내부).
   const sub = headline?.trim() || "";
-  if (chapter === 1) return <Chapter1Page name={name} body={cleanBody} pullQuote={cleanPull} sub={sub} />;
-  if (chapter === 2) return <Chapter2Page name={name} body={cleanBody} pullQuote={cleanPull} sub={sub} />;
+  if (chapter === 1) return <Chapter1Page name={name} body={cleanBody} pullQuote={cleanPull} sub={sub} variant={variant} />;
+  if (chapter === 2) return <Chapter2Page name={name} body={cleanBody} pullQuote={cleanPull} sub={sub} variant={variant} />;
   if (chapter === 3) {
     // 기존 deep page (별도 페이지) 를 main 으로 흡수 — pullQuote 가 본문 뒤 인라인으로 렌더.
-    return <Chapter3MainPage name={name} body={cleanBody} pullQuote={cleanPull} sub={sub} />;
+    return <Chapter3MainPage name={name} body={cleanBody} pullQuote={cleanPull} sub={sub} variant={variant} />;
   }
-  return <Chapter4Page name={name} body={cleanBody} sub={sub} />;
+  return <Chapter4Page name={name} body={cleanBody} sub={sub} variant={variant} />;
 }

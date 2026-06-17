@@ -15,6 +15,7 @@ import { Cover } from "@/lib/v3/pdf/pages/Cover";
 import { TOC } from "@/lib/v3/pdf/pages/TOC";
 import { EditorIntro } from "@/lib/v3/pdf/pages/EditorIntro";
 import { Chapter } from "@/lib/v3/pdf/pages/Chapter";
+import type { ImageVariant } from "@/lib/v3/pdf/imageSets";
 import { EditorOutro } from "@/lib/v3/pdf/pages/EditorOutro";
 import { BackPage } from "@/lib/v3/pdf/pages/BackPage";
 import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
@@ -73,6 +74,7 @@ const TABS: { key: PageKey; label: string }[] = [
 
 export default function PdfPreviewPage() {
   const [page, setPage] = useState<PageKey>("cover");
+  const [variant, setVariant] = useState<ImageVariant>(1);
   const [fontsReady, setFontsReady] = useState(false);
 
   useEffect(() => {
@@ -89,6 +91,7 @@ export default function PdfPreviewPage() {
         body={SAMPLE.chapters[n].body}
         pullQuote={SAMPLE.chapters[n].pullQuote}
         name={SAMPLE.name}
+        variant={variant}
       />
     );
     const pages = (() => {
@@ -106,7 +109,7 @@ export default function PdfPreviewPage() {
                 ]}
               />;
         case "editorIntro":
-          return <EditorIntro body={SAMPLE.editorIntro} name={SAMPLE.name} />;
+          return <EditorIntro body={SAMPLE.editorIntro} name={SAMPLE.name} variant={variant} />;
         case "ch1":
           return ch(1);
         case "ch2":
@@ -123,7 +126,7 @@ export default function PdfPreviewPage() {
           return (
             <>
               <Cover name={SAMPLE.name} date={SAMPLE.date} headline={SAMPLE.coverHeadline} />
-              <EditorIntro body={SAMPLE.editorIntro} name={SAMPLE.name} />
+              <EditorIntro body={SAMPLE.editorIntro} name={SAMPLE.name} variant={variant} />
               <TOC
                 name={SAMPLE.name}
                 chapterHeadlines={[
@@ -144,7 +147,7 @@ export default function PdfPreviewPage() {
       }
     })();
     return <Document title="STORY Preview">{pages}</Document>;
-  }, [page, fontsReady]);
+  }, [page, fontsReady, variant]);
 
   return (
     <main style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#1c130c", color: "#f5ead6" }}>
@@ -168,13 +171,34 @@ export default function PdfPreviewPage() {
             {t.label}
           </button>
         ))}
-        <span style={{ marginLeft: "auto", fontSize: 11, opacity: 0.6 }}>
-          sample: {SAMPLE.name} / {SAMPLE.date}
-        </span>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 11, opacity: 0.6, marginRight: 6 }}>
+            sample: {SAMPLE.name} / {SAMPLE.date}
+          </span>
+          <span style={{ fontSize: 11, opacity: 0.8 }}>이미지 세트:</span>
+          {([1, 2] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setVariant(v)}
+              style={{
+                padding: "6px 10px",
+                fontSize: 12,
+                borderRadius: 4,
+                border: "1px solid #b99b6b",
+                background: variant === v ? "#b99b6b" : "transparent",
+                color: variant === v ? "#1c130c" : "#f5ead6",
+                cursor: "pointer",
+              }}
+            >
+              ({v})
+            </button>
+          ))}
+        </div>
       </header>
       <div style={{ flex: 1, minHeight: 0 }}>
         {doc && (
-          <PDFViewer key={page} width="100%" height="100%" style={{ border: "none" }} showToolbar>
+          <PDFViewer key={`${page}-${variant}`} width="100%" height="100%" style={{ border: "none" }} showToolbar>
             {doc}
           </PDFViewer>
         )}

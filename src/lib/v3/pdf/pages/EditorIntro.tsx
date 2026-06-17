@@ -1,5 +1,6 @@
 import { Image, Page, Text, View } from "@react-pdf/renderer";
 import { sanitizeBody } from "../sanitize";
+import { getIntroImage, type ImageVariant } from "../imageSets";
 
 /**
  * Editor Intro — 매거진 2번째 페이지.
@@ -11,6 +12,7 @@ import { sanitizeBody } from "../sanitize";
 interface Props {
   body: string;
   name: string;
+  variant: ImageVariant;
 }
 
 const TEXT = "#3d2414";
@@ -20,7 +22,7 @@ const PAGE_W = 595;
 const PAGE_H = 842;
 const PAD = 46;
 
-export function EditorIntro({ body, name }: Props) {
+export function EditorIntro({ body, name, variant }: Props) {
   return (
     <Page size={[PAGE_W, PAGE_H]} style={{ padding: 0, position: "relative", width: PAGE_W, height: PAGE_H, fontFamily: "Noto Serif KR", color: TEXT }}>
       {/* paper bg */}
@@ -83,7 +85,7 @@ export function EditorIntro({ body, name }: Props) {
         }}
       >
         <Image
-          src="/intro(1).jpg"
+          src={getIntroImage(variant)}
           style={{ width: PAGE_W - PAD * 2, height: 260, objectFit: "cover" }}
         />
       </View>

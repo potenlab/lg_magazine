@@ -200,9 +200,12 @@ function Chapter2Page({ name, body, pullQuote, sub }: { name: string; body: stri
   );
 }
 
-// ── Ch3 (deep page 합쳐서 단일 페이지) ─────────────────────────────
-// Page wrap. 본문이 길면 다음 페이지로 흐름.
-// 기존 Chapter3DeepPage 의 pullQuote 블록을 본문 뒤 / hero 앞에 인라인으로 흡수.
+// ── Ch3 ──────────────────────────────────────────────────────────
+// 시안 (2026-06-17): Vol. + 와인 룰 → 좌 타이틀 / 우 "CHAPTER 3." → 짧은
+// 룰 → 부제 → 본문 → hero → 큰 따옴표 pullQuote 순서.
+//   - 타이틀 행: alignItems flex-end 로 큰 타이틀과 작은 라벨이 baseline 동선
+//   - 본문 ↔ hero 사이 wrap={false} 분리, hero ↔ pullQuote 도 통째 유지
+//   - pullQuote 좌·우 따옴표는 페이지 양 끝 가까이 큼직하게 (시안의 큰 ", ")
 function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: string; pullQuote: string | null; sub: string }) {
   return (
     <Page size="A4" wrap style={{ padding: 0 }}>
@@ -213,45 +216,71 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
       />
 
       <View style={{ paddingHorizontal: 46, paddingTop: 20, paddingBottom: 50 }}>
-        {/* fixed header */}
+        {/* fixed header — Vol.{name} + 와인 룰 */}
         <View fixed>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
-          <View style={{ height: 1, backgroundColor: WINE, marginTop: 4 }} />
+          <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
         </View>
 
-        {/* 중앙 타이틀 */}
-        <View style={{ alignItems: "center", marginTop: 36 }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 3.</Text>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT, marginTop: 8 }}>{KOR_TITLE[3]}</Text>
-          <View style={{ marginTop: 12, width: 70, height: 1, backgroundColor: RULE }} />
+        {/* Title 행 — 좌 큰 타이틀 / 우 작은 CHAPTER 3. 라벨, baseline 정렬 */}
+        <View style={{ marginTop: 36, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" }}>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 32, fontWeight: 700, color: TEXT, lineHeight: 1.1 }}>
+            {KOR_TITLE[3]}
+          </Text>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 13, color: MUTED, letterSpacing: 1, marginBottom: 6 }}>
+            CHAPTER 3.
+          </Text>
         </View>
+        <View style={{ marginTop: 14, width: 90, height: 1, backgroundColor: RULE }} />
 
-        {/* 부제 */}
-        <View style={{ alignItems: "center", marginTop: 28 }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, color: TEXT }}>{sub || SUBTITLE[3]}</Text>
-        </View>
-
-        {/* Body 1-col flow */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 24 }}>
-          {body}
+        {/* 부제 (LLM headline / 비면 SUBTITLE[3] fallback) */}
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, color: TEXT, marginTop: 28 }}>
+          {sub || SUBTITLE[3]}
         </Text>
 
-        {/* PullQuote — 기존 deep page 의 큰 인용 (26pt 따옴표 / 18pt 본문).
-            wrap={false} 로 한 페이지에 통째 유지. */}
+        {/* Body 1-col flow — 길면 다음 페이지로 */}
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 13.5, lineHeight: 1.85, color: TEXT, marginTop: 16 }}>
+          {body}
+        </Text>
+      </View>
+
+      {/* 하단 블록 — hero + pullQuote 를 페이지 bottom 46 에 anchor.
+          top 제약 없음 → 콘텐츠 길이에 따라 위로 자라남. */}
+      <View style={{ position: "absolute", left: 46, right: 46, bottom: 46 }}>
+        <View style={{ height: 200, overflow: "hidden" }}>
+          <Image src={HERO[3]} style={{ width: 503, height: 200, objectFit: "cover" }} />
+        </View>
+
         {pullQuote && (
-          <View wrap={false} style={{ marginTop: 28, flexDirection: "row" }}>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, color: MUTED, marginRight: 10, marginTop: -8 }}>&#x201C;</Text>
+          <View
+            style={{
+              marginTop: 24,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 52, color: MUTED, marginRight: 12, marginTop: -10 }}>
+              &#x201C;
+            </Text>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: "Noto Serif KR", fontSize: 20, fontWeight: 700, color: TEXT, lineHeight: 1.7 }}>{pullQuote}</Text>
+              <Text
+                style={{
+                  fontFamily: "Noto Serif KR",
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: TEXT,
+                  textAlign: "left",
+                  lineHeight: 1.6,
+                }}
+              >
+                {pullQuote}
+              </Text>
             </View>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, color: MUTED, marginLeft: 10, marginBottom: -14 }}>&#x201D;</Text>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 52, color: MUTED, marginLeft: 12, marginBottom: -22 }}>
+              &#x201D;
+            </Text>
           </View>
         )}
-
-        {/* 하단 hero — wrap={false} 로 한 페이지에 통째로 */}
-        <View wrap={false} style={{ marginTop: 28, height: 167, overflow: "hidden" }}>
-          <Image src={HERO[3]} style={{ width: 503, height: 167, objectFit: "cover" }} />
-        </View>
       </View>
     </Page>
   );

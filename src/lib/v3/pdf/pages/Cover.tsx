@@ -43,11 +43,13 @@ export function Cover({ name, date, headline }: Props) {
 
         {/* VOL. {name} — "오직 한 사람을 위한 단 한 호의 매거진" 베이크 텍스트
             바로 아래 줄에 위치. */}
+        {/* 이름 길이에 따라 좌측으로 밀리지 않도록 left-anchor 로 고정.
+            "오직 한 사람을 위한" 베이크 텍스트 왼쪽 끝에 맞춰 자람. */}
         <Text
           style={{
             position: "absolute",
             top: 200,
-            right: 102,
+            left: 335,
             fontSize: 22,
             fontFamily: "Noto Serif KR",
             color: CREAM,

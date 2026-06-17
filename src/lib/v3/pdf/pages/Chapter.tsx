@@ -130,7 +130,7 @@ function Chapter1Page({ name, body, pullQuote, sub }: { name: string; body: stri
             &#x201C;
           </Text>
           <View style={{ flex: 1, alignItems: "center" }}>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 20, fontWeight: 700, color: TEXT, textAlign: "center", lineHeight: 1.6 }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 19, fontWeight: 700, color: TEXT, textAlign: "center", lineHeight: 1.6 }}>
               {pullQuote}
             </Text>
           </View>
@@ -165,15 +165,15 @@ function Chapter2Page({ name, body, pullQuote, sub }: { name: string; body: stri
           <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
         </View>
 
-        {/* 중앙 타이틀 — #1 marginTop 24. 타이틀↔룰·룰↔부제 간격 20 통일. */}
-        <View style={{ alignItems: "center", marginTop: 24 }}>
+        {/* 타이틀 블록 — 좌측 정렬. #1 marginTop 24. 타이틀↔룰·룰↔부제 간격 20. */}
+        <View style={{ alignItems: "flex-start", marginTop: 24 }}>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 2.</Text>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT, marginTop: 8 }}>{KOR_TITLE[2]}</Text>
           <View style={{ marginTop: 20, width: 70, height: 1, backgroundColor: RULE }} />
         </View>
 
-        {/* 부제 */}
-        <View style={{ alignItems: "center", marginTop: 20 }}>
+        {/* 부제 — 좌측 정렬 */}
+        <View style={{ alignItems: "flex-start", marginTop: 20 }}>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, color: TEXT }}>{sub || SUBTITLE[2]}</Text>
         </View>
 
@@ -195,7 +195,7 @@ function Chapter2Page({ name, body, pullQuote, sub }: { name: string; body: stri
         </View>
         {pullQuote && (
           <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 20, fontWeight: 700, color: TEXT, lineHeight: 1.5 }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 19, fontWeight: 700, color: TEXT, lineHeight: 1.5 }}>
               {pullQuote}
             </Text>
             <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, marginTop: 12 }}>by. {name}</Text>
@@ -258,8 +258,8 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
           - hero: 풀폭 X (width 503 유지), left 0, height 175, pullQuote 위 24 gap (marginBottom 24)
           - pullQuote: 컨테이너 안에서 좌·우 46 padding */}
       <View style={{ position: "absolute", left: 0, right: 0, bottom: 46 }}>
-        <View style={{ width: 503, height: 175, overflow: "hidden", marginBottom: 24 }}>
-          <Image src={HERO[3]} style={{ width: 503, height: 175, objectFit: "cover" }} />
+        <View style={{ width: 403, height: 155, overflow: "hidden", marginBottom: 24 }}>
+          <Image src={HERO[3]} style={{ width: 403, height: 155, objectFit: "cover" }} />
         </View>
 
         {pullQuote && (
@@ -271,7 +271,7 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
               <Text
                 style={{
                   fontFamily: "Noto Serif KR",
-                  fontSize: 20,
+                  fontSize: 19,
                   fontWeight: 700,
                   color: TEXT,
                   textAlign: "left",

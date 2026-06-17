@@ -38,16 +38,16 @@ export function EditorOutro({ body, name }: Props) {
       </View>
       <View style={{ position: "absolute", top: 46, left: 46, right: 46, height: 1, backgroundColor: WINE }} />
 
-      {/* Editor's Note hero 사진 — 헤더 룰(top 46) 아래 24, height 360 (기존 -20). */}
-      <View style={{ position: "absolute", top: 70, left: 46, right: 46, height: 360, overflow: "hidden" }}>
+      {/* Editor's Note hero 사진 — 헤더 룰(top 46) 아래 24, height 320 (-40). */}
+      <View style={{ position: "absolute", top: 70, left: 46, right: 46, height: 320, overflow: "hidden" }}>
         <Image
           src="/outro.jpg"
-          style={{ width: 503, height: 360, objectFit: "cover" }}
+          style={{ width: 503, height: 320, objectFit: "cover" }}
         />
       </View>
 
       {/* "EDITOR'S NOTE" 큰 타이틀 + 룰 — hero 아래 24. 타이틀-룰-본문 간격 20. */}
-      <View style={{ position: "absolute", top: 454, left: 46, right: 46 }}>
+      <View style={{ position: "absolute", top: 414, left: 46, right: 46 }}>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 28, fontWeight: 700, color: TEXT, letterSpacing: 1 }}>
           EDITOR&apos;S NOTE
         </Text>
@@ -55,7 +55,7 @@ export function EditorOutro({ body, name }: Props) {
       </View>
 
       {/* Body — 룰 아래 20 (타이틀 텍스트 ~34pt + 20 + 1 + 20). */}
-      <View style={{ position: "absolute", top: 529, left: 46, right: 46 }}>
+      <View style={{ position: "absolute", top: 489, left: 46, right: 46 }}>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: TEXT, lineHeight: 1.85 }}>
           {sanitizeBody(body)}
         </Text>

@@ -70,46 +70,46 @@ function CornerAccent({ corner }: { corner: "tl" | "tr" | "bl" | "br" }) {
 // Hero / Title / Subtitle 은 첫 페이지 상단(flow), PullQuote 는 body 뒤 flow.
 function Chapter1Page({ name, body, pullQuote, sub, variant }: { name: string; body: string; pullQuote: string | null; sub: string; variant: ImageVariant }) {
   return (
-    <Page size="A4" wrap style={{ padding: 0 }}>
-      {/* paper bg — 모든 페이지 반복 */}
+    // Page 에 padding 직접 부여 — wrap 페이지에도 동일 적용(헤더 간격 일관).
+    // paddingTop 71 = 헤더 영역(top 20 + 텍스트~14 + rule mt 12 + 1 ≈ 47) + breathing 24.
+    <Page size="A4" wrap style={{ paddingHorizontal: 46, paddingTop: 71, paddingBottom: 50 }}>
+      {/* paper bg — fixed (모든 페이지 반복) */}
       <Image
         src={PAPER}
         fixed
         style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
       />
 
-      <View style={{ paddingHorizontal: 46, paddingTop: 20, paddingBottom: 50 }}>
-        {/* Header — fixed: Vol. {name} 좌 + magazine STORY 우 + 와인 룰. */}
-        <View fixed>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
-          </View>
-          <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
+      {/* Header — fixed + absolute(top 20): flow 공간 차지 없이 모든 페이지 동일 위치. */}
+      <View fixed style={{ position: "absolute", top: 20, left: 46, right: 46 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
         </View>
-
-        {/* Hero — 첫 페이지에만 (flow). CornerAccent 제거. */}
-        <View style={{ marginTop: 24, height: 157, overflow: "hidden", position: "relative" }}>
-          <Image src={getChapterImage(1, variant)} style={{ width: 503, height: 157, objectFit: "cover" }} />
-        </View>
-
-        {/* Title row — flex-start (상단 정렬). 룰·부제 간격 20 으로 통일. */}
-        <View style={{ marginTop: 24, flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT }}>{KOR_TITLE[1]}</Text>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 1.</Text>
-        </View>
-        <View style={{ height: 1, backgroundColor: RULE, marginTop: 20, width: 80 }} />
-
-        {/* Subtitle — dynamic headline (TOC sub 와 동일), 비면 static fallback */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, marginTop: 20, color: TEXT }}>
-          {sub || SUBTITLE[1]}
-        </Text>
-
-        {/* Body 1-col — wrap 가능 (본문 길면 다음 페이지로) */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 16 }}>
-          {body}
-        </Text>
+        <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
       </View>
+
+      {/* Hero — #1 (flow). marginTop 0: Page paddingTop 71 이 헤더 아래 갭 담당. */}
+      <View style={{ height: 157, overflow: "hidden", position: "relative" }}>
+        <Image src={getChapterImage(1, variant)} style={{ width: 503, height: 157, objectFit: "cover" }} />
+      </View>
+
+      {/* Title row — flex-start (상단 정렬). 룰·부제 간격 20 으로 통일. */}
+      <View style={{ marginTop: 24, flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT }}>{KOR_TITLE[1]}</Text>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 1.</Text>
+      </View>
+      <View style={{ height: 1, backgroundColor: RULE, marginTop: 20, width: 80 }} />
+
+      {/* Subtitle — dynamic headline (TOC sub 와 동일), 비면 static fallback */}
+      <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, marginTop: 20, color: TEXT }}>
+        {sub || SUBTITLE[1]}
+      </Text>
+
+      {/* Body 1-col — wrap 가능 (본문 길면 다음 페이지로) */}
+      <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 16 }}>
+        {body}
+      </Text>
 
       {/* PullQuote — 절대 좌표 bottom 46 anchor (페이지 하단 고정). top 제한 없음. */}
       {pullQuote && (
@@ -146,40 +146,39 @@ function Chapter1Page({ name, body, pullQuote, sub, variant }: { name: string; b
 // 헤더(paper bg + magazine STORY 룰)는 fixed 로 모든 페이지에 반복.
 function Chapter2Page({ name, body, pullQuote, sub, variant }: { name: string; body: string; pullQuote: string | null; sub: string; variant: ImageVariant }) {
   return (
-    <Page size="A4" wrap style={{ padding: 0 }}>
+    // Page 에 padding 직접 부여 — wrap 페이지 헤더 간격 일관 (paddingTop 71).
+    <Page size="A4" wrap style={{ paddingHorizontal: 46, paddingTop: 71, paddingBottom: 50 }}>
       <Image
         src={PAPER}
         fixed
         style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
       />
 
-      <View style={{ paddingHorizontal: 46, paddingTop: 20, paddingBottom: 50 }}>
-        {/* fixed header — Vol. {name} 좌 + magazine STORY 우 + 와인 룰. */}
-        <View fixed>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
-          </View>
-          <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
+      {/* fixed header — absolute(top 20): 모든 페이지 동일 위치, flow 공간 X. */}
+      <View fixed style={{ position: "absolute", top: 20, left: 46, right: 46 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
         </View>
-
-        {/* 타이틀 블록 — 좌측 정렬. #1 marginTop 24. 타이틀↔룰·룰↔부제 간격 20. */}
-        <View style={{ alignItems: "flex-start", marginTop: 24 }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 2.</Text>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT, marginTop: 8 }}>{KOR_TITLE[2]}</Text>
-          <View style={{ marginTop: 20, width: 70, height: 1, backgroundColor: RULE }} />
-        </View>
-
-        {/* 부제 — 좌측 정렬 */}
-        <View style={{ alignItems: "flex-start", marginTop: 20 }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, color: TEXT }}>{sub || SUBTITLE[2]}</Text>
-        </View>
-
-        {/* Body — 1-col flow. 길면 다음 페이지로. */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 16 }}>
-          {body}
-        </Text>
+        <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
       </View>
+
+      {/* 타이틀 블록 — #1 marginTop 0 (Page paddingTop 가 갭 담당). 좌측 정렬. */}
+      <View style={{ alignItems: "flex-start" }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 2.</Text>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT, marginTop: 8 }}>{KOR_TITLE[2]}</Text>
+        <View style={{ marginTop: 20, width: 70, height: 1, backgroundColor: RULE }} />
+      </View>
+
+      {/* 부제 — 좌측 정렬 */}
+      <View style={{ alignItems: "flex-start", marginTop: 20 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, color: TEXT }}>{sub || SUBTITLE[2]}</Text>
+      </View>
+
+      {/* Body — 1-col flow. 길면 다음 페이지로. */}
+      <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 16 }}>
+        {body}
+      </Text>
 
       {/* 본문 ↔ 하단 블록 사이 가로 룰 — 하단 블록(bottom 46 + hero 155) 24 위.
           → bottom = 46 + 155 + 24 = 225 */}
@@ -212,45 +211,44 @@ function Chapter2Page({ name, body, pullQuote, sub, variant }: { name: string; b
 //   - pullQuote 좌·우 따옴표는 페이지 양 끝 가까이 큼직하게 (시안의 큰 ", ")
 function Chapter3MainPage({ name, body, pullQuote, sub, variant }: { name: string; body: string; pullQuote: string | null; sub: string; variant: ImageVariant }) {
   return (
-    <Page size="A4" wrap style={{ padding: 0 }}>
+    // Page 에 padding 직접 부여 — wrap 페이지 헤더 간격 일관 (paddingTop 71).
+    <Page size="A4" wrap style={{ paddingHorizontal: 46, paddingTop: 71, paddingBottom: 50 }}>
       <Image
         src={PAPER}
         fixed
         style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
       />
 
-      <View style={{ paddingHorizontal: 46, paddingTop: 20, paddingBottom: 50 }}>
-        {/* fixed header — Vol. {name} 좌 + magazine STORY 우 + 와인 룰. */}
-        <View fixed>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
-          </View>
-          <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
+      {/* fixed header — absolute(top 20): 모든 페이지 동일 위치, flow 공간 X. */}
+      <View fixed style={{ position: "absolute", top: 20, left: 46, right: 46 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
         </View>
+        <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
+      </View>
 
-        {/* Title 행 — #1 marginTop 24. 좌 큰 타이틀 / 우 작은 라벨, 상단 정렬.
-            타이틀↔룰·룰↔부제 간격 20 통일. */}
-        <View style={{ marginTop: 24, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT }}>
-            {KOR_TITLE[3]}
-          </Text>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>
-            CHAPTER 3.
-          </Text>
-        </View>
-        <View style={{ marginTop: 20, width: 80, height: 1, backgroundColor: RULE }} />
-
-        {/* 부제 (LLM headline / 비면 SUBTITLE[3] fallback) */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, color: TEXT, marginTop: 20 }}>
-          {sub || SUBTITLE[3]}
+      {/* Title 행 — #1 marginTop 0 (Page paddingTop 가 갭 담당). 좌 큰 타이틀 / 우 작은 라벨, 상단 정렬.
+          타이틀↔룰·룰↔부제 간격 20 통일. */}
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT }}>
+          {KOR_TITLE[3]}
         </Text>
-
-        {/* Body 1-col flow — 길면 다음 페이지로 */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 16 }}>
-          {body}
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>
+          CHAPTER 3.
         </Text>
       </View>
+      <View style={{ marginTop: 20, width: 80, height: 1, backgroundColor: RULE }} />
+
+      {/* 부제 (LLM headline / 비면 SUBTITLE[3] fallback) */}
+      <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, color: TEXT, marginTop: 20 }}>
+        {sub || SUBTITLE[3]}
+      </Text>
+
+      {/* Body 1-col flow — 길면 다음 페이지로 */}
+      <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 16 }}>
+        {body}
+      </Text>
 
       {/* 하단 hero + pullQuote 묶음 — 페이지 bottom 46 anchor.
           - hero: 풀폭 X (width 503 유지), left 0, height 175, pullQuote 위 24 gap (marginBottom 24)
@@ -295,51 +293,50 @@ function Chapter3MainPage({ name, body, pullQuote, sub, variant }: { name: strin
 // 기존 요소 그대로 두고 좌·우 위치만 시안에 맞춰 swap.
 function Chapter4Page({ name, body, sub, variant }: { name: string; body: string; sub: string; variant: ImageVariant }) {
   return (
-    <Page size="A4" wrap style={{ padding: 0 }}>
+    // Page 에 padding 직접 부여 — wrap 페이지 헤더 간격 일관 (paddingTop 71).
+    <Page size="A4" wrap style={{ paddingHorizontal: 46, paddingTop: 71, paddingBottom: 50 }}>
       <Image
         src={PAPER}
         fixed
         style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
       />
 
-      <View style={{ paddingHorizontal: 46, paddingTop: 20, paddingBottom: 50 }}>
-        {/* fixed header — Vol. {name} 좌 + magazine STORY 우 + 와인 룰. */}
-        <View fixed>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
-          </View>
-          <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
+      {/* fixed header — absolute(top 20): 모든 페이지 동일 위치, flow 공간 X. */}
+      <View fixed style={{ position: "absolute", top: 20, left: 46, right: 46 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
         </View>
-
-        {/* 좌 타이틀 블록 / 우 hero — #1 marginTop 24. 좌·우 swap.
-            alignItems: "flex-end" → 타이틀 블록을 hero 하단에 맞춰 정렬.
-            타이틀↔룰 간격 20 통일. 한글 타이틀은 "\n" 으로 2 줄 유지. */}
-        <View wrap={false} style={{ marginTop: 24, flexDirection: "row", gap: 24, alignItems: "flex-end" }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 4.</Text>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT, marginTop: 8, lineHeight: 1.3 }}>
-              {"내일로 향하는\n한 걸음"}
-            </Text>
-            <View style={{ marginTop: 20, width: 80, height: 1, backgroundColor: RULE }} />
-          </View>
-          {/* Chapter 4.jpg 세로형 (ratio 0.67). 시안보다 작았어서 키우고,
-              우측 pad 0 — marginRight -46 으로 paddingHorizontal 보정해 페이지 우측 끝까지. */}
-          <View style={{ width: 220, height: 328, overflow: "hidden", marginRight: -46 }}>
-            <Image src={getChapterImage(4, variant)} style={{ width: 220, height: 328, objectFit: "cover" }} />
-          </View>
-        </View>
-
-        {/* 부제 — 룰↔부제 간격 20 통일 */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, color: TEXT, marginTop: 20 }}>
-          {sub || SUBTITLE[4]}
-        </Text>
-
-        {/* Body 1-col flow */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 16 }}>
-          {body}
-        </Text>
+        <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
       </View>
+
+      {/* 좌 타이틀 블록 / 우 hero — #1 marginTop 0 (Page paddingTop 가 갭 담당). 좌·우 swap.
+          alignItems: "flex-end" → 타이틀 블록을 hero 하단에 맞춰 정렬.
+          타이틀↔룰 간격 20 통일. 한글 타이틀은 "\n" 으로 2 줄 유지. */}
+      <View wrap={false} style={{ flexDirection: "row", gap: 24, alignItems: "flex-end" }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 4.</Text>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT, marginTop: 8, lineHeight: 1.3 }}>
+            {"내일로 향하는\n한 걸음"}
+          </Text>
+          <View style={{ marginTop: 20, width: 80, height: 1, backgroundColor: RULE }} />
+        </View>
+        {/* Chapter 4.jpg 세로형 (ratio 0.67). 시안보다 작았어서 키우고,
+            우측 pad 0 — marginRight -46 으로 paddingHorizontal 보정해 페이지 우측 끝까지. */}
+        <View style={{ width: 220, height: 328, overflow: "hidden", marginRight: -46 }}>
+          <Image src={getChapterImage(4, variant)} style={{ width: 220, height: 328, objectFit: "cover" }} />
+        </View>
+      </View>
+
+      {/* 부제 — 룰↔부제 간격 20 통일 */}
+      <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, color: TEXT, marginTop: 20 }}>
+        {sub || SUBTITLE[4]}
+      </Text>
+
+      {/* Body 1-col flow */}
+      <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 16 }}>
+        {body}
+      </Text>
     </Page>
   );
 }

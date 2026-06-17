@@ -149,9 +149,16 @@ function Entry({ entry, isFirst }: { entry: AppendixEntry; isFirst?: boolean }) 
   // 간격은 marginBottom → marginTop 으로 부여 — entry 가 wrap 되어 새 페이지
   // 상단에 떨어져도 동일 간격 유지. 챕터 첫 entry 는 부모 컨테이너의
   // marginTop(10) 만으로 충분하므로 자체 marginTop 0.
+  //
+  // wrap: 질문(isQuestion)은 짧으므로 한 덩어리로 보호(wrap=false).
+  // 답변/결과 박스는 길어질 수 있어 wrap 허용 → 페이지 끝에서 통째로 밀리지
+  // 않고 중간에서 잘려 다음 페이지로 이어짐(앞 페이지 하단 여백 최소화).
+  // minPresenceAhead: 박스가 페이지 맨 아래에서 라벨만 덜렁 남는 것을 막기
+  // 위해, 시작 시 최소 64pt(라벨+~2줄) 공간이 없으면 다음 페이지로 넘김.
   return (
     <View
-      wrap={false}
+      wrap={!isQuestion}
+      minPresenceAhead={isQuestion ? undefined : 64}
       style={{
         marginTop: isFirst ? 0 : 10,
         // question: 좌측 보더만, padding 좌측만 살짝, 박스 X

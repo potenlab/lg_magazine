@@ -46,30 +46,6 @@ const HERO: Record<1 | 2 | 3 | 4, string> = {
   4: "/Chapter 4.jpg",
 };
 
-/** 본문을 두 컬럼으로 균형 split. paragraph(\n\n) → 문장 → 글자 수 순서. */
-function splitBodyIntoColumns(body: string): [string, string] {
-  const paragraphs = body.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
-  if (paragraphs.length === 0) return ["", ""];
-  if (paragraphs.length === 1) {
-    const sentences = paragraphs[0].split(/(?<=[.!?。])\s+/);
-    if (sentences.length > 1) {
-      const halfIdx = Math.ceil(sentences.length / 2);
-      return [sentences.slice(0, halfIdx).join(" "), sentences.slice(halfIdx).join(" ")];
-    }
-    const halfChar = Math.ceil(paragraphs[0].length / 2);
-    return [paragraphs[0].slice(0, halfChar), paragraphs[0].slice(halfChar)];
-  }
-  const total = paragraphs.reduce((s, p) => s + p.length, 0);
-  let acc = 0;
-  let idx = paragraphs.length;
-  for (let i = 0; i < paragraphs.length; i++) {
-    acc += paragraphs[i].length;
-    if (acc >= total / 2) { idx = i + 1; break; }
-  }
-  return [paragraphs.slice(0, idx).join("\n\n"), paragraphs.slice(idx).join("\n\n")];
-}
-
-
 /** Hero 이미지 모서리 와인 색 삼각 액센트 (액자 효과).
  *  Ch1 등에서 <CornerAccent corner="tr|tl|br|bl" /> 로 사용. */
 function CornerAccent({ corner }: { corner: "tl" | "tr" | "bl" | "br" }) {

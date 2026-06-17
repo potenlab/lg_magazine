@@ -7,7 +7,6 @@ import { MagazinePosterScene } from "@/components/v3/scenes/MagazinePosterScene"
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
 import { cleanArticleField } from "@/lib/v3/llm/articleSanitize";
-import { readUrlConfig } from "@/lib/v3/llm/realLLM";
 import { MagazinePDF, type MagazineData } from "@/lib/v3/pdf/MagazinePDF";
 import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
@@ -103,7 +102,7 @@ export function ClosingChoiceScene({
     if (!data || status !== "ready" || downloading) return;
     setDownloading(true);
     try {
-      const blob = await pdf(<MagazinePDF data={data} deep={readUrlConfig().deep} />).toBlob();
+      const blob = await pdf(<MagazinePDF data={data} />).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

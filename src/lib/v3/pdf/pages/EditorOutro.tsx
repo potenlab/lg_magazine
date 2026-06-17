@@ -31,8 +31,9 @@ export function EditorOutro({ body, name }: Props) {
         style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
       />
 
-      {/* 상단 헤더 — magazine STORY (우측) + 와인 룰 */}
-      <View style={{ position: "absolute", top: 20, left: 46, right: 46, flexDirection: "row", justifyContent: "flex-end" }}>
+      {/* 상단 헤더 — Vol. {name} 좌 + magazine STORY 우 + 와인 룰 */}
+      <View style={{ position: "absolute", top: 20, left: 46, right: 46, flexDirection: "row", justifyContent: "space-between" }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
       </View>
       <View style={{ position: "absolute", top: 46, left: 46, right: 46, height: 1, backgroundColor: WINE }} />

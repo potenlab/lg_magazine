@@ -20,7 +20,7 @@ const PAGE_W = 595;
 const PAGE_H = 842;
 const PAD = 46;
 
-export function EditorIntro({ body, name: _name }: Props) {
+export function EditorIntro({ body, name }: Props) {
   return (
     <Page size={[PAGE_W, PAGE_H]} style={{ padding: 0, position: "relative", width: PAGE_W, height: PAGE_H, fontFamily: "Noto Serif KR", color: TEXT }}>
       {/* paper bg */}
@@ -29,7 +29,10 @@ export function EditorIntro({ body, name: _name }: Props) {
         style={{ position: "absolute", top: 0, left: 0, width: PAGE_W, height: PAGE_H }}
       />
 
-      {/* 상단 마스트헤드 — 우측 magazine STORY 만. (좌측 Vol. {name} 는 제거) */}
+      {/* 상단 마스트헤드 — Vol. {name} 좌 + magazine STORY 우 */}
+      <Text style={{ position: "absolute", top: 20, left: PAD, fontSize: 12, color: TEXT }}>
+        Vol. {name}
+      </Text>
       <Text style={{ position: "absolute", top: 20, right: PAD, fontSize: 12, color: WINE, letterSpacing: 0 }}>
         magazine <Text style={{ fontWeight: 700 }}>STORY</Text>
       </Text>

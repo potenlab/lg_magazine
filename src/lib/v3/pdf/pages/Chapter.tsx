@@ -81,10 +81,12 @@ function Chapter1Page({ name, body, pullQuote, sub }: { name: string; body: stri
       />
 
       <View style={{ paddingHorizontal: 46, paddingTop: 20, paddingBottom: 50 }}>
-        {/* Header — fixed: Vol. {name} + 와인 룰 (모든 페이지에).
-            룰 marginTop 12 → 20(padding)+~14(text)+12 ≈ top 46. */}
+        {/* Header — fixed: Vol. {name} 좌 + magazine STORY 우 + 와인 룰. */}
         <View fixed>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
+          </View>
           <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
         </View>
 
@@ -154,10 +156,13 @@ function Chapter2Page({ name, body, pullQuote, sub }: { name: string; body: stri
       />
 
       <View style={{ paddingHorizontal: 46, paddingTop: 20, paddingBottom: 50 }}>
-        {/* fixed header — 모든 페이지 반복 */}
-        <View fixed style={{ alignItems: "flex-end" }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
-          <View style={{ height: 1, backgroundColor: WINE, marginTop: 4, alignSelf: "stretch" }} />
+        {/* fixed header — Vol. {name} 좌 + magazine STORY 우 + 와인 룰. */}
+        <View fixed>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
+          </View>
+          <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
         </View>
 
         {/* 중앙 타이틀 */}
@@ -182,8 +187,9 @@ function Chapter2Page({ name, body, pullQuote, sub }: { name: string; body: stri
           → bottom = 46 + 155 + 24 = 225 */}
       <View style={{ position: "absolute", left: 46, right: 46, bottom: 225, height: 1, backgroundColor: RULE }} />
 
-      {/* 하단: 좌 hero + 우 pullQuote. bottom 46 anchor (top 제한 없음). */}
-      <View style={{ position: "absolute", left: 46, right: 46, bottom: 46, flexDirection: "row", gap: 22 }}>
+      {/* 하단: 좌 hero + 우 pullQuote. bottom 46 anchor (top 제한 없음).
+          alignItems: "flex-end" → pullQuote 텍스트가 hero 높이 하단에 정렬. */}
+      <View style={{ position: "absolute", left: 46, right: 46, bottom: 46, flexDirection: "row", gap: 22, alignItems: "flex-end" }}>
         <View style={{ width: 250, height: 155, overflow: "hidden" }}>
           <Image src={HERO[2]} style={{ width: 250, height: 155, objectFit: "cover" }} />
         </View>
@@ -216,14 +222,17 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
       />
 
       <View style={{ paddingHorizontal: 46, paddingTop: 20, paddingBottom: 50 }}>
-        {/* fixed header — Vol.{name} + 와인 룰 */}
+        {/* fixed header — Vol. {name} 좌 + magazine STORY 우 + 와인 룰. */}
         <View fixed>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
+          </View>
           <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
         </View>
 
-        {/* Title 행 — 좌 큰 타이틀 / 우 작은 CHAPTER 3. 라벨, baseline 정렬 */}
-        <View style={{ marginTop: 36, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" }}>
+        {/* Title 행 — 좌 큰 타이틀 / 우 작은 CHAPTER 3. 라벨, 상단 정렬 */}
+        <View style={{ marginTop: 36, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT }}>
             {KOR_TITLE[3]}
           </Text>
@@ -244,17 +253,16 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
         </Text>
       </View>
 
-      {/* 하단 블록 — hero + pullQuote 를 페이지 bottom 46 에 anchor.
-          top 제약 없음 → 콘텐츠 길이에 따라 위로 자라남. */}
-      <View style={{ position: "absolute", left: 46, right: 46, bottom: 46 }}>
-        <View style={{ height: 212, overflow: "hidden" }}>
-          <Image src={HERO[3]} style={{ width: 503, height: 212, objectFit: "cover" }} />
-        </View>
+      {/* 하단 hero — 좌·우 pad 0, 페이지 폭 전체. 시안보다 컸어서 height 축소. */}
+      <View style={{ position: "absolute", left: 0, right: 0, bottom: 196, height: 175, overflow: "hidden" }}>
+        <Image src={HERO[3]} style={{ width: 595, height: 175, objectFit: "cover" }} />
+      </View>
 
-        {pullQuote && (
+      {/* PullQuote — hero 와 분리, pad 46 유지하고 페이지 bottom 46 anchor. */}
+      {pullQuote && (
+        <View style={{ position: "absolute", left: 46, right: 46, bottom: 46 }}>
           <View
             style={{
-              marginTop: 24,
               flexDirection: "row",
               alignItems: "center",
             }}
@@ -280,8 +288,8 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
               &#x201D;
             </Text>
           </View>
-        )}
-      </View>
+        </View>
+      )}
     </Page>
   );
 }
@@ -300,25 +308,30 @@ function Chapter4Page({ name, body, sub }: { name: string; body: string; sub: st
       />
 
       <View style={{ paddingHorizontal: 46, paddingTop: 20, paddingBottom: 50 }}>
-        {/* fixed header — 텍스트 우측 정렬 */}
-        <View fixed style={{ alignItems: "flex-end" }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
-          <View style={{ height: 1, backgroundColor: WINE, marginTop: 4, alignSelf: "stretch" }} />
+        {/* fixed header — Vol. {name} 좌 + magazine STORY 우 + 와인 룰. */}
+        <View fixed>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
+          </View>
+          <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
         </View>
 
         {/* 좌 타이틀 블록 / 우 hero — 좌·우 swap.
-            wrap={false} 로 페이지 중간 잘림 방지. */}
-        <View wrap={false} style={{ marginTop: 36, flexDirection: "row", gap: 24, alignItems: "flex-start" }}>
-          <View style={{ flex: 1, paddingTop: 80 }}>
+            alignItems: "flex-end" → 타이틀 블록을 hero 하단에 맞춰 정렬.
+            한글 타이틀은 줄바꿈("\n") 으로 2 줄 유지. */}
+        <View wrap={false} style={{ marginTop: 36, flexDirection: "row", gap: 24, alignItems: "flex-end" }}>
+          <View style={{ flex: 1 }}>
             <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 4.</Text>
             <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT, marginTop: 8, lineHeight: 1.3 }}>
-              {KOR_TITLE[4]}
+              {"내일로 향하는\n한 걸음"}
             </Text>
             <View style={{ marginTop: 12, width: 80, height: 1, backgroundColor: RULE }} />
           </View>
-          {/* Chapter 4.jpg 가 세로형 (820×1220, ratio 0.67) — 슬롯도 세로 비율로 맞춤 */}
-          <View style={{ width: 180, height: 268, overflow: "hidden" }}>
-            <Image src={HERO[4]} style={{ width: 180, height: 268, objectFit: "cover" }} />
+          {/* Chapter 4.jpg 세로형 (ratio 0.67). 시안보다 작았어서 키우고,
+              우측 pad 0 — marginRight -46 으로 paddingHorizontal 보정해 페이지 우측 끝까지. */}
+          <View style={{ width: 220, height: 328, overflow: "hidden", marginRight: -46 }}>
+            <Image src={HERO[4]} style={{ width: 220, height: 328, objectFit: "cover" }} />
           </View>
         </View>
 

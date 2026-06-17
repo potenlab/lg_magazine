@@ -25,7 +25,7 @@ const CHAPTERS_TOP = TITLE_TOP + TITLE_FS + TITLE_GAP; // 216
 const CHAPTER_GAP = 110;
 
 export function TOC({
-  name: _name,
+  name,
   chapterHeadlines,
 }: {
   name: string;
@@ -40,7 +40,10 @@ export function TOC({
         style={{ position: "absolute", top: 0, left: 0, width: PAGE_W, height: PAGE_H }}
       />
 
-      {/* 상단 마스트헤드 — 우측 magazine STORY 만 (좌측 Vol. {name} 제거) */}
+      {/* 상단 마스트헤드 — Vol. {name} 좌 + magazine STORY 우 */}
+      <Text style={{ position: "absolute", top: 20, left: PAD, fontSize: 12, color: COLORS.text }}>
+        Vol. {name}
+      </Text>
       <Text style={{ position: "absolute", top: 20, right: PAD, fontSize: 12, color: COLORS.wine, letterSpacing: 0 }}>
         magazine <Text style={{ fontWeight: 700 }}>STORY</Text>
       </Text>

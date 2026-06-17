@@ -51,7 +51,13 @@ const PAPER = "/paper.jpg";
 
 export function Appendix({ name, threads }: Props) {
   return (
-    <Page size="A4" wrap style={{ padding: 0 }}>
+    // Page 자체에 paddingTop/Horizontal/Bottom 부여 — wrap 페이지에도
+    // 동일하게 적용되므로 헤더 위 여백 (20)·콘텐츠 위 여백 (71) 일관 유지.
+    <Page
+      size="A4"
+      wrap
+      style={{ paddingHorizontal: 46, paddingTop: 71, paddingBottom: 50 }}
+    >
       {/* paper bg — fixed (모든 페이지 반복) */}
       <Image
         src={PAPER}
@@ -59,74 +65,73 @@ export function Appendix({ name, threads }: Props) {
         style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
       />
 
-      <View style={{ paddingHorizontal: 46, paddingTop: 20, paddingBottom: 50 }}>
-        {/* fixed header — Vol.{name} 좌 + magazine STORY 우 + 와인 룰.
-            marginBottom 24 — 페이지 wrap 시에도 헤더 아래에 동일한
-            breathing room 확보 (다른 본문 페이지의 첫 콘텐츠 marginTop 과 통일). */}
-        <View fixed style={{ marginBottom: 24 }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
-          </View>
-          <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
+      {/* fixed header — absolute 좌표로 모든 페이지 동일 위치에 고정.
+          flow 공간을 차지하지 않으므로 본문은 Page paddingTop(71) 부터 시작.
+          헤더 위 여백 20 + Vol 텍스트 ~14 + rule marginTop 12 + 1 = ~47pt 가
+          헤더가 차지하는 영역, 그 아래 71 - 47 = 24pt 가 breathing room. */}
+      <View fixed style={{ position: "absolute", top: 20, left: 46, right: 46 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
         </View>
-
-        {/* #1 — Title 블록. 헤더 marginBottom 24 가 이미 갭을 줘서
-            여기서는 자체 marginTop 제거. */}
-        <View>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>
-            APPENDIX
-          </Text>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT, marginTop: 8 }}>
-            {name}님이 직접 적어주신 기록
-          </Text>
-          <View style={{ height: 1, backgroundColor: RULE, marginTop: 20, width: 80 }} />
-        </View>
-
-        {/* 본문 — marginTop 16 (Ch1~4 본문 spacing). */}
-        {threads.length === 0 ? (
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 13, color: MUTED, marginTop: 16 }}>
-            기록할 답변이 아직 없어요.
-          </Text>
-        ) : (
-          <View>
-            {threads.map((thread, ti) => (
-              // 간격은 thread 별 marginTop 으로 부여 — 페이지가 wrap 되어
-              // thread 가 새 페이지 상단에 떨어져도 동일 간격 유지된다.
-              // 첫 thread 는 부제(본문 marginTop 16) 아래에 위치.
-              <View key={ti} style={{ marginTop: ti === 0 ? 16 : 20 }}>
-                {/* 챕터 헤더 — wrap={false} 로 한 줄 보호.
-                    web: border-b border-[#b99b6b]/30 pb-2,
-                         label 14px uppercase tracking-[0.14em] #9b8768,
-                         title 19px semibold #3d2414. */}
-                <View
-                  wrap={false}
-                  style={{
-                    paddingBottom: 6,
-                    borderBottomWidth: 0.6,
-                    borderBottomColor: GOLD,
-                  }}
-                >
-                  <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: MUTED, letterSpacing: 1.4 }}>
-                    {thread.chapter}
-                  </Text>
-                  <Text style={{ fontFamily: "Noto Serif KR", fontSize: 15, fontWeight: 700, color: TEXT, marginTop: 2 }}>
-                    {thread.title}
-                  </Text>
-                </View>
-
-                {/* 챕터 entries — 각 Entry 가 자체 marginTop 으로 간격 부여
-                    (wrap 시 새 페이지 상단에 떨어진 entry 도 동일 간격 유지). */}
-                <View style={{ marginTop: 10 }}>
-                  {thread.entries.map((e, i) => (
-                    <Entry key={i} entry={e} isFirst={i === 0} />
-                  ))}
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
+        <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
       </View>
+
+      {/* #1 — Title 블록. Page paddingTop 가 이미 헤더 아래 24pt 갭을 줘서
+          자체 marginTop 0. */}
+      <View>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>
+          APPENDIX
+        </Text>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT, marginTop: 8 }}>
+          {name}님이 직접 적어주신 기록
+        </Text>
+        <View style={{ height: 1, backgroundColor: RULE, marginTop: 20, width: 80 }} />
+      </View>
+
+      {/* 본문 — marginTop 16 (Ch1~4 본문 spacing). */}
+      {threads.length === 0 ? (
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 13, color: MUTED, marginTop: 16 }}>
+          기록할 답변이 아직 없어요.
+        </Text>
+      ) : (
+        <View>
+          {threads.map((thread, ti) => (
+            // 간격은 thread 별 marginTop 으로 부여 — 페이지가 wrap 되어
+            // thread 가 새 페이지 상단에 떨어져도 동일 간격 유지된다.
+            // 첫 thread 는 부제(본문 marginTop 16) 아래에 위치.
+            <View key={ti} style={{ marginTop: ti === 0 ? 16 : 20 }}>
+              {/* 챕터 헤더 — wrap={false} 로 한 줄 보호.
+                  web: border-b border-[#b99b6b]/30 pb-2,
+                       label 14px uppercase tracking-[0.14em] #9b8768,
+                       title 19px semibold #3d2414. */}
+              <View
+                wrap={false}
+                style={{
+                  paddingBottom: 6,
+                  borderBottomWidth: 0.6,
+                  borderBottomColor: GOLD,
+                }}
+              >
+                <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: MUTED, letterSpacing: 1.4 }}>
+                  {thread.chapter}
+                </Text>
+                <Text style={{ fontFamily: "Noto Serif KR", fontSize: 15, fontWeight: 700, color: TEXT, marginTop: 2 }}>
+                  {thread.title}
+                </Text>
+              </View>
+
+              {/* 챕터 entries — 각 Entry 가 자체 marginTop 으로 간격 부여
+                  (wrap 시 새 페이지 상단에 떨어진 entry 도 동일 간격 유지). */}
+              <View style={{ marginTop: 10 }}>
+                {thread.entries.map((e, i) => (
+                  <Entry key={i} entry={e} isFirst={i === 0} />
+                ))}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
     </Page>
   );
 }

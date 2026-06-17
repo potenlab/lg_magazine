@@ -128,7 +128,7 @@ function Chapter1Page({ name, body, pullQuote, sub }: { name: string; body: stri
             &#x201C;
           </Text>
           <View style={{ flex: 1, alignItems: "center" }}>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 22, fontWeight: 700, color: TEXT, textAlign: "center", lineHeight: 1.6 }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 20, fontWeight: 700, color: TEXT, textAlign: "center", lineHeight: 1.6 }}>
               {pullQuote}
             </Text>
           </View>
@@ -176,24 +176,25 @@ function Chapter2Page({ name, body, pullQuote, sub }: { name: string; body: stri
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 24 }}>
           {body}
         </Text>
+      </View>
 
-        {/* 본문 ↔ 하단 블록 사이 가로 룰 */}
-        <View style={{ height: 1, backgroundColor: RULE, marginTop: 28 }} />
+      {/* 본문 ↔ 하단 블록 사이 가로 룰 — 하단 블록(bottom 46 + hero 155) 24 위.
+          → bottom = 46 + 155 + 24 = 225 */}
+      <View style={{ position: "absolute", left: 46, right: 46, bottom: 225, height: 1, backgroundColor: RULE }} />
 
-        {/* 하단: 좌 hero + 우 pullQuote. wrap={false} 로 둘이 같은 페이지 유지. */}
-        <View wrap={false} style={{ marginTop: 24, flexDirection: "row", gap: 22 }}>
-          <View style={{ width: 250, height: 155, overflow: "hidden" }}>
-            <Image src={HERO[2]} style={{ width: 250, height: 155, objectFit: "cover" }} />
-          </View>
-          {pullQuote && (
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: "Noto Serif KR", fontSize: 16, fontWeight: 700, color: TEXT, lineHeight: 1.5 }}>
-                {pullQuote}
-              </Text>
-              <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, marginTop: 12 }}>by. {name}</Text>
-            </View>
-          )}
+      {/* 하단: 좌 hero + 우 pullQuote. bottom 46 anchor (top 제한 없음). */}
+      <View style={{ position: "absolute", left: 46, right: 46, bottom: 46, flexDirection: "row", gap: 22 }}>
+        <View style={{ width: 250, height: 155, overflow: "hidden" }}>
+          <Image src={HERO[2]} style={{ width: 250, height: 155, objectFit: "cover" }} />
         </View>
+        {pullQuote && (
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 20, fontWeight: 700, color: TEXT, lineHeight: 1.5 }}>
+              {pullQuote}
+            </Text>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, marginTop: 12 }}>by. {name}</Text>
+          </View>
+        )}
       </View>
     </Page>
   );
@@ -241,7 +242,7 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
           <View wrap={false} style={{ marginTop: 28, flexDirection: "row" }}>
             <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, color: MUTED, marginRight: 10, marginTop: -8 }}>&#x201C;</Text>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, color: TEXT, lineHeight: 1.7 }}>{pullQuote}</Text>
+              <Text style={{ fontFamily: "Noto Serif KR", fontSize: 20, fontWeight: 700, color: TEXT, lineHeight: 1.7 }}>{pullQuote}</Text>
             </View>
             <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, color: MUTED, marginLeft: 10, marginBottom: -14 }}>&#x201D;</Text>
           </View>

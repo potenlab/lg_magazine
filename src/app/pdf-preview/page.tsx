@@ -17,6 +17,7 @@ import { EditorIntro } from "@/lib/v3/pdf/pages/EditorIntro";
 import { Chapter } from "@/lib/v3/pdf/pages/Chapter";
 import type { ImageVariant } from "@/lib/v3/pdf/imageSets";
 import { EditorOutro } from "@/lib/v3/pdf/pages/EditorOutro";
+import { Appendix, type AppendixThread } from "@/lib/v3/pdf/pages/Appendix";
 import { BackPage } from "@/lib/v3/pdf/pages/BackPage";
 import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
 
@@ -57,7 +58,57 @@ const SAMPLE = {
   },
 } as const;
 
-type PageKey = "cover" | "toc" | "editorIntro" | "ch1" | "ch2" | "ch3" | "ch4" | "editorOutro" | "backPage" | "all";
+const SAMPLE_APPENDIX: AppendixThread[] = [
+  {
+    chapter: "Chapter 1",
+    title: "내가 지나온 길",
+    entries: [
+      { tone: "question", label: "질문", text: "시간 가는 줄 모르고 빠져들었던 순간은?" },
+      { tone: "answer", label: "첫 번째 경험", text: "스무 살 여름, 일산 호수공원에서 자전거 대여 사업을 하면서 하루에 50만 원을 벌어본 적이 있다. 그날 내가 사업가의 피가 흐른다는 걸 처음 느꼈다." },
+      { tone: "answer", label: "두 번째 경험", text: "200명 대외활동 참가자 중 4명의 우수활동자로 선정되어 중국 탐방을 다녀온 경험. 내가 생각보다 특별한 사람이라는 걸 알게 된 순간." },
+      { tone: "result", label: "엘아울의 한마디", text: "두 장면 모두 명확한 숫자와 성과로 자기 존재를 확인하는 순간이었어요." },
+    ],
+  },
+  {
+    chapter: "Chapter 2",
+    title: "나는 누구인가",
+    entries: [
+      { tone: "answer", label: "선택한 가치 카드", text: "주도성, 자유, 성장" },
+      { tone: "result", label: "엘아울의 발견", text: "주도성이 다른 두 가치를 떠받치는 기반처럼 보였어요. 자유는 주도성이 보장된 다음에야 의미를 가진다는 결을 읽었습니다." },
+      { tone: "answer", label: "나의 정체성", text: "자신의 길을 개척하는 사람" },
+    ],
+  },
+  {
+    chapter: "Chapter 3",
+    title: "내가 그리는 미래",
+    entries: [
+      { tone: "answer", label: "끌리는 것", text: "내 경험을 바탕으로 누군가의 방향성에 영향을 주는 일." },
+      { tone: "answer", label: "이미 하고 있는 것", text: "유튜브 강의를 통해 사람들과 소통하고 있다." },
+      { tone: "answer", label: "5년 후 비전", text: "내 교육철학과 사업철학을 책이나 지침서로 정리해 사람들이 자기 삶의 방향을 설계할 때 참고할 수 있는 한 장의 지도를 남기는 사람." },
+    ],
+  },
+  {
+    chapter: "Chapter 4",
+    title: "내일로 향하는 한 걸음",
+    entries: [
+      { tone: "answer", label: "내일 아침의 작은 한 걸음", text: "매일 아침 감사일기 한 줄 쓰기." },
+      { tone: "answer", label: "함께할 사람들", text: "교육 크리에이터 콘텐츠로 클로드·시간 관리·개발 공부를 함께할 동료들." },
+    ],
+  },
+];
+
+type PageKey =
+  | "cover"
+  | "toc"
+  | "editorIntro"
+  | "ch1"
+  | "ch2"
+  | "ch3"
+  | "ch4"
+  | "editorOutro"
+  | "appendix"
+  | "backPage"
+  | "all";
 
 const TABS: { key: PageKey; label: string }[] = [
   { key: "cover", label: "Cover" },
@@ -68,6 +119,7 @@ const TABS: { key: PageKey; label: string }[] = [
   { key: "ch3", label: "Ch 3" },
   { key: "ch4", label: "Ch 4" },
   { key: "editorOutro", label: "Editor Outro" },
+  { key: "appendix", label: "Appendix" },
   { key: "backPage", label: "Back Page" },
   { key: "all", label: "전체" },
 ];
@@ -120,6 +172,8 @@ export default function PdfPreviewPage() {
           return ch(4);
         case "editorOutro":
           return <EditorOutro body={SAMPLE.editorOutro} name={SAMPLE.name} />;
+        case "appendix":
+          return <Appendix name={SAMPLE.name} threads={SAMPLE_APPENDIX} />;
         case "backPage":
           return <BackPage name={SAMPLE.name} date={SAMPLE.date} />;
         case "all":
@@ -141,6 +195,7 @@ export default function PdfPreviewPage() {
               {ch(3)}
               {ch(4)}
               <EditorOutro body={SAMPLE.editorOutro} name={SAMPLE.name} />
+              <Appendix name={SAMPLE.name} threads={SAMPLE_APPENDIX} />
               <BackPage name={SAMPLE.name} date={SAMPLE.date} />
             </>
           );

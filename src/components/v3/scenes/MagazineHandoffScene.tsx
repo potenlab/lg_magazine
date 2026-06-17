@@ -12,6 +12,7 @@ import { llm } from "@/lib/v3/llm";
 import { cleanArticleField } from "@/lib/v3/llm/articleSanitize";
 import { MagazinePDF, type MagazineData } from "@/lib/v3/pdf/MagazinePDF";
 import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
+import { buildAppendixThreads } from "@/lib/v3/pdf/buildAppendix";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 type Status = "loading" | "ready" | "error";
@@ -79,6 +80,7 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
             3: cleanArticle(ch3),
             4: cleanArticle(ch4),
           },
+          appendix: buildAppendixThreads(session),
         });
         // Cache fetched articles to session so the next scene (C-2b 합본 매거진
         // 스프레드)이 재호출하지 않도록. 빈 응답(headline/body 비어 있음)은 캐시

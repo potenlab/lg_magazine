@@ -4,6 +4,7 @@ import { TOC } from "./pages/TOC";
 import { EditorIntro } from "./pages/EditorIntro";
 import { Chapter } from "./pages/Chapter";
 import { EditorOutro } from "./pages/EditorOutro";
+import { Appendix, type AppendixThread } from "./pages/Appendix";
 import { BackPage } from "./pages/BackPage";
 import { pickRandomVariant, type ImageVariant } from "./imageSets";
 
@@ -19,6 +20,8 @@ export interface MagazineData {
     3: { headline: string; body: string; pullQuote: string | null };
     4: { headline: string; body: string; pullQuote: string | null };
   };
+  /** 별첨 — 챕터별 질문/답변/결과 기록. 비우면 Appendix 페이지 미렌더. */
+  appendix?: AppendixThread[];
 }
 
 /**
@@ -47,6 +50,9 @@ export function MagazinePDF({ data, variant }: { data: MagazineData; variant?: I
       <Chapter chapter={3} headline={data.chapters[3].headline} body={data.chapters[3].body} pullQuote={data.chapters[3].pullQuote} name={data.name} variant={v} />
       <Chapter chapter={4} headline={data.chapters[4].headline} body={data.chapters[4].body} pullQuote={data.chapters[4].pullQuote} name={data.name} variant={v} />
       <EditorOutro body={data.editorOutro} name={data.name} />
+      {data.appendix && data.appendix.length > 0 && (
+        <Appendix name={data.name} threads={data.appendix} />
+      )}
       <BackPage name={data.name} date={data.date} />
     </Document>
   );

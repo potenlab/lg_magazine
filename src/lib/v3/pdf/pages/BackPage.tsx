@@ -31,19 +31,19 @@ export function BackPage({ name, date }: Props) {
       {/* 하단 cream strip 위 콜로폰 텍스트.
           back page.jpg 하단 ~150pt 가 cream strip 으로 베이크됐다는 전제. */}
       <View style={{ position: "absolute", bottom: 110, left: 52, right: 52 }}>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT, lineHeight: 1.8 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: TEXT, lineHeight: 1.8 }}>
           Magazine STORY
         </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT, lineHeight: 1.8 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: TEXT, lineHeight: 1.8 }}>
           Vol. {name}
         </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT, lineHeight: 1.8 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: TEXT, lineHeight: 1.8 }}>
           발행일 {formatDate(date)}  ·  인쇄부수 1부
         </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT, lineHeight: 1.8 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: TEXT, lineHeight: 1.8 }}>
           오직 한 사람을 위해 만들어진 특집호.
         </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT, lineHeight: 1.8 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: TEXT, lineHeight: 1.8 }}>
           — 매거진 STORY 편집부
         </Text>
       </View>

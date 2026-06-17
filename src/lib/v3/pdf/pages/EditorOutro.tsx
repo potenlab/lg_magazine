@@ -32,10 +32,10 @@ export function EditorOutro({ body, name }: Props) {
       />
 
       {/* 상단 헤더 — magazine STORY (우측) + 와인 룰 */}
-      <View style={{ position: "absolute", top: 40, left: 46, right: 46, flexDirection: "row", justifyContent: "flex-end" }}>
+      <View style={{ position: "absolute", top: 30, left: 46, right: 46, flexDirection: "row", justifyContent: "flex-end" }}>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
       </View>
-      <View style={{ position: "absolute", top: 64, left: 46, right: 46, height: 1, backgroundColor: WINE }} />
+      <View style={{ position: "absolute", top: 46, left: 46, right: 46, height: 1, backgroundColor: WINE }} />
 
       {/* Editor's Note hero 사진 */}
       <View style={{ position: "absolute", top: 96, left: 46, right: 46, height: 380, overflow: "hidden" }}>
@@ -47,7 +47,7 @@ export function EditorOutro({ body, name }: Props) {
 
       {/* "EDITOR'S NOTE" 큰 타이틀 + 룰 */}
       <View style={{ position: "absolute", top: 500, left: 46, right: 46 }}>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 34, fontWeight: 700, color: TEXT, letterSpacing: 1 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 28, fontWeight: 700, color: TEXT, letterSpacing: 1 }}>
           EDITOR&apos;S NOTE
         </Text>
         <View style={{ marginTop: 14, width: 110, height: 1, backgroundColor: RULE }} />
@@ -55,7 +55,7 @@ export function EditorOutro({ body, name }: Props) {
 
       {/* Body */}
       <View style={{ position: "absolute", top: 580, left: 46, right: 46 }}>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT, lineHeight: 1.85 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: TEXT, lineHeight: 1.85 }}>
           {sanitizeBody(body)}
         </Text>
       </View>

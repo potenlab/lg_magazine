@@ -30,13 +30,13 @@ export function EditorIntro({ body, name: _name }: Props) {
       />
 
       {/* 상단 마스트헤드 — 우측 magazine STORY 만. (좌측 Vol. {name} 는 제거) */}
-      <Text style={{ position: "absolute", top: 40, right: PAD, fontSize: 12, color: WINE, letterSpacing: 0 }}>
+      <Text style={{ position: "absolute", top: 30, right: PAD, fontSize: 12, color: WINE, letterSpacing: 0 }}>
         magazine <Text style={{ fontWeight: 700 }}>STORY</Text>
       </Text>
       <View
         style={{
           position: "absolute",
-          top: 60,
+          top: 46,
           left: PAD,
           right: PAD,
           height: 1,
@@ -56,7 +56,7 @@ export function EditorIntro({ body, name: _name }: Props) {
         <Text
           style={{
             fontFamily: "Noto Serif KR",
-            fontSize: 12,
+            fontSize: 14,
             lineHeight: 1.9,
             color: TEXT,
           }}

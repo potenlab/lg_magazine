@@ -16,7 +16,7 @@ const CHAPTER_META: { num: string; title: string }[] = [
 const PAGE_W = 595;
 const PAGE_H = 842;
 const PAD = 46;
-const RULE_TOP = 60;
+const RULE_TOP = 46;
 const TITLE_TOP = 100;
 const TITLE_FS = 56;
 const TITLE_GAP = 40;
@@ -25,7 +25,7 @@ const CHAPTERS_TOP = TITLE_TOP + TITLE_FS + TITLE_GAP; // 196
 const CHAPTER_GAP = 100;
 
 export function TOC({
-  name,
+  name: _name,
   chapterHeadlines,
   deep: _deep,
 }: {
@@ -42,11 +42,8 @@ export function TOC({
         style={{ position: "absolute", top: 0, left: 0, width: PAGE_W, height: PAGE_H }}
       />
 
-      {/* 상단 마스트헤드 — 좌: Vol. {name} / 우: magazine STORY, 같은 사이즈 10pt */}
-      <Text style={{ position: "absolute", top: 40, left: PAD, fontSize: 12, color: COLORS.wine, letterSpacing: 0 }}>
-        Vol. {name}
-      </Text>
-      <Text style={{ position: "absolute", top: 40, right: PAD, fontSize: 12, color: COLORS.wine, letterSpacing: 0 }}>
+      {/* 상단 마스트헤드 — 우측 magazine STORY 만 (좌측 Vol. {name} 제거) */}
+      <Text style={{ position: "absolute", top: 30, right: PAD, fontSize: 12, color: COLORS.wine, letterSpacing: 0 }}>
         magazine <Text style={{ fontWeight: 700 }}>STORY</Text>
       </Text>
       <View
@@ -88,14 +85,14 @@ export function TOC({
               style={{
                 fontFamily: "Noto Serif KR",
                 fontWeight: 700,
-                fontSize: 20,
+                fontSize: 18,
                 color: COLORS.text,
                 marginBottom: 6,
               }}
             >
               {c.title}
             </Text>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: COLORS.muted }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 15, color: COLORS.muted }}>
               {chapterHeadlines[i]}
             </Text>
           </View>
@@ -108,7 +105,7 @@ export function TOC({
           position: "absolute",
           top: CHAPTERS_TOP + 4 * CHAPTER_GAP + 12,
           left: PAD,
-          fontSize: 16,
+          fontSize: 14,
           color: COLORS.wine,
           letterSpacing: 0,
         }}

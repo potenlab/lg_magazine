@@ -89,12 +89,12 @@ function PaperBg() {
 function TopHeader({ name, variant }: { name: string; variant: "vol" | "story" }) {
   return (
     <Fragment>
-      <View style={{ position: "absolute", top: 40, left: 46, right: 46, flexDirection: "row", justifyContent: variant === "vol" ? "flex-start" : "flex-end" }}>
+      <View style={{ position: "absolute", top: 30, left: 46, right: 46, flexDirection: "row", justifyContent: variant === "vol" ? "flex-start" : "flex-end" }}>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: variant === "vol" ? TEXT : WINE }}>
           {variant === "vol" ? `Vol. ${name}` : "magazine STORY"}
         </Text>
       </View>
-      <View style={{ position: "absolute", top: 64, left: 46, right: 46, height: 1, backgroundColor: WINE }} />
+      <View style={{ position: "absolute", top: 46, left: 46, right: 46, height: 1, backgroundColor: WINE }} />
     </Fragment>
   );
 }
@@ -133,11 +133,11 @@ function Chapter1Page({ name, body, pullQuote, sub }: { name: string; body: stri
         style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
       />
 
-      <View style={{ paddingHorizontal: 46, paddingTop: 40, paddingBottom: 50 }}>
+      <View style={{ paddingHorizontal: 46, paddingTop: 30, paddingBottom: 50 }}>
         {/* Header — fixed: Vol. {name} + 와인 룰 (모든 페이지에) */}
         <View fixed>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
-          <View style={{ height: 1, backgroundColor: WINE, marginTop: 18 }} />
+          <View style={{ height: 1, backgroundColor: WINE, marginTop: 4 }} />
         </View>
 
         {/* Hero — 첫 페이지에만 (flow) */}
@@ -149,7 +149,7 @@ function Chapter1Page({ name, body, pullQuote, sub }: { name: string; body: stri
 
         {/* Title row */}
         <View style={{ marginTop: 24, flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 30, fontWeight: 700, color: TEXT }}>{KOR_TITLE[1]}</Text>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 28, fontWeight: 700, color: TEXT }}>{KOR_TITLE[1]}</Text>
           <View style={{ alignItems: "flex-end" }}>
             <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 1.</Text>
             <View style={{ height: 1, backgroundColor: RULE, marginTop: 4, width: 110 }} />
@@ -158,12 +158,12 @@ function Chapter1Page({ name, body, pullQuote, sub }: { name: string; body: stri
         <View style={{ height: 1, backgroundColor: RULE, marginTop: 6, width: 80 }} />
 
         {/* Subtitle — dynamic headline (TOC sub 와 동일), 비면 static fallback */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, fontWeight: 700, marginTop: 22, color: TEXT }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 16, fontWeight: 700, marginTop: 22, color: TEXT }}>
           {sub || SUBTITLE[1]}
         </Text>
 
         {/* Body 1-col — wrap 가능 (본문 길면 다음 페이지로) */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT, marginTop: 18 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 18 }}>
           {body}
         </Text>
 
@@ -203,27 +203,27 @@ function Chapter2Page({ name, body, pullQuote, sub }: { name: string; body: stri
         style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
       />
 
-      <View style={{ paddingHorizontal: 46, paddingTop: 40, paddingBottom: 50 }}>
+      <View style={{ paddingHorizontal: 46, paddingTop: 30, paddingBottom: 50 }}>
         {/* fixed header — 모든 페이지 반복 */}
         <View fixed style={{ alignItems: "flex-end" }}>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
-          <View style={{ height: 1, backgroundColor: WINE, marginTop: 18, alignSelf: "stretch" }} />
+          <View style={{ height: 1, backgroundColor: WINE, marginTop: 4, alignSelf: "stretch" }} />
         </View>
 
         {/* 중앙 타이틀 */}
         <View style={{ alignItems: "center", marginTop: 36 }}>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 2.</Text>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 30, fontWeight: 700, color: TEXT, marginTop: 8 }}>{KOR_TITLE[2]}</Text>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 28, fontWeight: 700, color: TEXT, marginTop: 8 }}>{KOR_TITLE[2]}</Text>
           <View style={{ marginTop: 12, width: 70, height: 1, backgroundColor: RULE }} />
         </View>
 
         {/* 부제 */}
         <View style={{ alignItems: "center", marginTop: 28 }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 15, fontWeight: 700, color: TEXT }}>{sub || SUBTITLE[2]}</Text>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 16, fontWeight: 700, color: TEXT }}>{sub || SUBTITLE[2]}</Text>
         </View>
 
         {/* Body — 1-col flow. 길면 다음 페이지로. */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT, marginTop: 24 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 24 }}>
           {body}
         </Text>
 
@@ -260,27 +260,27 @@ function Chapter3MainPage({ name, body, sub }: { name: string; body: string; sub
         style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
       />
 
-      <View style={{ paddingHorizontal: 46, paddingTop: 40, paddingBottom: 50 }}>
+      <View style={{ paddingHorizontal: 46, paddingTop: 30, paddingBottom: 50 }}>
         {/* fixed header */}
         <View fixed>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
-          <View style={{ height: 1, backgroundColor: WINE, marginTop: 18 }} />
+          <View style={{ height: 1, backgroundColor: WINE, marginTop: 4 }} />
         </View>
 
         {/* 중앙 타이틀 */}
         <View style={{ alignItems: "center", marginTop: 36 }}>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 3.</Text>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 30, fontWeight: 700, color: TEXT, marginTop: 8 }}>{KOR_TITLE[3]}</Text>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 28, fontWeight: 700, color: TEXT, marginTop: 8 }}>{KOR_TITLE[3]}</Text>
           <View style={{ marginTop: 12, width: 70, height: 1, backgroundColor: RULE }} />
         </View>
 
         {/* 부제 */}
         <View style={{ alignItems: "center", marginTop: 28 }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 15, fontWeight: 700, color: TEXT }}>{sub || SUBTITLE[3]}</Text>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 16, fontWeight: 700, color: TEXT }}>{sub || SUBTITLE[3]}</Text>
         </View>
 
         {/* Body 1-col flow */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT, marginTop: 24 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 24 }}>
           {body}
         </Text>
 
@@ -334,11 +334,11 @@ function Chapter4Page({ name, body, sub }: { name: string; body: string; sub: st
         style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
       />
 
-      <View style={{ paddingHorizontal: 46, paddingTop: 40, paddingBottom: 50 }}>
+      <View style={{ paddingHorizontal: 46, paddingTop: 30, paddingBottom: 50 }}>
         {/* fixed header */}
         <View fixed>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
-          <View style={{ height: 1, backgroundColor: WINE, marginTop: 18 }} />
+          <View style={{ height: 1, backgroundColor: WINE, marginTop: 4 }} />
         </View>
 
         {/* hero + title 행 — wrap={false} 로 페이지 중간에 잘리지 않게 */}
@@ -356,12 +356,12 @@ function Chapter4Page({ name, body, sub }: { name: string; body: string; sub: st
         </View>
 
         {/* 부제 */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 15, fontWeight: 700, color: TEXT, marginTop: 40 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 16, fontWeight: 700, color: TEXT, marginTop: 40 }}>
           {sub || SUBTITLE[4]}
         </Text>
 
         {/* Body 1-col flow */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, lineHeight: 1.75, color: TEXT, marginTop: 24 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 24 }}>
           {body}
         </Text>
       </View>

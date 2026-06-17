@@ -224,14 +224,14 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
 
         {/* Title 행 — 좌 큰 타이틀 / 우 작은 CHAPTER 3. 라벨, baseline 정렬 */}
         <View style={{ marginTop: 36, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 32, fontWeight: 700, color: TEXT, lineHeight: 1.1 }}>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT }}>
             {KOR_TITLE[3]}
           </Text>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 13, color: MUTED, letterSpacing: 1, marginBottom: 6 }}>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>
             CHAPTER 3.
           </Text>
         </View>
-        <View style={{ marginTop: 14, width: 90, height: 1, backgroundColor: RULE }} />
+        <View style={{ marginTop: 12, width: 80, height: 1, backgroundColor: RULE }} />
 
         {/* 부제 (LLM headline / 비면 SUBTITLE[3] fallback) */}
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, color: TEXT, marginTop: 28 }}>
@@ -239,7 +239,7 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
         </Text>
 
         {/* Body 1-col flow — 길면 다음 페이지로 */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 13.5, lineHeight: 1.85, color: TEXT, marginTop: 16 }}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 24 }}>
           {body}
         </Text>
       </View>
@@ -247,8 +247,8 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
       {/* 하단 블록 — hero + pullQuote 를 페이지 bottom 46 에 anchor.
           top 제약 없음 → 콘텐츠 길이에 따라 위로 자라남. */}
       <View style={{ position: "absolute", left: 46, right: 46, bottom: 46 }}>
-        <View style={{ height: 200, overflow: "hidden" }}>
-          <Image src={HERO[3]} style={{ width: 503, height: 200, objectFit: "cover" }} />
+        <View style={{ height: 212, overflow: "hidden" }}>
+          <Image src={HERO[3]} style={{ width: 503, height: 212, objectFit: "cover" }} />
         </View>
 
         {pullQuote && (
@@ -259,7 +259,7 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
               alignItems: "center",
             }}
           >
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 52, color: MUTED, marginRight: 12, marginTop: -10 }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 40, color: MUTED, marginRight: 14, marginTop: -10 }}>
               &#x201C;
             </Text>
             <View style={{ flex: 1 }}>
@@ -276,7 +276,7 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
                 {pullQuote}
               </Text>
             </View>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 52, color: MUTED, marginLeft: 12, marginBottom: -22 }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 40, color: MUTED, marginLeft: 14, marginBottom: -16 }}>
               &#x201D;
             </Text>
           </View>
@@ -287,8 +287,9 @@ function Chapter3MainPage({ name, body, pullQuote, sub }: { name: string; body: 
 }
 
 // ── Ch4 ─────────────────────────────────────────────────────────
-// Page wrap. hero+title 블록은 wrap={false} 로 묶어 통째 유지,
-// 그 아래 부제 + 1-col 본문이 자연 흐름. 본문 길면 다음 페이지로.
+// 시안 (2026-06-17): 헤더 텍스트 우측 + 와인 룰 → 좌 (CHAPTER 4. /
+// 큰 타이틀 / 짧은 룰) + 우 hero → 부제 → 본문.
+// 기존 요소 그대로 두고 좌·우 위치만 시안에 맞춰 swap.
 function Chapter4Page({ name, body, sub }: { name: string; body: string; sub: string }) {
   return (
     <Page size="A4" wrap style={{ padding: 0 }}>
@@ -299,33 +300,35 @@ function Chapter4Page({ name, body, sub }: { name: string; body: string; sub: st
       />
 
       <View style={{ paddingHorizontal: 46, paddingTop: 20, paddingBottom: 50 }}>
-        {/* fixed header */}
-        <View fixed>
+        {/* fixed header — 텍스트 우측 정렬 */}
+        <View fixed style={{ alignItems: "flex-end" }}>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
-          <View style={{ height: 1, backgroundColor: WINE, marginTop: 4 }} />
+          <View style={{ height: 1, backgroundColor: WINE, marginTop: 4, alignSelf: "stretch" }} />
         </View>
 
-        {/* hero + title 행 — wrap={false} 로 페이지 중간에 잘리지 않게 */}
-        <View wrap={false} style={{ marginTop: 24, flexDirection: "row", gap: 24, alignItems: "center" }}>
-          <View style={{ width: 290, height: 230, overflow: "hidden" }}>
-            <Image src={HERO[4]} style={{ width: 290, height: 230, objectFit: "cover" }} />
-          </View>
-          <View style={{ flex: 1 }}>
+        {/* 좌 타이틀 블록 / 우 hero — 좌·우 swap.
+            wrap={false} 로 페이지 중간 잘림 방지. */}
+        <View wrap={false} style={{ marginTop: 36, flexDirection: "row", gap: 24, alignItems: "flex-start" }}>
+          <View style={{ flex: 1, paddingTop: 80 }}>
             <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 4.</Text>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT, marginTop: 10, lineHeight: 1.3 }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT, marginTop: 8, lineHeight: 1.3 }}>
               {KOR_TITLE[4]}
             </Text>
-            <View style={{ marginTop: 14, width: 110, height: 1, backgroundColor: RULE }} />
+            <View style={{ marginTop: 12, width: 80, height: 1, backgroundColor: RULE }} />
+          </View>
+          {/* Chapter 4.jpg 가 세로형 (820×1220, ratio 0.67) — 슬롯도 세로 비율로 맞춤 */}
+          <View style={{ width: 180, height: 268, overflow: "hidden" }}>
+            <Image src={HERO[4]} style={{ width: 180, height: 268, objectFit: "cover" }} />
           </View>
         </View>
 
-        {/* 부제 */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, color: TEXT, marginTop: 40 }}>
+        {/* 부제 — Ch1/Ch2 와 동일 사이즈·간격으로 통일 */}
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, color: TEXT, marginTop: 28 }}>
           {sub || SUBTITLE[4]}
         </Text>
 
-        {/* Body 1-col flow */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 24 }}>
+        {/* Body 1-col flow — Ch1/Ch2 와 동일 사이즈·간격 */}
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 18 }}>
           {body}
         </Text>
       </View>

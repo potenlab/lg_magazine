@@ -49,7 +49,7 @@ export function Cover({ name, date, headline }: Props) {
           style={{
             position: "absolute",
             top: 200,
-            left: 335,
+            left: 385,
             fontSize: 22,
             fontFamily: "Noto Serif KR",
             color: CREAM,

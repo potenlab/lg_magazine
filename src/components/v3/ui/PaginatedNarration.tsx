@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { EditorialInline, toEditorialBlocks } from "@/components/v3/ui/EditorialText";
+import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 
 const PER_LINE_DELAY_MS = 1200;
 const FADE_DURATION_MS = 600;
@@ -31,6 +32,7 @@ export function PaginatedNarration({
   onAdvance,
   onPageChange,
   tight = false,
+  finalButtonLabel,
 }: {
   lines: string[];
   pageSize?: number;
@@ -46,6 +48,10 @@ export function PaginatedNarration({
    * hides the bottom "다음 페이지" hint. Use when a sibling input/control
    * sits below the narration and we want them tight together. */
   tight?: boolean;
+  /** When set, the last-page "다음" italic hint is replaced by a box CTA
+   * (StoryButtonV3 ritual) at the bottom-right. Use on terminal/ritual scenes
+   * (e.g. C-3 "열차에서 내리기"). */
+  finalButtonLabel?: string;
 }) {
   const displayLines = useMemo(() => toEditorialBlocks(lines), [lines]);
   const pages: string[][] = [];
@@ -160,7 +166,18 @@ export function PaginatedNarration({
   const hintOpacity = canAdvance ? "opacity-100" : fullyShown ? "opacity-45" : "opacity-0";
 
   return (
-    <div className={tight ? "flex flex-col" : "flex flex-1 flex-col"} onClick={advancePage}>
+    <div
+      className={tight ? "flex flex-col" : "flex flex-1 flex-col"}
+      onClick={(e) => {
+        // 박스 버튼 모드에서는 컨테이너 클릭으로 advance 되지 않게 차단 —
+        // 사용자가 CTA 버튼만 누르게 유도. (마지막 페이지 한정)
+        if (finalButtonLabel && isLastPage) return;
+        // 박스 버튼 자체 클릭 이벤트는 이미 stopPropagation 처리되지 않으므로
+        // (StoryButtonV3 내부엔 없음) 안전을 위해 비-last-page 경로에서만 advance.
+        void e;
+        advancePage();
+      }}
+    >
       <div
         className={
           tight
@@ -193,7 +210,22 @@ export function PaginatedNarration({
         </AnimatePresence>
       </div>
 
-      {!tight && (() => {
+      {/* 마지막 페이지 + finalButtonLabel 설정 시 — 박스 CTA 버튼 (StoryButtonV3 ritual)
+          으로 italic 힌트를 대체. dwell 종료(canAdvance) 전에는 미노출. */}
+      {!tight && finalButtonLabel && isLastPage && (
+        <div
+          className={`pointer-events-${canAdvance ? "auto" : "none"} absolute bottom-6 right-6 z-10 transition-opacity duration-300 ${canAdvance ? "opacity-100" : "opacity-0"}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <StoryButtonV3
+            label={finalButtonLabel}
+            onClick={() => onAdvance?.()}
+            ritual
+          />
+        </div>
+      )}
+
+      {!tight && !(finalButtonLabel && isLastPage) && (() => {
         // 마지막 페이지에서 onAdvance 가 없으면 "다음" 힌트를 아예 미렌더 —
         // 부모 씬의 CTA 버튼(같은 bottom-right 좌표) 영역을 가리거나 클릭을
         // 가로채는 회귀 방지.

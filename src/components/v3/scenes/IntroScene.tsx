@@ -31,8 +31,9 @@ const JOB_OPTIONS = [
   "영업", "마케팅", "상품기획",
   "연구개발", "설계/엔지니어링", "기획/전략",
   "품질/안전", "생산/제조", "SCM/구매",
-  "IT/시스템", "재무/회계", "인사/조직",
+  "IT/시스템", "재무/회계", "HR",
   "DX/데이터", "법무", "커뮤니케이션",
+  "디자인",
 ];
 
 type LetterLine = { text: string; delay: number; h?: [number, number][] };

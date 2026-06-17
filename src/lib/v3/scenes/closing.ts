@@ -78,6 +78,8 @@ export const CLOSING_SCENES: SceneSpec[] = [
       "그동안 {name}님의 이야기를 들려주셔서, 정말 고맙습니다.",
       "부디 빛나시기를.",
     ],
+    // 종결 직전 CTA — 박스 버튼 (StoryButtonV3 ritual variant) 으로 렌더.
+    buttonLabel: "열차에서 내리기",
     next: "C-5",
   },
   // ── [2026-06 제거] C-4 "이제 내릴게요" 종착역 페이지 ─────────────────

@@ -53,7 +53,12 @@ export function OwlNarrationScene({
 
   return (
     <div className="flex flex-1 flex-col gap-4">
-      <PaginatedNarration lines={lines} pageSize={spec.pageSize} onAdvance={advance} />
+      <PaginatedNarration
+        lines={lines}
+        pageSize={spec.pageSize}
+        onAdvance={advance}
+        finalButtonLabel={spec.buttonLabel}
+      />
     </div>
   );
 }

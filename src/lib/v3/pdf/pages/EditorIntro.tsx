@@ -44,13 +44,15 @@ export function EditorIntro({ body, name: _name }: Props) {
         }}
       />
 
-      {/* 본문 — 페이지 폭 사용 (좌우 PAD) */}
+      {/* 본문 — 페이지 폭 사용 (좌우 PAD). bottom 만 anchor (사진 상단 24pt 위).
+          사진 top = 842 - 46(bottom) - 260(height) = 536 → 컨테이너 bottom = 330 (= 842 - 512).
+          top 제약 없음 → 본문 길이만큼 위로 자라남. */}
       <View
         style={{
           position: "absolute",
-          top: 120,
           left: PAD,
           right: PAD,
+          bottom: 330,
         }}
       >
         <Text
@@ -66,20 +68,20 @@ export function EditorIntro({ body, name: _name }: Props) {
         <View style={{ height: 1, backgroundColor: WINE, marginTop: 24 }} />
       </View>
 
-      {/* 하단 사진 — Introduction.jpg */}
+      {/* 하단 사진 — intro(1).jpg */}
       <View
         style={{
           position: "absolute",
           left: PAD,
           right: PAD,
-          bottom: 50,
-          height: 320,
+          bottom: 46,
+          height: 260,
           overflow: "hidden",
         }}
       >
         <Image
           src="/intro(1).jpg"
-          style={{ width: PAGE_W - PAD * 2, height: 320, objectFit: "cover" }}
+          style={{ width: PAGE_W - PAD * 2, height: 260, objectFit: "cover" }}
         />
       </View>
     </Page>

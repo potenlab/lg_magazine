@@ -19,10 +19,10 @@ const PAD = 46;
 const RULE_TOP = 46;
 const TITLE_TOP = 100;
 const TITLE_FS = 56;
-const TITLE_GAP = 40;
-const CHAPTERS_TOP = TITLE_TOP + TITLE_FS + TITLE_GAP; // 196
-// 챕터 사이 사이클 간격 (top 좌표 차이) — 사용자 지정 100pt.
-const CHAPTER_GAP = 100;
+const TITLE_GAP = 60;
+const CHAPTERS_TOP = TITLE_TOP + TITLE_FS + TITLE_GAP; // 216
+// 챕터 사이 사이클 간격 (top 좌표 차이).
+const CHAPTER_GAP = 110;
 
 export function TOC({
   name: _name,

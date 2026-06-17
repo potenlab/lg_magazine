@@ -81,28 +81,24 @@ function Chapter1Page({ name, body, pullQuote, sub }: { name: string; body: stri
       />
 
       <View style={{ paddingHorizontal: 46, paddingTop: 20, paddingBottom: 50 }}>
-        {/* Header — fixed: Vol. {name} + 와인 룰 (모든 페이지에) */}
+        {/* Header — fixed: Vol. {name} + 와인 룰 (모든 페이지에).
+            룰 marginTop 12 → 20(padding)+~14(text)+12 ≈ top 46. */}
         <View fixed>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
-          <View style={{ height: 1, backgroundColor: WINE, marginTop: 4 }} />
+          <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
         </View>
 
-        {/* Hero — 첫 페이지에만 (flow) */}
+        {/* Hero — 첫 페이지에만 (flow). CornerAccent 제거. */}
         <View style={{ marginTop: 24, height: 157, overflow: "hidden", position: "relative" }}>
           <Image src={HERO[1]} style={{ width: 503, height: 157, objectFit: "cover" }} />
-          <CornerAccent corner="tr" />
-          <CornerAccent corner="bl" />
         </View>
 
-        {/* Title row */}
-        <View style={{ marginTop: 24, flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" }}>
+        {/* Title row — alignItems flex-start 로 위쪽 정렬. CHAPTER 1. 아래 룰 제거. */}
+        <View style={{ marginTop: 24, flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT }}>{KOR_TITLE[1]}</Text>
-          <View style={{ alignItems: "flex-end" }}>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 1.</Text>
-            <View style={{ height: 1, backgroundColor: RULE, marginTop: 4, width: 110 }} />
-          </View>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>CHAPTER 1.</Text>
         </View>
-        <View style={{ height: 1, backgroundColor: RULE, marginTop: 6, width: 80 }} />
+        <View style={{ height: 1, backgroundColor: RULE, marginTop: 12, width: 80 }} />
 
         {/* Subtitle — dynamic headline (TOC sub 와 동일), 비면 static fallback */}
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, marginTop: 22, color: TEXT }}>
@@ -113,27 +109,34 @@ function Chapter1Page({ name, body, pullQuote, sub }: { name: string; body: stri
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, lineHeight: 1.75, color: TEXT, marginTop: 18 }}>
           {body}
         </Text>
+      </View>
 
-        {/* PullQuote — body 뒤 flow. wrap={false} 로 quote 자체는 한 페이지에 통째 유지. */}
-        {pullQuote && (
-          <View
-            wrap={false}
-            style={{ marginTop: 36, flexDirection: "row", alignItems: "center", justifyContent: "center" }}
-          >
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 40, color: MUTED, marginRight: 14, marginTop: -10 }}>
-              &#x201C;
-            </Text>
-            <View style={{ flex: 1, alignItems: "center" }}>
-              <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: TEXT, textAlign: "center", lineHeight: 1.6 }}>
-                {pullQuote}
-              </Text>
-            </View>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 40, color: MUTED, marginLeft: 14, marginBottom: -16 }}>
-              &#x201D;
+      {/* PullQuote — 절대 좌표 bottom 46 anchor (페이지 하단 고정). top 제한 없음. */}
+      {pullQuote && (
+        <View
+          style={{
+            position: "absolute",
+            left: 46,
+            right: 46,
+            bottom: 46,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 40, color: MUTED, marginRight: 14, marginTop: -10 }}>
+            &#x201C;
+          </Text>
+          <View style={{ flex: 1, alignItems: "center" }}>
+            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 22, fontWeight: 700, color: TEXT, textAlign: "center", lineHeight: 1.6 }}>
+              {pullQuote}
             </Text>
           </View>
-        )}
-      </View>
+          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 40, color: MUTED, marginLeft: 14, marginBottom: -16 }}>
+            &#x201D;
+          </Text>
+        </View>
+      )}
     </Page>
   );
 }

@@ -104,7 +104,6 @@ export default function PdfPreviewPage() {
                   SAMPLE.chapters[3].headline,
                   SAMPLE.chapters[4].headline,
                 ]}
-                deep={false}
               />;
         case "editorIntro":
           return <EditorIntro body={SAMPLE.editorIntro} name={SAMPLE.name} />;
@@ -133,7 +132,6 @@ export default function PdfPreviewPage() {
                   SAMPLE.chapters[3].headline,
                   SAMPLE.chapters[4].headline,
                 ]}
-                deep={false}
               />
               {ch(1)}
               {ch(2)}

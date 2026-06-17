@@ -32,7 +32,7 @@ export function EditorOutro({ body, name }: Props) {
       />
 
       {/* 상단 헤더 — magazine STORY (우측) + 와인 룰 */}
-      <View style={{ position: "absolute", top: 30, left: 46, right: 46, flexDirection: "row", justifyContent: "flex-end" }}>
+      <View style={{ position: "absolute", top: 20, left: 46, right: 46, flexDirection: "row", justifyContent: "flex-end" }}>
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
       </View>
       <View style={{ position: "absolute", top: 46, left: 46, right: 46, height: 1, backgroundColor: WINE }} />
@@ -40,7 +40,7 @@ export function EditorOutro({ body, name }: Props) {
       {/* Editor's Note hero 사진 */}
       <View style={{ position: "absolute", top: 96, left: 46, right: 46, height: 380, overflow: "hidden" }}>
         <Image
-          src="/Editor's Note.jpg"
+          src="/outro.jpg"
           style={{ width: 503, height: 380, objectFit: "cover" }}
         />
       </View>

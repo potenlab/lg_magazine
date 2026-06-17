@@ -30,7 +30,7 @@ export function EditorIntro({ body, name: _name }: Props) {
       />
 
       {/* 상단 마스트헤드 — 우측 magazine STORY 만. (좌측 Vol. {name} 는 제거) */}
-      <Text style={{ position: "absolute", top: 30, right: PAD, fontSize: 12, color: WINE, letterSpacing: 0 }}>
+      <Text style={{ position: "absolute", top: 20, right: PAD, fontSize: 12, color: WINE, letterSpacing: 0 }}>
         magazine <Text style={{ fontWeight: 700 }}>STORY</Text>
       </Text>
       <View
@@ -78,7 +78,7 @@ export function EditorIntro({ body, name: _name }: Props) {
         }}
       >
         <Image
-          src="/Introduction.jpg"
+          src="/intro(1).jpg"
           style={{ width: PAGE_W - PAD * 2, height: 320, objectFit: "cover" }}
         />
       </View>

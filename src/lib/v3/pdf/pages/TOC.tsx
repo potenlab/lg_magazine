@@ -27,12 +27,10 @@ const CHAPTER_GAP = 100;
 export function TOC({
   name: _name,
   chapterHeadlines,
-  deep: _deep,
 }: {
   name: string;
   /** Chapter 1~4 의 dynamic headline. 인덱스 0 → Ch1. */
   chapterHeadlines: [string, string, string, string];
-  deep: boolean;
 }) {
   return (
     <Page size={[PAGE_W, PAGE_H]} style={{ padding: 0, position: "relative", width: PAGE_W, height: PAGE_H, fontFamily: "Noto Serif KR", color: COLORS.text }}>
@@ -43,7 +41,7 @@ export function TOC({
       />
 
       {/* 상단 마스트헤드 — 우측 magazine STORY 만 (좌측 Vol. {name} 제거) */}
-      <Text style={{ position: "absolute", top: 30, right: PAD, fontSize: 12, color: COLORS.wine, letterSpacing: 0 }}>
+      <Text style={{ position: "absolute", top: 20, right: PAD, fontSize: 12, color: COLORS.wine, letterSpacing: 0 }}>
         magazine <Text style={{ fontWeight: 700 }}>STORY</Text>
       </Text>
       <View

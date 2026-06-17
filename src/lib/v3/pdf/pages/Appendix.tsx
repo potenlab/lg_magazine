@@ -84,7 +84,7 @@ export function Appendix({ name, threads }: Props) {
 
         {/* 부제 — Ch1~4 부제와 동일 스타일 (18pt bold, marginTop 20). */}
         <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, color: TEXT, marginTop: 20, lineHeight: 1.4 }}>
-          네 챕터에서 주고받은 질문 · 답변 · 편집장 요약
+          {name}님이 직접 적어주신 기록
         </Text>
 
         {/* 본문 — marginTop 16 (Ch1~4 본문 spacing). */}
@@ -93,9 +93,12 @@ export function Appendix({ name, threads }: Props) {
             기록할 답변이 아직 없어요.
           </Text>
         ) : (
-          <View style={{ marginTop: 16 }}>
+          <View>
             {threads.map((thread, ti) => (
-              <View key={ti} style={{ marginBottom: 20 }}>
+              // 간격은 thread 별 marginTop 으로 부여 — 페이지가 wrap 되어
+              // thread 가 새 페이지 상단에 떨어져도 동일 간격 유지된다.
+              // 첫 thread 는 부제(본문 marginTop 16) 아래에 위치.
+              <View key={ti} style={{ marginTop: ti === 0 ? 16 : 20 }}>
                 {/* 챕터 헤더 — wrap={false} 로 한 줄 보호.
                     web: border-b border-[#b99b6b]/30 pb-2,
                          label 14px uppercase tracking-[0.14em] #9b8768,
@@ -126,20 +129,6 @@ export function Appendix({ name, threads }: Props) {
             ))}
           </View>
         )}
-
-        {/* footer — 매거진 후면 마무리 톤 */}
-        <View style={{ marginTop: 18, paddingTop: 12, borderTopWidth: 0.6, borderTopColor: GOLD }}>
-          <Text
-            style={{
-              fontFamily: "Noto Serif KR",
-              fontSize: 12,
-              color: MUTED,
-              textAlign: "center",
-            }}
-          >
-            — {name}님이 직접 적어주신 기록 —
-          </Text>
-        </View>
       </View>
     </Page>
   );

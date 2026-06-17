@@ -113,6 +113,20 @@ export function TOC({
       >
         EDITOR&apos;S NOTE
       </Text>
+
+      {/* APPENDIX — EDITOR'S NOTE 아래 28pt */}
+      <Text
+        style={{
+          position: "absolute",
+          top: CHAPTERS_TOP + 4 * CHAPTER_GAP + 12 + 28,
+          left: PAD,
+          fontSize: 14,
+          color: COLORS.wine,
+          letterSpacing: 0,
+        }}
+      >
+        APPENDIX
+      </Text>
     </Page>
   );
 }

@@ -77,15 +77,10 @@ export function Appendix({ name, threads }: Props) {
             APPENDIX
           </Text>
           <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT, marginTop: 8 }}>
-            내가 적은 기록
+            {name}님이 직접 적어주신 기록
           </Text>
           <View style={{ height: 1, backgroundColor: RULE, marginTop: 20, width: 80 }} />
         </View>
-
-        {/* 부제 — Ch1~4 부제와 동일 스타일 (18pt bold, marginTop 20). */}
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 18, fontWeight: 700, color: TEXT, marginTop: 20, lineHeight: 1.4 }}>
-          {name}님이 직접 적어주신 기록
-        </Text>
 
         {/* 본문 — marginTop 16 (Ch1~4 본문 spacing). */}
         {threads.length === 0 ? (
@@ -119,10 +114,11 @@ export function Appendix({ name, threads }: Props) {
                   </Text>
                 </View>
 
-                {/* 챕터 entries — space-y-2.5 = 10px */}
+                {/* 챕터 entries — 각 Entry 가 자체 marginTop 으로 간격 부여
+                    (wrap 시 새 페이지 상단에 떨어진 entry 도 동일 간격 유지). */}
                 <View style={{ marginTop: 10 }}>
                   {thread.entries.map((e, i) => (
-                    <Entry key={i} entry={e} />
+                    <Entry key={i} entry={e} isFirst={i === 0} />
                   ))}
                 </View>
               </View>
@@ -140,15 +136,18 @@ export function Appendix({ name, threads }: Props) {
  *   answer:   흰 박스 + 골드 보더 (round 4)
  *   result:   베이지 박스 + 골드 보더 (round 4) — 엘아울 합성 강조
  */
-function Entry({ entry }: { entry: AppendixEntry }) {
+function Entry({ entry, isFirst }: { entry: AppendixEntry; isFirst?: boolean }) {
   const isQuestion = entry.tone === "question";
   const isResult = entry.tone === "result";
 
+  // 간격은 marginBottom → marginTop 으로 부여 — entry 가 wrap 되어 새 페이지
+  // 상단에 떨어져도 동일 간격 유지. 챕터 첫 entry 는 부모 컨테이너의
+  // marginTop(10) 만으로 충분하므로 자체 marginTop 0.
   return (
     <View
       wrap={false}
       style={{
-        marginBottom: 8,
+        marginTop: isFirst ? 0 : 10,
         // question: 좌측 보더만, padding 좌측만 살짝, 박스 X
         // answer/result: 박스 (round + border + bg + padding)
         paddingLeft: isQuestion ? 10 : 10,

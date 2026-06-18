@@ -14,8 +14,6 @@ export interface MagazineData {
   coverHeadline: string;
   editorIntro: string;
   editorOutro: string;
-  /** Editor's Note 메인 타이틀 = 정체성 타이틀 문장. 비면 EditorOutro 가 fallback. */
-  editorTitle?: string;
   chapters: {
     1: { headline: string; body: string; pullQuote: string | null };
     2: { headline: string; body: string; pullQuote: string | null };
@@ -51,7 +49,7 @@ export function MagazinePDF({ data, variant }: { data: MagazineData; variant?: I
       <Chapter chapter={2} headline={data.chapters[2].headline} body={data.chapters[2].body} pullQuote={data.chapters[2].pullQuote} name={data.name} variant={v} />
       <Chapter chapter={3} headline={data.chapters[3].headline} body={data.chapters[3].body} pullQuote={data.chapters[3].pullQuote} name={data.name} variant={v} />
       <Chapter chapter={4} headline={data.chapters[4].headline} body={data.chapters[4].body} pullQuote={data.chapters[4].pullQuote} name={data.name} variant={v} />
-      <EditorOutro title={data.editorTitle} body={data.editorOutro} name={data.name} />
+      <EditorOutro body={data.editorOutro} name={data.name} />
       {data.appendix && data.appendix.length > 0 && (
         <Appendix name={data.name} threads={data.appendix} />
       )}

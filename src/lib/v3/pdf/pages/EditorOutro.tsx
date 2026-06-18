@@ -16,20 +16,16 @@ import { sanitizeBody } from "../sanitize";
  *   본문이 길면 자동으로 다음 페이지로 wrap.
  */
 interface Props {
-  /** 정체성 타이틀 문장 — 메인 타이틀로 렌더. 비면 fallback. */
-  title?: string;
   body: string;
   name: string;
 }
 
 const TEXT = "#3d2414";
-const MUTED = "#7a5a3a";
 const WINE = "#59282E";
 const RULE = "#59282E";
 const PAPER = "/paper.jpg";
 
-export function EditorOutro({ title, body, name }: Props) {
-  const mainTitle = title?.trim() || "묵묵히 자기 빛을 쌓아온 사람";
+export function EditorOutro({ body, name }: Props) {
   return (
     // Page 에 padding 직접 부여 — wrap 페이지 헤더 간격 일관 (paddingTop 71).
     <Page size="A4" wrap style={{ paddingHorizontal: 46, paddingTop: 71, paddingBottom: 50 }}>
@@ -53,14 +49,9 @@ export function EditorOutro({ title, body, name }: Props) {
         <Image src="/outro.jpg" style={{ width: 503, height: 200, objectFit: "cover" }} />
       </View>
 
-      {/* 라벨 EDITOR'S NOTE — hero 아래 24 (챕터 hero↔타이틀 간격). */}
-      <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 1, marginTop: 24 }}>
+      {/* 타이틀 EDITOR'S NOTE — hero 아래 24 (챕터 hero↔타이틀 간격). */}
+      <Text style={{ fontFamily: "Noto Serif KR", fontSize: 28, fontWeight: 700, color: TEXT, letterSpacing: 1, marginTop: 24 }}>
         EDITOR&apos;S NOTE
-      </Text>
-
-      {/* 메인 타이틀 = 정체성 타이틀 문장 — 라벨 아래 8 (챕터 라벨↔타이틀). */}
-      <Text style={{ fontFamily: "Noto Serif KR", fontSize: 22, fontWeight: 700, color: TEXT, marginTop: 8, lineHeight: 1.4 }}>
-        {mainTitle}
       </Text>
 
       {/* 짧은 룰 — 타이틀 아래 20. */}

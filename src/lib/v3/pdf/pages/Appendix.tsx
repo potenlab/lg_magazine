@@ -96,40 +96,50 @@ export function Appendix({ name, threads }: Props) {
         </Text>
       ) : (
         <View>
-          {threads.map((thread, ti) => (
+          {threads.map((thread, ti) => {
+            const [firstEntry, ...restEntries] = thread.entries;
+            return (
             // 간격은 thread 별 marginTop 으로 부여 — 페이지가 wrap 되어
             // thread 가 새 페이지 상단에 떨어져도 동일 간격 유지된다.
             // 첫 thread 는 부제(본문 marginTop 16) 아래에 위치.
             <View key={ti} style={{ marginTop: ti === 0 ? 16 : 20 }}>
-              {/* 챕터 헤더 — wrap={false} + minPresenceAhead 로 페이지 하단에
-                  덩그러니 라벨만 남는 것 방지 (규칙 B: 대제목 위치 방어).
-                  헤더 자체(~36pt) + 첫 entry 라벨·1~2줄(~80pt) 공간 확보. */}
-              <View
-                wrap={false}
-                minPresenceAhead={120}
-                style={{
-                  paddingBottom: 6,
-                  borderBottomWidth: 0.6,
-                  borderBottomColor: GOLD,
-                }}
-              >
-                <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: MUTED, letterSpacing: 1.4 }}>
-                  {thread.chapter}
-                </Text>
-                <Text style={{ fontFamily: "Noto Serif KR", fontSize: 15, fontWeight: 700, color: TEXT, marginTop: 2 }}>
-                  {thread.title}
-                </Text>
+              {/* 챕터 헤더 + 첫 entry 를 한 덩어리(wrap=false)로 묶는다.
+                  → 페이지 하단 공간이 부족해 헤더만 남고 첫 질문이 다음 장으로
+                  넘어가는 분리를 방지. 공간 부족 시 헤더째 다음 장 최상단으로 이동. */}
+              <View wrap={false}>
+                <View
+                  style={{
+                    paddingBottom: 6,
+                    borderBottomWidth: 0.6,
+                    borderBottomColor: GOLD,
+                  }}
+                >
+                  <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: MUTED, letterSpacing: 1.4 }}>
+                    {thread.chapter}
+                  </Text>
+                  <Text style={{ fontFamily: "Noto Serif KR", fontSize: 15, fontWeight: 700, color: TEXT, marginTop: 2 }}>
+                    {thread.title}
+                  </Text>
+                </View>
+                {firstEntry && (
+                  <View style={{ marginTop: 10 }}>
+                    <Entry entry={firstEntry} isFirst />
+                  </View>
+                )}
               </View>
 
-              {/* 챕터 entries — 각 Entry 가 자체 marginTop 으로 간격 부여
-                  (wrap 시 새 페이지 상단에 떨어진 entry 도 동일 간격 유지). */}
-              <View style={{ marginTop: 10 }}>
-                {thread.entries.map((e, i) => (
-                  <Entry key={i} entry={e} isFirst={i === 0} />
-                ))}
-              </View>
+              {/* 나머지 entries — 자연 흐름(wrap 허용). 각 Entry 자체 marginTop 으로
+                  간격 부여 (wrap 시 새 페이지 상단에 떨어진 entry 도 동일 간격 유지). */}
+              {restEntries.length > 0 && (
+                <View>
+                  {restEntries.map((e, i) => (
+                    <Entry key={i + 1} entry={e} isFirst={false} />
+                  ))}
+                </View>
+              )}
             </View>
-          ))}
+            );
+          })}
         </View>
       )}
     </Page>
@@ -146,21 +156,22 @@ function Entry({ entry, isFirst }: { entry: AppendixEntry; isFirst?: boolean }) 
   const isQuestion = entry.tone === "question";
   const isResult = entry.tone === "result";
 
-  // 본문을 문단(\n\n) 단위로 split — react-pdf 는 children 경계에서만 page-break
-  // 가 일어나므로, 각 문단을 자체 <View wrap={false}> 로 감싸면 문단 중간(라인)
-  // 에서는 절대 잘리지 않고, 정 길어 한 페이지를 넘으면 문단 경계에서만 분할됨.
-  // (규칙 C: 부득이한 분할 시 문단 단위)
+  // 본문을 문단(\n\n) 단위로 split. 단, 각 문단 <Text> 는 라인 레벨로 wrap
+  // 가능하게 둔다 (규칙 B: break-inside auto). orphans/widows 2 로 분할 시
+  // 최소 2줄이 함께 넘어가도록 제어 — 다음 장에 한 줄만 덩그러니 남는 것 방지.
   const paragraphs = entry.text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   const safeParagraphs = paragraphs.length ? paragraphs : [entry.text];
 
-  // 박스 통째로 다음 페이지로 미는 케이스: minPresenceAhead 를 라벨+첫문단
-  // 평균(~80pt) 으로 설정. 페이지 끝에서 라벨만 남고 답변이 뚝 끊기는 케이스
-  // 방지. (규칙 A)
-  // 질문(isQuestion)은 짧으므로 wrap=false 로 통째 보호.
+  // 규칙 A — '질문'에 minPresenceAhead 를 걸어 break-after: avoid 효과 구현:
+  //   질문 뒤에 답변 첫 줄(라벨+~2줄 ≈ 64pt)이 들어올 공간이 없으면 질문을
+  //   통째로 다음 장으로 내려, 질문만 페이지 끝에 덩그러니 남는 것을 막는다.
+  //   (질문은 짧으므로 wrap=false 로 통째 보호.)
+  // 규칙 B — 답변/결과 박스는 wrap=true (break-inside auto) 로 페이지 경계에서
+  //   자연 분할 → 하단 빈 여백 최소화. minPresenceAhead 없음.
   return (
     <View
       wrap={!isQuestion}
-      minPresenceAhead={isQuestion ? undefined : 80}
+      minPresenceAhead={isQuestion ? 64 : undefined}
       style={{
         marginTop: isFirst ? 0 : 10,
         paddingLeft: 10,
@@ -174,48 +185,33 @@ function Entry({ entry, isFirst }: { entry: AppendixEntry; isFirst?: boolean }) 
         backgroundColor: isQuestion ? undefined : isResult ? RESULT_BG : ANSWER_BG,
       }}
     >
-      {/* 라벨 + 첫 문단은 한 덩어리로 보호 — 라벨만 페이지 끝에 남는 회귀 방지. */}
-      <View wrap={false}>
+      <Text
+        style={{
+          fontFamily: "Noto Serif KR",
+          fontSize: 11,
+          color: MUTED,
+          letterSpacing: 0.6,
+        }}
+      >
+        {entry.label}
+      </Text>
+      {/* 문단별 <Text> — 라인 레벨 wrap 허용 + orphans/widows 2 (규칙 B). */}
+      {safeParagraphs.map((p, i) => (
         <Text
-          style={{
-            fontFamily: "Noto Serif KR",
-            fontSize: 11,
-            color: MUTED,
-            letterSpacing: 0.6,
-          }}
-        >
-          {entry.label}
-        </Text>
-        <Text
+          key={i}
+          orphans={2}
+          widows={2}
           style={{
             fontFamily: "Noto Serif KR",
             fontSize: isQuestion ? 12 : 13,
             color: isQuestion ? QUESTION_TEXT : TEXT,
-            marginTop: 3,
+            marginTop: i === 0 ? 3 : 8,
             lineHeight: 1.65,
             fontStyle: isQuestion ? "italic" : "normal",
           }}
         >
-          {safeParagraphs[0]}
+          {p}
         </Text>
-      </View>
-
-      {/* 2번째 이후 문단들 — 각각 wrap=false 로 문단 중간 분할 방지. */}
-      {safeParagraphs.slice(1).map((p, i) => (
-        <View key={i} wrap={false}>
-          <Text
-            style={{
-              fontFamily: "Noto Serif KR",
-              fontSize: isQuestion ? 12 : 13,
-              color: isQuestion ? QUESTION_TEXT : TEXT,
-              marginTop: 8,
-              lineHeight: 1.65,
-              fontStyle: isQuestion ? "italic" : "normal",
-            }}
-          >
-            {p}
-          </Text>
-        </View>
       ))}
     </View>
   );

@@ -7,6 +7,7 @@ import { extractIdentityTitle } from "@/lib/v3/scenes/template";
 import type { V3Session } from "@/lib/v3/scenes/types";
 import { ALL_TOOL_OPTIONS } from "@/lib/v3/toolOptions";
 import { cleanArticleField, clampBodyToCompleteSentence, clampBodyKeepingEnding } from "@/lib/v3/llm/articleSanitize";
+import { judgeBranchHeuristic } from "@/lib/v3/judging/heuristics";
 
 // ── 객관식 선택지 의미 사전 ─────────────────────────────────────
 // Ch3에서 사용자가 고르는 객관식 라벨들은 4~6자 짧은 phrase("전문성 연결",
@@ -145,6 +146,17 @@ const SYNTHESIS_PERSONA = `당신은 매거진 STORY의 편집장 엘아울(L-OW
 - 짧고 정확한 한국어. 과한 수사·관용구·이모지·클리셰("가장 완벽한", "치열하게", "어깨의 무거운 짐") 금지.
 - 조사 정확성: 받침 있음 → 은/이/을, 받침 없음 → 는/가/를. 어미 중복("있었군요이었군요") 금지, 한 문장 = 한 마침 어미.
 - 따뜻하지만 날카로운 존댓말. 출력은 지시한 형식(JSON)만, 군더더기·해설 금지.`;
+
+// judgeBranch 전용 분류 페르소나. EDITOR_PERSONA는 "오프토픽 답변이면 3단계로
+// 따뜻하게 되물어라"를 명시적으로 가르치기 때문에, 분류 task에 그 system을 물리면
+// 농담·인사·오프토픽 입력에서 모델이 BRANCH 대신 위트 되묻기 산문을 뱉어 파싱이
+// 깨진다(→ 과거엔 throw→500). 분류 호출은 되묻기·페르소나·대화체를 일절 끄고
+// 오직 라벨 한 글자만 내게 한다.
+const CLASSIFIER_PERSONA = `당신은 텍스트 분류기입니다. 참가자 답변을 규칙에 따라 정확히 한 글자로 분류합니다.
+
+- 출력은 지시한 형식(BRANCH/REASON)만. 인사·되묻기·위로·설명·해설·페르소나·대화체 일절 금지.
+- 어떤 입력이든(농담·인사·욕설·오프토픽·빈 답변·의미 없는 글자 포함) 반드시 첫 줄을 "BRANCH: " 로 시작하는 한 글자 결과로 낸다. 절대 되묻거나 문장으로 응답하지 않는다.
+- 판단이 애매하거나 답변이 무의미하면, 가장 불충분함을 뜻하는 케이스(보통 목록의 첫 글자)로 분류한다.`;
 
 async function ask(user: string, maxTokens = 300, system: string = EDITOR_PERSONA): Promise<LLMResult> {
   const provider = await getProvider();
@@ -386,7 +398,7 @@ export async function v3JudgeBranch(input: {
 }): Promise<{ branch: "A" | "B" | "C" | "D"; reason: string }> {
   const spec = RULE_SPECS[input.rule];
   const allowed = spec.letters.join("/");
-  const user = `[질문 맥락] ${spec.context}
+  const baseUser = `[질문 맥락] ${spec.context}
 
 [참가자 답변]
 ${input.answer}
@@ -398,23 +410,42 @@ ${spec.cases}
 [출력 형식 — 다른 텍스트·해설 금지]
 BRANCH: <${allowed} 중 한 글자만>
 REASON: <한 문장 근거, 30자 이내>`;
-  const r = await ask(user, 100);
-  const text = r.text.trim();
-  const bm = text.match(/BRANCH:\s*([ABCD])/i);
-  const rm = text.match(/REASON:\s*([^\n]+)/);
-  if (!bm) {
-    throw new Error(`v3JudgeBranch: bad output: ${text}`);
+
+  // 분류 전용 CLASSIFIER_PERSONA로 호출 + 형식 위반 시 1회 재시도. 두 번 다
+  // 형식을 못 맞추면 throw(→500) 대신 휴리스틱으로 폴백한다 — 어떤 입력에도
+  // 라우트가 절대 500을 내지 않게 하는 안전망. (클라도 동일 휴리스틱을 갖고
+  // 있지만, 서버가 200으로 정상 분기를 돌려주면 불필요한 에러 round-trip이 사라진다.)
+  const MAX_ATTEMPTS = 2;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const user =
+      attempt === 0
+        ? baseUser
+        : `${baseUser}
+
+[⚠️ 재요청] 직전 출력이 형식을 어겼습니다. 인사·되묻기·설명·문장 금지. 첫 줄을 정확히 "BRANCH: " 로 시작해 ${allowed} 중 한 글자만 내세요.`;
+    const r = await ask(user, 100, CLASSIFIER_PERSONA);
+    const text = r.text.trim();
+    const bm = text.match(/BRANCH:\s*([ABCD])/i);
+    const rm = text.match(/REASON:\s*([^\n]+)/);
+    if (bm) {
+      const branch = bm[1].toUpperCase() as "A" | "B" | "C" | "D";
+      if (spec.letters.includes(branch)) {
+        return { branch, reason: (rm?.[1] || "").trim() };
+      }
+      // 규칙이 허용 안 하는 글자 → 재시도 트리거(루프 계속).
+      console.warn(
+        `[v3JudgeBranch] attempt ${attempt + 1}: branch ${branch} not allowed for rule ${input.rule}`,
+      );
+    } else {
+      console.warn(
+        `[v3JudgeBranch] attempt ${attempt + 1} bad output (no BRANCH): ${text.slice(0, 80)}`,
+      );
+    }
   }
-  const branch = bm[1].toUpperCase() as "A" | "B" | "C" | "D";
-  // Defensive: if LLM returned a letter outside the rule's allowed set,
-  // pick the closest fallback. (Better than trying to render an undefined branch.)
-  if (!spec.letters.includes(branch)) {
-    throw new Error(`v3JudgeBranch: branch ${branch} not allowed for rule ${input.rule}`);
-  }
-  return {
-    branch,
-    reason: (rm?.[1] || "").trim(),
-  };
+
+  // 재시도까지 실패 → 휴리스틱 폴백(절대 throw/500 금지). JudgeRule ≡ BranchRule.
+  console.warn(`[v3JudgeBranch] all ${MAX_ATTEMPTS} attempts failed for rule ${input.rule} → heuristic fallback`);
+  return judgeBranchHeuristic(input.rule, input.answer);
 }
 
 // LLM 출력 검증 함수들 — 비문법적 조사 부착 / 사용자 어구 그대로 사용 감지

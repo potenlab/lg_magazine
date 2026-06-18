@@ -338,7 +338,23 @@ export const stubLLM: LLMContract = {
     if (kind === "intro") {
       return `${session.name}님을 만났다. ${session.gender}는 ${session.job ? `${session.job} 일을 하는 사람이었다` : "묵묵히 자기 자리를 지키는 한 사람이었다"}. ${session.gender}가 들려준 이야기는 화려하지 않았지만, 그 속에는 자기만의 결이 흐르고 있었다. 우리는 ${session.gender}의 이야기를 한 호의 매거진으로 담았다.`;
     }
-    return `우리는 묵묵히 자기 빛을 쌓아온 한 사람을 만났다.\n\n${session.gender}의 이야기를 들으며, 우리는 ${session.gender}가 이미 자기만의 답을 가지고 있음을 깨달았다.\n\n이 한 호가 ${session.gender}의 다음 여정에 작은 등불이 되기를.`;
+    const pron = session.gender;
+    const coreValues = session.selectedValues.length
+      ? session.selectedValues.join(", ")
+      : session.topValue;
+    const valuesLine = coreValues
+      ? `${pron}가 걸어온 길에는 ${coreValues} 같은 결이 자연스럽게 배어 있었다. `
+      : "";
+    const visionLine = session.visionLine
+      ? `${session.visionLine} 길을 그리고 있었다.`
+      : "";
+    return (
+      `우리는 묵묵히 자기 빛을 쌓아온 한 사람을 만났다. ${pron}의 이야기를 들으며, 우리는 ${pron}가 이미 자기만의 답을 가지고 있음을 깨달았다. ` +
+      `완벽한 문서가 아니라 퇴근 전 10분으로 시작하는 사람, 거창한 제안 대신 개인 노트 한 페이지를 먼저 여는 사람. ` +
+      `${pron}는 조용한 기록이 언젠가 팀 전체의 나침반이 되리라는 걸, 말하지 않아도 알고 있었다.\n\n` +
+      `${valuesLine}${visionLine}`.trim() +
+      `\n\n이 한 호가 ${pron}의 다음 여정에 작은 등불이 되기를. 그리고 ${pron}가 만들어갈 다음 호를 기대해 보자.`
+    );
   },
 
   async writeCoverHeadline({ session }) {

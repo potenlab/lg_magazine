@@ -6,7 +6,7 @@ import { getDeep } from "@/lib/llm/modeContext";
 import { extractIdentityTitle } from "@/lib/v3/scenes/template";
 import type { V3Session } from "@/lib/v3/scenes/types";
 import { ALL_TOOL_OPTIONS } from "@/lib/v3/toolOptions";
-import { cleanArticleField } from "@/lib/v3/llm/articleSanitize";
+import { cleanArticleField, clampBodyToCompleteSentence } from "@/lib/v3/llm/articleSanitize";
 
 // ── 객관식 선택지 의미 사전 ─────────────────────────────────────
 // Ch3에서 사용자가 고르는 객관식 라벨들은 4~6자 짧은 phrase("전문성 연결",
@@ -1231,6 +1231,11 @@ export async function v3WriteChapterArticle(input: {
 인터뷰어 관찰 표현은 안전한 일반 표현만 — 예: "잠시 눈을 감았다", "한 호흡 쉬고 말했다",
    "펜이 잠시 멈추었다", "${pron}는 천천히 입을 열었다". 과장된 묘사 금지.
 
+[⚠️ 분량 — 반드시 지킬 것]
+- 본문(BODY) 전체는 3문단, 공백 포함 360~400자. 절대 420자를 넘기지 말 것.
+  (웹 매거진은 본문을 한 칸에 그대로 싣기 때문에, 길면 마지막 문장이 잘려 보임.)
+- 마지막 문장은 반드시 마침표로 완결할 것. 문장 도중에 끊지 말 것.
+
 [금지 사항]
 - 요약 박스, 항목 나열(•/-/번호), "핵심:", "정리:" 같은 라벨 형식 금지 — 통산문만.
 - L-OWL의 환기·격려 멘트("자, 다음 페이지로...") 페이지 안에 등장 금지 — 이 페이지는 결과물이지 대화가 아님.
@@ -1337,7 +1342,8 @@ BODY: <본문 3문단, 각 문단 2~3문장>
   // 같은 함수를 재사용.
   return {
     headline: cleanArticleField(hm?.[1] || ""),
-    body: cleanArticleField(bm?.[1] || ""),
+    // 본문은 분량 캡 + 완결 문장 보장 — 웹 매거진 칸 넘침(중간 잘림) 방지.
+    body: clampBodyToCompleteSentence(cleanArticleField(bm?.[1] || "")),
     // v3.8 11.4: Chapter 4는 풀쿼트 없음 — LLM이 혹시 출력해도 무시
     pullQuote: chapter === 4 ? null : (cleanArticleField(pm?.[1] || "") || null),
   };
@@ -1379,28 +1385,37 @@ ${EDITORIAL_PROSE_CONSTRAINT}`;
     return r.text.trim();
   }
 
-  // v3.8 11.5 — Editor's Note 형식 강제.
+  // v3.8 12.x — Editor's Note 본문. 정체성 카드 내용(핵심 가치·비전)을 노트에
+  // 자연스럽게 녹여낸다. 메인 타이틀({정체성 타이틀})은 EditorOutro 컴포넌트가
+  // 따로 렌더하므로 여기서는 출력하지 않는다 — 본문만.
+  const coreValues = session.selectedValues.length
+    ? session.selectedValues.join(", ")
+    : (session.topValue || "");
   const user = `[참가자] ${session.name}
-[정체성] ${identityTitle}
-[가치] ${session.topValue} · ${session.valueDefinitions[session.topValue] || ""}
-[비전] ${session.visionLine}
-[첫 걸음] ${session.firstStep}
+[정체성 타이틀] ${identityTitle || "—"}
+[핵심 가치] ${coreValues || "—"}
+[정체성 문장(비전)] ${session.visionLine || "—"}
 
-매거진 STORY 편집장의 아웃트로 노트(Editor's Note)를 써주세요.
+매거진 STORY 편집장의 아웃트로 노트(Editor's Note) "본문"을 써주세요.
 
-[형식 — 반드시 이 구조를 따르세요]
-- 첫 문장: "우리는 묵묵히 자기 빛을 쌓아온 한 사람을 만났다." (또는 자연스러운 변형)
-- 본문: "${pron}의 이야기를 들으며, 우리는 ${pron}가 이미 자기만의 답을 가지고 있음을 깨달았다." 톤의 발견 문장
-- 마지막 문장: "이 한 호가 ${pron}의 다음 여정에 작은 등불이 되기를." 톤의 응원
+[고정 도입부 — ${pron} 적용해 (거의) 그대로 시작]
+"우리는 묵묵히 자기 빛을 쌓아온 한 사람을 만났다. ${pron}의 이야기를 들으며, 우리는 ${pron}가 이미 자기만의 답을 가지고 있음을 깨달았다. 완벽한 문서가 아니라 퇴근 전 10분으로 시작하는 사람, 거창한 제안 대신 개인 노트 한 페이지를 먼저 여는 사람. ${pron}는 조용한 기록이 언젠가 팀 전체의 나침반이 되리라는 걸, 말하지 않아도 알고 있었다."
+  ※ 위 도입부는 거의 그대로 두되, 어색한 부분만 최소한으로 다듬을 것.
+
+[전개 — 동적 데이터 자연스럽게 윤문 (하드코딩·기계적 나열 금지)]
+- 도입부에 이어, [핵심 가치]("${coreValues}")와 [정체성 문장(비전)]("${session.visionLine}")을 반드시 본문에 녹여낼 것.
+- 변수를 그대로 이어 붙이지 말고, 앞 문단의 담담한 관찰자 에세이 톤(~했다 / ~이었다)에 완전히 스며들도록 문맥·어조를 다듬어 한 문단으로 연결.
+
+[마무리 — 반드시 이 문장으로 완전히 끝맺기 (변형 금지)]
+"이 한 호가 ${pron}의 다음 여정에 작은 등불이 되기를. 그리고 ${pron}가 만들어갈 다음 호를 기대해 보자."
 
 [원칙]
-- 3~4문장, 각 문장 사이 빈 줄로 구분
-- ${pron}를 3인칭으로
-- "${session.name}님" 같은 경어 호명 금지
-- "잘 어울려요" 같은 평가 대신, 발견의 시선으로
+- ${pron}를 3인칭으로. "${session.name}님" 같은 경어 호명 금지.
+- UI 한계상 너무 길어지지 않게 — 전체 공백 포함 360~420자. 문장 도중에 끊지 말 것.
+- "잘 어울려요" 같은 평가 대신, 발견의 시선으로.
 
 ${EDITORIAL_PROSE_CONSTRAINT}`;
-  const r = await ask(user, 400);
+  const r = await ask(user, 500);
   return r.text.trim();
 }
 

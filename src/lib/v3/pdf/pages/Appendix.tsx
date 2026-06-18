@@ -156,18 +156,26 @@ function Entry({ entry, isFirst }: { entry: AppendixEntry; isFirst?: boolean }) 
   const isQuestion = entry.tone === "question";
   const isResult = entry.tone === "result";
 
-  // 본문을 문단(\n\n) 단위로 split. 단, 각 문단 <Text> 는 라인 레벨로 wrap
-  // 가능하게 둔다 (규칙 B: break-inside auto). orphans/widows 2 로 분할 시
-  // 최소 2줄이 함께 넘어가도록 제어 — 다음 장에 한 줄만 덩그러니 남는 것 방지.
+  // 본문을 문단(\n\n) 단위로 split. 각 문단 <Text> 는 라인 레벨 wrap 허용
+  // (규칙 B: break-inside auto) + orphans/widows 2 로 분할 시 최소 2줄 유지.
   const paragraphs = entry.text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   const safeParagraphs = paragraphs.length ? paragraphs : [entry.text];
 
-  // 규칙 A — '질문'에 minPresenceAhead 를 걸어 break-after: avoid 효과 구현:
-  //   질문 뒤에 답변 첫 줄(라벨+~2줄 ≈ 64pt)이 들어올 공간이 없으면 질문을
-  //   통째로 다음 장으로 내려, 질문만 페이지 끝에 덩그러니 남는 것을 막는다.
-  //   (질문은 짧으므로 wrap=false 로 통째 보호.)
-  // 규칙 B — 답변/결과 박스는 wrap=true (break-inside auto) 로 페이지 경계에서
-  //   자연 분할 → 하단 빈 여백 최소화. minPresenceAhead 없음.
+  // 라벨이 페이지 끝에 홀로 남는 것(제목 잘림) 방지 — 라벨 + '첫 문장' 만
+  // wrap=false 로 묶는다. (첫 문단 통째가 아니라 첫 문장만 묶어 atomic 블록을
+  // 작게 유지 → 하단 빈 여백 최소화.) 첫 문단의 나머지·이후 문단은 라인 분할.
+  const firstPara = safeParagraphs[0] || "";
+  const sentMatch = firstPara.match(/^([\s\S]*?[.!?。][”’"'』」)\]]*)\s*([\s\S]*)$/);
+  const firstSentence = sentMatch ? sentMatch[1].trim() : firstPara;
+  const firstRest = sentMatch ? sentMatch[2].trim() : "";
+  const restParagraphs = safeParagraphs.slice(1);
+
+  const bodyFontSize = isQuestion ? 12 : 13;
+  const bodyColor = isQuestion ? QUESTION_TEXT : TEXT;
+  const bodyFontStyle = isQuestion ? "italic" : "normal";
+
+  // 규칙 A — '질문'은 minPresenceAhead 로 break-after: avoid (뒤 답변 첫 줄과 유지).
+  // 규칙 B — 답변/결과 박스는 wrap=true (break-inside auto) 로 자연 분할.
   return (
     <View
       wrap={!isQuestion}
@@ -185,30 +193,28 @@ function Entry({ entry, isFirst }: { entry: AppendixEntry; isFirst?: boolean }) 
         backgroundColor: isQuestion ? undefined : isResult ? RESULT_BG : ANSWER_BG,
       }}
     >
-      <Text
-        style={{
-          fontFamily: "Noto Serif KR",
-          fontSize: 11,
-          color: MUTED,
-          letterSpacing: 0.6,
-        }}
-      >
-        {entry.label}
-      </Text>
-      {/* 문단별 <Text> — 라인 레벨 wrap 허용 + orphans/widows 2 (규칙 B). */}
-      {safeParagraphs.map((p, i) => (
+      {/* 라벨 + 첫 문장 — wrap=false 로 묶어 라벨만 페이지 끝에 남는 것 방지. */}
+      <View wrap={false}>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: MUTED, letterSpacing: 0.6 }}>
+          {entry.label}
+        </Text>
+        <Text style={{ fontFamily: "Noto Serif KR", fontSize: bodyFontSize, color: bodyColor, marginTop: 3, lineHeight: 1.65, fontStyle: bodyFontStyle }}>
+          {firstSentence}
+        </Text>
+      </View>
+      {/* 첫 문단의 나머지 문장 — 라인 레벨 wrap + orphans/widows 2. */}
+      {firstRest ? (
+        <Text orphans={2} widows={2} style={{ fontFamily: "Noto Serif KR", fontSize: bodyFontSize, color: bodyColor, lineHeight: 1.65, fontStyle: bodyFontStyle }}>
+          {firstRest}
+        </Text>
+      ) : null}
+      {/* 이후 문단들 — 라인 레벨 wrap + orphans/widows 2. */}
+      {restParagraphs.map((p, i) => (
         <Text
-          key={i}
+          key={i + 1}
           orphans={2}
           widows={2}
-          style={{
-            fontFamily: "Noto Serif KR",
-            fontSize: isQuestion ? 12 : 13,
-            color: isQuestion ? QUESTION_TEXT : TEXT,
-            marginTop: i === 0 ? 3 : 8,
-            lineHeight: 1.65,
-            fontStyle: isQuestion ? "italic" : "normal",
-          }}
+          style={{ fontFamily: "Noto Serif KR", fontSize: bodyFontSize, color: bodyColor, marginTop: 8, lineHeight: 1.65, fontStyle: bodyFontStyle }}
         >
           {p}
         </Text>

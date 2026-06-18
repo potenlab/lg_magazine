@@ -8,11 +8,6 @@ function firstSentence(s: string): string {
   return m && m.length > 3 ? m : s.trim();
 }
 
-function extractNoun(s: string): string {
-  const m = s.match(/[가-힣]{2,5}/g);
-  return m?.[m.length - 1] || "그 일";
-}
-
 // 사용자 답변을 안전하게 인용하는 형식. "~이었군요" 같이 어미를 임의로
 // 붙여서 비문(예: "처음이라서이었군요")이 발생하는 것을 막기 위해, 답변
 // 자체를 따옴표로 묶고 별도 문장으로 풀어준다. 어떤 어미로 끝나든 안전.
@@ -41,16 +36,18 @@ export const stubLLM: LLMContract = {
   },
 
   async comfortReassure({ name }) {
-    // LLM 호출 실패 시 stub fallback. extractNoun이 "처음이라서" 같은
-    // 어구를 그대로 가져와 조사가 비문법적으로 붙는 문제(예: "처음이라서이")가
-    // 있어서, 안전한 명사형 표현으로 고정.
+    // LLM 호출 실패 시 stub fallback. 사용자 어구를 그대로 가져와 조사가
+    // 비문법적으로 붙는 문제(예: "처음이라서이")를 피하려, 사용자 텍스트를
+    // 가공하지 않는 안전한 고정 표현으로 둔다.
     return `아, ${name}님 마음 한구석에 그런 결이 있으셨군요.\n\n괜찮아요 — 이 열차에 함께하는 동안 그 마음은 천천히 가라앉을 거예요.`;
   },
 
-  async reflectPoetic({ name, storyA, storyB }) {
-    const a = extractNoun(storyA);
-    const b = extractNoun(storyB);
-    return `${a}와 ${b} 사이에서, 막막한 상황을 직접 움직이며 배워가는 결이 흐르는 것 같아요.`;
+  async reflectPoetic() {
+    // Stub fallback (LLM 실패 시 최후 안전망). 이전엔 extractNoun으로 두 이야기에서
+    // "명사"를 뽑아 `${a}와 ${b} 사이에서`로 끼웠는데, extractNoun이 실제론 문장
+    // 끝 종결어미를 잘라와("또렷했습니다"→"또렷했습니") 비문을 만들었다.
+    // 안전망이 떠도 화면이 멀쩡하도록, 사용자 텍스트를 가공하지 않는 고정 문장으로.
+    return `두 이야기 사이에, 막막한 상황을 직접 움직이며 배워가는 결이 흐르는 것 같아요.`;
   },
 
   async reflectValues({ name, values }) {
@@ -63,10 +60,12 @@ export const stubLLM: LLMContract = {
     return `${joined}을(를) 함께 품고 일할 때 가장 힘이 나는 사람이시군요.`;
   },
 
-  async reflectStrength({ helpRequests, values }) {
-    const noun = extractNoun(helpRequests);
+  async reflectStrength({ values }) {
+    // Stub fallback. 이전엔 extractNoun(helpRequests)로 명사를 뽑아 `${noun}을 …`로
+    // 조사를 붙였는데, 종결어미가 잘려와 비문/조사 오류가 났다. 사용자 텍스트를
+    // 가공하지 않는 안전한 고정 표현으로 고정.
     return {
-      commonAsk: `${noun}을 다듬는 일`,
+      commonAsk: "복잡한 상황을 함께 정리하는 일",
       linkedValue: values[0]?.word ?? "",
     };
   },
@@ -268,11 +267,13 @@ export const stubLLM: LLMContract = {
     };
   },
 
-  async extractKeyword({ answer, rule }) {
-    const noun = extractNoun(answer);
-    if (rule === "flow") return `${noun}에 빠져드는`;
-    if (rule === "common") return `${noun}을 다루는`;
-    return `${noun}을 향하는`;
+  async extractKeyword({ rule }) {
+    // Stub fallback. 이전엔 extractNoun(answer)으로 명사를 뽑아 조사를 붙였는데
+    // (`${noun}을 …`) 종결어미가 잘려와 비문이 났다. 조사가 필요 없는 안전한
+    // 수식 어구로 고정.
+    if (rule === "flow") return "깊이 빠져드는";
+    if (rule === "common") return "차분히 풀어가는";
+    return "스스로 길을 내는";
   },
 
   async observePattern({ name, selectedValue }) {

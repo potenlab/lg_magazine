@@ -74,6 +74,7 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
           coverHeadline,
           editorIntro,
           editorOutro,
+          editorTitle: extractIdentityTitle(session.identityName),
           chapters: {
             1: cleanArticle(ch1),
             2: cleanArticle(ch2),

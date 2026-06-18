@@ -10,6 +10,7 @@ import { cleanArticleField } from "@/lib/v3/llm/articleSanitize";
 import { MagazinePDF, type MagazineData } from "@/lib/v3/pdf/MagazinePDF";
 import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
 import { buildAppendixThreads } from "@/lib/v3/pdf/buildAppendix";
+import { extractIdentityTitle } from "@/lib/v3/scenes/template";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 type PdfStatus = "loading" | "ready" | "error";
@@ -81,6 +82,7 @@ export function ClosingChoiceScene({
           coverHeadline,
           editorIntro,
           editorOutro,
+          editorTitle: extractIdentityTitle(session.identityName),
           chapters: {
             1: cleanArticle(ch1),
             2: cleanArticle(ch2),

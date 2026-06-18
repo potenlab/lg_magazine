@@ -33,8 +33,7 @@ const SAMPLE = {
   editorIntro:
     "지난 한 시간 동안 들려주신 이야기를 모았어요. 이 호는 오직 한 사람, 홍길동님을 위한 단 한 권의 매거진입니다. 페이지를 펼치는 순간 그날의 대화가 다시 살아나길 바라며, 한 줄 한 줄에 그 시간을 담았습니다.",
   editorOutro:
-    "우리는 묵묵히 자기 빛을 쌓아온 한 사람을 만났다. 그의 이야기를 들으며, 우리는 그가 이미 자기만의 답을 가지고 있음을 깨달았다. 완벽한 문서가 아니라 퇴근 전 10분으로 시작하는 사람, 거창한 제안 대신 개인 노트 한 페이지를 먼저 여는 사람. 그는 조용한 기록이 언젠가 팀 전체의 나침반이 되리라는 걸, 말하지 않아도 알고 있었다.\n\n그가 걸어온 길에는 성장, 공감, 영향력 같은 결이 자연스럽게 배어 있었다. 조용하지만 확실한 온기로 함께 일하는 사람들의 발걸음을 가볍게 만들어주는 길을 그리고 있었다.\n\n이 한 호가 그의 다음 여정에 작은 등불이 되기를. 그리고 그가 만들어갈 다음 호를 기대해 보자.",
-  editorTitle: "따뜻한 공감과 묵묵한 책임감으로 우리 팀의 든든한 버팀목이 되어주는 사람",
+    "우리는 묵묵히 자기 빛을 쌓아온 한 사람을 만났다. 그의 이야기를 들으며, 우리는 그가 이미 자기만의 답을 가지고 있음을 깨달았다. 완벽한 문서가 아니라 퇴근 전 10분으로 시작하는 사람, 거창한 제안 대신 개인 노트 한 페이지를 먼저 여는 사람. 그는 조용한 기록이 언젠가 팀 전체의 나침반이 되리라는 걸, 말하지 않아도 알고 있었다.\n\n그가 걸어온 길에는 성장, 공감, 영향력 같은 결이 자연스럽게 배어 있었다. 조용하지만 확실한 온기로 함께 일하는 사람들의 발걸음을 가볍게 만들어주는 길을 그리고 있었다.\n\n이 한 호가 그의 다음 여정에 작은 등불이 되기를.",
   chapters: {
     1: {
       headline: "내가 지나온 길",
@@ -172,7 +171,7 @@ export default function PdfPreviewPage() {
         case "ch4":
           return ch(4);
         case "editorOutro":
-          return <EditorOutro title={SAMPLE.editorTitle} body={SAMPLE.editorOutro} name={SAMPLE.name} />;
+          return <EditorOutro body={SAMPLE.editorOutro} name={SAMPLE.name} />;
         case "appendix":
           return <Appendix name={SAMPLE.name} threads={SAMPLE_APPENDIX} />;
         case "backPage":
@@ -195,7 +194,7 @@ export default function PdfPreviewPage() {
               {ch(2)}
               {ch(3)}
               {ch(4)}
-              <EditorOutro title={SAMPLE.editorTitle} body={SAMPLE.editorOutro} name={SAMPLE.name} />
+              <EditorOutro body={SAMPLE.editorOutro} name={SAMPLE.name} />
               <Appendix name={SAMPLE.name} threads={SAMPLE_APPENDIX} />
               <BackPage name={SAMPLE.name} date={SAMPLE.date} />
             </>

@@ -329,7 +329,7 @@ export const stubLLM: LLMContract = {
         `그것은 — ${session.firstStep}.\n\n` +
         `그리고 그 길을 혼자 가지 않을 것이라 했다. ` +
         `곁에는 ${session.supportPerson}${josa(session.supportPerson, "이/가")} 있고, 손에는 ${session.neededResource}${josa(session.neededResource, "이/가")} 함께할 것이다.\n\n` +
-        `${pron}가 만들어갈 다음 호를 기대해보자.`,
+        `${pron}가 만들어갈 다음 호를 기대해 보자.`,
       pullQuote: null,
     };
   },
@@ -353,7 +353,7 @@ export const stubLLM: LLMContract = {
       `완벽한 문서가 아니라 퇴근 전 10분으로 시작하는 사람, 거창한 제안 대신 개인 노트 한 페이지를 먼저 여는 사람. ` +
       `${pron}는 조용한 기록이 언젠가 팀 전체의 나침반이 되리라는 걸, 말하지 않아도 알고 있었다.\n\n` +
       `${valuesLine}${visionLine}`.trim() +
-      `\n\n이 한 호가 ${pron}의 다음 여정에 작은 등불이 되기를. 그리고 ${pron}가 만들어갈 다음 호를 기대해 보자.`
+      `\n\n이 한 호가 ${pron}의 다음 여정에 작은 등불이 되기를.`
     );
   },
 

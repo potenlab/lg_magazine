@@ -357,7 +357,9 @@ function PullQuoteCenter({ text }: { text: string }) {
 
 export function Chapter({ chapter, headline, body, pullQuote, name, variant }: Props) {
   // '', **, () 같은 마크다운/특수기호가 LLM 본문에 섞여 들어오는 케이스 제거.
-  const cleanBody = clampBodyToCompleteSentence(sanitizeBody(body));
+  // Chapter 4는 고정 맺음말이 잘리면 안 되므로 분량 캡 제외.
+  const cleanBody =
+    chapter === 4 ? sanitizeBody(body) : clampBodyToCompleteSentence(sanitizeBody(body));
   const cleanPull = pullQuote ? sanitizeBody(pullQuote) : null;
   // sub = LLM 이 생성한 챕터 headline. TOC 의 sub 와 동일 값.
   // headline 이 비면 SUBTITLE 상수가 fallback (각 챕터 page 내부).

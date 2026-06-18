@@ -289,7 +289,7 @@ export const stubLLM: LLMContract = {
       return {
         headline: `${pron}가 가장 ${pron}다웠던 두 순간`,
         body:
-          `${pron}가 들려준 두 이야기는 화려하지 않았다.\n\n` +
+          `화려한 이야기는 아니었다. ${pron}가 들려준 두 장면은 오히려 조용한 쪽이었다.\n\n` +
           `첫 번째 장면에서 ${pron}는 "${firstSentence(session.flowExperience1)}"고 회상했다.\n` +
           `두 번째 장면에서 ${pron}는 "${firstSentence(session.flowExperience2)}"고 말했다.\n\n` +
           `편집장은 두 페이지를 나란히 놓고 한 문장을 적어 내려갔다 — ${session.ch1PoeticMirror || "두 이야기 사이에 같은 결이 흐르고 있었다."}.`,
@@ -301,7 +301,7 @@ export const stubLLM: LLMContract = {
       return {
         headline: `${identityTitle}${josa(identityTitle, "이라는/라는")} 이름`,
         body:
-          `${pron}가 가장 소중히 여기는 가치는 ${session.topValue}${josa(session.topValue, "이다/다")}.\n` +
+          `가장 소중히 여기는 가치를 묻자, 돌아온 답은 ${session.topValue}${josa(session.topValue, "이었다/였다")}.\n` +
           `그러나 ${pron}가 말하는 ${session.topValue}${josa(session.topValue, "은/는")} 사전적 의미와는 결이 다르다.\n\n` +
           `"${session.valueDefinitions[session.topValue] || ""}"\n\n` +
           `${pron}가 그 단어를 발음할 때, 거기에는 ${pron}만의 무게가 있었다. ` +
@@ -313,7 +313,7 @@ export const stubLLM: LLMContract = {
       return {
         headline: `5년 후, ${pron}가 그린 자신`,
         body:
-          `${pron}에게 5년 후의 자신을 그려보라 청했을 때, ${pron}는 잠시 눈을 감았다.\n\n` +
+          `5년 후의 자신을 그려보라 청하자, ${pron}는 잠시 눈을 감았다.\n\n` +
           `${pron}가 그린 미래는 "${firstSentence(session.futureSelf)}"의 모습이었다. ` +
           `${firstSentence(session.futureDay)}.\n\n` +
           `그것은 어떤 거창한 성취도, 거대한 직책도 아니었다. ` +

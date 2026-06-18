@@ -2,7 +2,7 @@
 
 import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { firstParagraphWithDropCap } from "@/lib/v3/pdf/dropcap";
-import { cleanArticleField, clampBodyToCompleteSentence } from "@/lib/v3/llm/articleSanitize";
+import { cleanArticleField, clampBodyToCompleteSentence, clampBodyKeepingEnding } from "@/lib/v3/llm/articleSanitize";
 
 /**
  * 매거진 한 페이지(article) 렌더링 — 챕터 라벨 + 헤드라인 + 드롭캡 본문 + pullQuote.
@@ -28,10 +28,10 @@ export function MagazineArticlePage({
   // 을 흘려보낸 케이스) 도 깔끔히 렌더되도록 클린업 후 사용.
   const cleanHeadline = cleanArticleField(article.headline);
   // 분량 캡 + 완결 문장 보장 — 본문이 칸을 넘쳐 마지막 문장이 잘려 보이는 것 방지.
-  // 단, Chapter 4는 고정 맺음말("…다음 호를 기대해 보자.")이 잘리면 안 되므로 캡 제외.
+  // Chapter 4는 고정 맺음말("…다음 호를 기대해 보자.")을 보존하며 350~400자 캡.
   const cleanBody =
     chapter === 4
-      ? cleanArticleField(article.body)
+      ? clampBodyKeepingEnding(cleanArticleField(article.body))
       : clampBodyToCompleteSentence(cleanArticleField(article.body));
   const cleanPullQuote = article.pullQuote
     ? cleanArticleField(article.pullQuote) || null

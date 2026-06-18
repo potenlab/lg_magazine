@@ -6,7 +6,7 @@ import { getDeep } from "@/lib/llm/modeContext";
 import { extractIdentityTitle } from "@/lib/v3/scenes/template";
 import type { V3Session } from "@/lib/v3/scenes/types";
 import { ALL_TOOL_OPTIONS } from "@/lib/v3/toolOptions";
-import { cleanArticleField, clampBodyToCompleteSentence } from "@/lib/v3/llm/articleSanitize";
+import { cleanArticleField, clampBodyToCompleteSentence, clampBodyKeepingEnding } from "@/lib/v3/llm/articleSanitize";
 
 // ── 객관식 선택지 의미 사전 ─────────────────────────────────────
 // Ch3에서 사용자가 고르는 객관식 라벨들은 4~6자 짧은 phrase("전문성 연결",
@@ -1325,6 +1325,7 @@ BODY: <본문 3문단, 각 문단 2~3문장>
 요건:
 - 도입(첫 문장): 내일의 구체적 행동이 일어나는 시간·장면(예: 하루의 한 틈, 어떤 시각)으로 열 것. 이름·주어로 시작 금지.
 - ${pron}는 그 길을 혼자 가지 않는다 — 곁에 있는 사람과 손에 쥔 자원을 본문에 자연스럽게 엮기
+- [분량 — Chapter 4 엄격] 본문 전체는 공백 포함 350~420자(절대 430자 초과 금지). 불필요한 수식어를 줄여 밀도 있게 쓸 것 — 맺음말 문장까지 포함해 430자 안에 들어와야 함.
 - [맺음말 — Chapter 4 한정] 본문의 맨 마지막 문장은 반드시 "${pron}가 만들어갈 다음 호를 기대해 보자." 로 완전하게 끝맺을 것. (변형·생략 금지)
 - v3.8 11.4: Chapter 4는 풀쿼트 없음. PULL 출력하지 말 것.`,
   };
@@ -1347,10 +1348,11 @@ BODY: <본문 3문단, 각 문단 2~3문장>
   return {
     headline: cleanArticleField(hm?.[1] || ""),
     // 본문은 분량 캡 + 완결 문장 보장 — 웹 매거진 칸 넘침(중간 잘림) 방지.
-    // 단, Chapter 4는 고정 맺음말("…다음 호를 기대해 보자.")이 잘리면 안 되므로 캡 제외.
+    // Chapter 4는 고정 맺음말("…다음 호를 기대해 보자.")을 보존하면서 350~400자
+    // 캡 적용 (clampBodyKeepingEnding — 초과 시 맺음말 앞부분만 줄임).
     body:
       chapter === 4
-        ? cleanArticleField(bm?.[1] || "")
+        ? clampBodyKeepingEnding(cleanArticleField(bm?.[1] || ""))
         : clampBodyToCompleteSentence(cleanArticleField(bm?.[1] || "")),
     // v3.8 11.4: Chapter 4는 풀쿼트 없음 — LLM이 혹시 출력해도 무시
     pullQuote: chapter === 4 ? null : (cleanArticleField(pm?.[1] || "") || null),

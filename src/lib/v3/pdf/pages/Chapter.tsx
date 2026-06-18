@@ -1,7 +1,7 @@
 import { Image, Page, Text, View } from "@react-pdf/renderer";
 import { sanitizeBody } from "../sanitize";
 import { getChapterImage, type ImageVariant } from "../imageSets";
-import { clampBodyToCompleteSentence } from "../../llm/articleSanitize";
+import { clampBodyToCompleteSentence, clampBodyKeepingEnding } from "../../llm/articleSanitize";
 
 /**
  * Chapter pages — 챕터별 시안이 달라 단일 컴포넌트 안에서 chapter 번호에
@@ -357,9 +357,11 @@ function PullQuoteCenter({ text }: { text: string }) {
 
 export function Chapter({ chapter, headline, body, pullQuote, name, variant }: Props) {
   // '', **, () 같은 마크다운/특수기호가 LLM 본문에 섞여 들어오는 케이스 제거.
-  // Chapter 4는 고정 맺음말이 잘리면 안 되므로 분량 캡 제외.
+  // Chapter 4는 고정 맺음말을 보존하면서 350~400자 캡 (clampBodyKeepingEnding).
   const cleanBody =
-    chapter === 4 ? sanitizeBody(body) : clampBodyToCompleteSentence(sanitizeBody(body));
+    chapter === 4
+      ? clampBodyKeepingEnding(sanitizeBody(body))
+      : clampBodyToCompleteSentence(sanitizeBody(body));
   const cleanPull = pullQuote ? sanitizeBody(pullQuote) : null;
   // sub = LLM 이 생성한 챕터 headline. TOC 의 sub 와 동일 값.
   // headline 이 비면 SUBTITLE 상수가 fallback (각 챕터 page 내부).

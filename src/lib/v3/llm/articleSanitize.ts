@@ -65,3 +65,34 @@ export function clampBodyToCompleteSentence(
   if (cutAll > 0) return t.slice(0, cutAll).trim();
   return windowStr.trim();
 }
+
+/** Chapter 4 본문 최대 분량 — 공백 포함 430자(UI 영역 넘침 방지 상한). */
+export const CHAPTER4_BODY_MAX_CHARS = 430;
+
+/** Chapter 4 전용 — 분량 캡을 적용하되 고정 맺음말("…만들어갈 다음 호를 기대해
+ *  보자.")은 항상 보존한다. 일반 clamp 는 꼬리를 잘라 맺음말까지 날리므로,
+ *  초과 시에는 '맺음말 앞부분'만 문장 단위로 줄여 캡 안에 맞춘다.
+ *
+ * 순수 함수 — client(PDF·매거진) / server(prompts.ts) 양쪽 안전. */
+export function clampBodyKeepingEnding(
+  body: string,
+  maxChars: number = CHAPTER4_BODY_MAX_CHARS,
+): string {
+  const t = (body || "").trim();
+  if (!t) return t;
+  if (t.length <= maxChars) return t; // 이미 캡 이내 — 맺음말 포함된 채 그대로
+
+  // 마지막 "…만들어갈 다음 호를 기대해 보자." 문장(맺음말)을 분리.
+  const m = t.match(/[^.!?。\n]*만들어갈\s*다음\s*호를\s*기대해\s*보자\.\s*$/);
+  if (!m || m.index === undefined) {
+    // 맺음말이 없으면 일반 완결-문장 캡으로 폴백.
+    return clampBodyToCompleteSentence(t, maxChars);
+  }
+  const ending = m[0].trim();
+  let prefix = t.slice(0, m.index).trim();
+  // prefix 를 (캡 − 맺음말 − 구분공백) 이내로 문장 단위 트림.
+  const room = maxChars - ending.length - 1;
+  if (room <= 0) return ending; // 맺음말만으로도 캡에 근접 — 맺음말만.
+  if (prefix.length > room) prefix = clampBodyToCompleteSentence(prefix, room);
+  return prefix ? `${prefix} ${ending}` : ending;
+}

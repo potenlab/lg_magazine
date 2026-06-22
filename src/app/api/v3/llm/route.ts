@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { validateBody } from "@/lib/llmInput";
 import { runWithMode, type LLMMode } from "@/lib/llm/modeContext";
+import { LlmBusyError } from "@/lib/llm/providers/aistudio";
+import { enqueue } from "@/lib/llm/jobQueue";
+
+// When set, LLM work is queued (202 + jobId) and the client polls
+// /api/v3/llm/jobs?id=... for the result, instead of blocking the request.
+const ASYNC_ENABLED = process.env.LLM_ASYNC === "1";
 import {
   v3JudgeBranch,
   v3ReflectShort,
@@ -109,9 +115,24 @@ export async function POST(req: Request) {
     // ?deep=1 query에서 온 적극 해석 토글.
     const deep = req.headers.get("x-llm-deep") === "1";
 
+    // Async path: enqueue and return a job id immediately — the client polls for
+    // the result, so the request never waits (and never times out) under load.
+    if (ASYNC_ENABLED) {
+      const jobId = enqueue(() => runWithMode(mode, deep, () => dispatch(body.task, body.payload)));
+      return NextResponse.json({ jobId }, { status: 202 });
+    }
+
     const result = await runWithMode(mode, deep, () => dispatch(body.task, body.payload));
     return NextResponse.json({ result });
   } catch (err) {
+    // Concurrency queue saturated → tell the client to back off and retry,
+    // rather than surfacing a 500/504 it can't distinguish from a hard failure.
+    if (err instanceof LlmBusyError) {
+      return NextResponse.json(
+        { error: "busy" },
+        { status: 429, headers: { "Retry-After": "3" } },
+      );
+    }
     const msg = err instanceof Error ? err.message : "unknown error";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

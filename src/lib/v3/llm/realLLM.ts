@@ -83,6 +83,11 @@ export function readUrlConfig(): { mode: "gem" | "claude" | "mix" | null; deep: 
   }
 }
 
+// Client poll cadence + a generous safety deadline for a genuinely stuck job.
+const JOB_POLL_MS = 1500;
+const JOB_CLIENT_DEADLINE_MS = 6 * 60_000;
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function callTask<T>(task: string, payload: unknown): Promise<T> {
   const { mode, deep } = readUrlConfig();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -93,12 +98,39 @@ async function callTask<T>(task: string, payload: unknown): Promise<T> {
     headers,
     body: JSON.stringify({ task, payload }),
   });
+
+  // Async server (LLM_ASYNC): 202 + { jobId } → poll until the job finishes.
+  // The request was never held open, so there's no server-side timeout to hit;
+  // the user simply waits in line. Sync server still returns 200 + { result }.
+  if (res.status === 202) {
+    const { jobId } = (await res.json()) as { jobId: string };
+    return pollJob<T>(jobId);
+  }
+
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     throw new Error(`v3 LLM /api error ${res.status}: ${detail.slice(0, 160)}`);
   }
   const json = (await res.json()) as { result: T };
   return json.result;
+}
+
+async function pollJob<T>(jobId: string): Promise<T> {
+  const started = Date.now();
+  for (;;) {
+    await wait(JOB_POLL_MS);
+    const res = await fetch(`/api/v3/llm/jobs?id=${encodeURIComponent(jobId)}`);
+    if (res.status === 404) throw new Error("v3 LLM job expired or not found");
+    if (res.ok) {
+      const job = (await res.json()) as { status: string; result?: T; error?: string };
+      if (job.status === "done") return job.result as T;
+      if (job.status === "error") throw new Error(job.error || "v3 LLM job failed");
+      // queued / running → keep waiting
+    }
+    if (Date.now() - started > JOB_CLIENT_DEADLINE_MS) {
+      throw new Error("v3 LLM job timed out (client deadline)");
+    }
+  }
 }
 
 export const realLLM: LLMContract = {

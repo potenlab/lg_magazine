@@ -65,6 +65,95 @@ const QUOTA_PHRASE = "토큰 호출량";
 const MINUTE_COOLDOWN_MS = 60_000;
 const DAILY_COOLDOWN_MS = 30 * 60_000;
 
+// ── Concurrency gate ─────────────────────────────────────────────────────────
+// The upstream LG AI Studio *account* (shared by all API codes — they are prompt
+// apps within one account, not separate rate buckets) tops out at ~20 concurrent
+// requests. Past that it returns generic 500s instead of queuing, and the pool
+// rotation does NOT help (it only failovers on quota). So we cap concurrent
+// upstream calls ourselves and queue the rest.
+//
+// NOTE: this limiter is PER PROCESS. Production runs ~3 Docker replicas behind
+// nginx, so the effective account-wide ceiling is MAX_CONCURRENCY × replicas.
+// Tune AISTUDIO_MAX_CONCURRENCY to keep (value × replicas) safely under ~20
+// (default 5 × 3 ≈ 15). Set it very high to disable the gate.
+const MAX_CONCURRENCY = Math.max(1, Number(process.env.AISTUDIO_MAX_CONCURRENCY ?? 5));
+// Longest a request may wait for a slot before we give up with 429 (kept well
+// under the nginx proxy_read_timeout so a queued request never becomes a 504).
+const QUEUE_TIMEOUT_MS = Number(process.env.AISTUDIO_QUEUE_TIMEOUT_MS ?? 20_000);
+// Transient upstream 5xx/429 are retried in-place (same gate slot) before failing.
+const OVERLOAD_MAX_RETRIES = Number(process.env.AISTUDIO_OVERLOAD_RETRIES ?? 2);
+const OVERLOAD_BASE_MS = 400;
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** Thrown when the concurrency queue is saturated and no slot freed in time.
+ *  The route maps this to HTTP 429 (busy, retry) rather than a 500/504. */
+export class LlmBusyError extends Error {
+  constructor() {
+    super("llm_busy");
+    this.name = "LlmBusyError";
+  }
+}
+
+/** FIFO counting semaphore: at most `max` runners at once; the rest queue and are
+ *  rejected with LlmBusyError if they wait longer than `waitMs`. */
+class Semaphore {
+  private active = 0;
+  private waiters: Array<{ resolve: () => void; timer: ReturnType<typeof setTimeout> }> = [];
+  constructor(
+    private readonly max: number,
+    private readonly waitMs: number,
+  ) {}
+
+  get inFlight(): number {
+    return this.active;
+  }
+  get queued(): number {
+    return this.waiters.length;
+  }
+
+  async run<T>(fn: () => Promise<T>): Promise<T> {
+    await this.acquire();
+    try {
+      return await fn();
+    } finally {
+      this.release();
+    }
+  }
+
+  private acquire(): Promise<void> {
+    if (this.active < this.max) {
+      this.active++;
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        const i = this.waiters.findIndex((w) => w.timer === timer);
+        if (i >= 0) this.waiters.splice(i, 1);
+        console.warn(
+          `[aistudio] queue saturated — rejecting (inFlight=${this.active} queued=${this.waiters.length})`,
+        );
+        reject(new LlmBusyError());
+      }, this.waitMs);
+      // Held slot is transferred directly on release(); active stays put.
+      this.waiters.push({ resolve, timer });
+    });
+  }
+
+  private release(): void {
+    const next = this.waiters.shift();
+    if (next) {
+      clearTimeout(next.timer);
+      next.resolve(); // hand the freed slot straight to the next waiter
+    } else {
+      this.active--;
+    }
+  }
+}
+
+// One gate per process, shared via the singleton provider (see provider.ts cache).
+const gate = new Semaphore(MAX_CONCURRENCY, QUEUE_TIMEOUT_MS);
+
 export class AIStudioProvider implements LLMProvider {
   readonly name = "aistudio";
   private base: string;
@@ -104,7 +193,14 @@ export class AIStudioProvider implements LLMProvider {
     this.cooldownUntil = new Array(codes.length).fill(0);
   }
 
+  // Public entry: serialize through the concurrency gate so we never exceed the
+  // upstream account's ~20-concurrent ceiling. Excess requests queue; a request
+  // that waits too long throws LlmBusyError (→ HTTP 429).
   async generateText(req: LLMRequest): Promise<LLMResult> {
+    return gate.run(() => this.generateGated(req));
+  }
+
+  private async generateGated(req: LLMRequest): Promise<LLMResult> {
     const parameters: ParameterEntry[] = [
       { key: "SYSTEM", value: req.system },
       { key: "USER", value: req.user },
@@ -112,6 +208,7 @@ export class AIStudioProvider implements LLMProvider {
     const body = JSON.stringify({ empNo: this.empNo, historyId: null, parameters });
 
     let quotaHits = 0;
+    let overloadRetries = OVERLOAD_MAX_RETRIES;
     // Try each code at most once per call, rotating past any that are quota-capped.
     for (let attempt = 0; attempt < this.apiCodes.length; attempt++) {
       const idx = this.nextAvailableCode();
@@ -135,6 +232,16 @@ export class AIStudioProvider implements LLMProvider {
         continue; // rotate to the next code
       }
       if (!res.ok) {
+        // Transient upstream failure (the concurrency-overload 500, or a 429):
+        // back off and retry within THIS gate slot so we don't add concurrency.
+        // Distinct from quota (handled above) — only throws once retries run out.
+        if ((res.status >= 500 || res.status === 429) && overloadRetries > 0) {
+          const n = OVERLOAD_MAX_RETRIES - overloadRetries; // 0, 1, ...
+          overloadRetries--;
+          await sleep(OVERLOAD_BASE_MS * 2 ** n + Math.floor(Math.random() * 200));
+          attempt--; // a retry must not consume the code-rotation budget
+          continue;
+        }
         throw new Error(`aistudio call (${code}): ${res.status} ${raw}`);
       }
 

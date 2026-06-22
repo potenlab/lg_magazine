@@ -1,3 +1,6 @@
+# Project name is fixed here so `docker compose` always targets the running
+# `lg_magazine` stack (no COMPOSE_PROJECT_NAME override needed).
+name: lg_magazine
 services:
   lg-magazine:
     build:

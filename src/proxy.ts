@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { QRIUS_SESSION_COOKIE } from "@/lib/qrius/config";
 import { verifySession } from "@/lib/qrius/session";
+import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/adminAuth";
 
 // Next.js 16: this file replaces `middleware.ts`. It gates the WHOLE app —
 // every page and API route requires a valid Qrius session. The only paths
@@ -31,6 +32,24 @@ export async function proxy(request: NextRequest) {
   const session = token && secret ? await verifySession(token, secret) : null;
 
   if (session) {
+    // Qrius 통과 후, /admin 경로는 별도 관리자 비번 쿠키로 한 번 더 검증한다.
+    // 로그인 페이지 자체와 login/logout API 는 통과시켜야 폼이 동작한다.
+    const isAdminGated =
+      (pathname.startsWith("/admin") && pathname !== "/admin/login") ||
+      (pathname.startsWith("/api/admin") && !pathname.startsWith("/api/auth/admin"));
+
+    if (isAdminGated) {
+      const adminToken = request.cookies.get(ADMIN_COOKIE)?.value;
+      const adminOk = await verifyAdminToken(adminToken);
+      if (!adminOk) {
+        if (pathname.startsWith("/api/")) {
+          return NextResponse.json({ error: "admin_unauthenticated" }, { status: 401 });
+        }
+        const login = new URL("/admin/login", request.url);
+        login.searchParams.set("next", `${pathname}${search}`);
+        return NextResponse.redirect(login);
+      }
+    }
     return NextResponse.next();
   }
 

@@ -166,5 +166,17 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
         { label: "필요한 자원", tone: "answer", text: s.neededResource, fieldKey: "neededResource" },
       ],
     },
+    {
+      chapter: "Closing",
+      title: "운영진에게 한 마디",
+      entries: [
+        {
+          label: "질문",
+          tone: "question",
+          text: "이 여정을 마치며, 운영진에게 전하고 싶은 말이 있다면 자유롭게 남겨주세요.",
+        },
+        { label: "참가자 소감", tone: "answer", text: s.closingFeedback, fieldKey: "closingFeedback" },
+      ],
+    },
   ];
 }

@@ -4,6 +4,7 @@ import {
   upsertV3Session,
   listV3Sessions,
   deleteV3Sessions,
+  deleteV3Session,
   isSupabaseConfigured,
 } from "@/lib/v3/session/serverStorage";
 
@@ -53,13 +54,20 @@ export async function GET() {
   }
 }
 
-/** DELETE /api/v3/sessions  → admin "clear all" affordance. */
-export async function DELETE() {
+/** DELETE /api/v3/sessions[?sessionId=...]
+ *  Without query: 전체 삭제. With sessionId: 해당 row만 삭제. */
+export async function DELETE(req: Request) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ ok: true, skipped: true, reason: SKIPPED_REASON });
   }
   try {
-    await deleteV3Sessions();
+    const { searchParams } = new URL(req.url);
+    const sessionId = searchParams.get("sessionId");
+    if (sessionId) {
+      await deleteV3Session(sessionId);
+    } else {
+      await deleteV3Sessions();
+    }
     return NextResponse.json({ ok: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown error";

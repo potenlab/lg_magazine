@@ -21,12 +21,24 @@ import ts from "typescript";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const tsSource = readFileSync(join(root, "src/lib/llm/providers/aistudio.ts"), "utf8");
 
+// aistudio.ts imports getTier from ../modeContext; transpile that too and rewire
+// the relative import to a data: URL so the standalone import resolves.
+const modeUrl =
+  "data:text/javascript;base64," +
+  Buffer.from(
+    ts.transpileModule(readFileSync(join(root, "src/lib/llm/modeContext.ts"), "utf8"), {
+      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+    }).outputText,
+  ).toString("base64");
+
 // Load a FRESH copy of the provider module (module-level consts read env at eval,
 // so each scenario sets its env then imports a cache-busted copy).
 async function loadProvider(tag) {
-  const js = ts.transpileModule(tsSource + `\n//cachebust:${tag}`, {
-    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-  }).outputText;
+  const js = ts
+    .transpileModule(tsSource + `\n//cachebust:${tag}`, {
+      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+    })
+    .outputText.replace(/from\s*["']\.\.\/modeContext["']/g, `from ${JSON.stringify(modeUrl)}`);
   return import("data:text/javascript;base64," + Buffer.from(js).toString("base64"));
 }
 

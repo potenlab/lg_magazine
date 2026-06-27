@@ -55,10 +55,23 @@ function ConversationCard({
   isOpen: boolean;
   onToggle: () => void;
 }) {
-  const visible = chapter.entries.filter((entry) => entry.text?.trim());
-  const answerCount = visible.filter((entry) => entry.tone === "answer").length;
-  const resultCount = visible.filter((entry) => entry.tone === "result").length;
-  const followupCount = visible.filter((entry) => entry.tone === "followup").length;
+  // result tone 은 비어 있어도 한 자리를 유지해서 "LLM 결과가 비었다(실패/미생성)" 가
+  // 펼친 화면에서 한눈에 보이도록 한다. answer/question/followup 은 종전대로 숨김.
+  const visible = chapter.entries.filter(
+    (entry) => entry.text?.trim() || entry.tone === "result",
+  );
+  const answerCount = visible.filter(
+    (entry) => entry.tone === "answer" && entry.text?.trim(),
+  ).length;
+  const resultFilled = visible.filter(
+    (entry) => entry.tone === "result" && entry.text?.trim(),
+  ).length;
+  const resultMissing = visible.filter(
+    (entry) => entry.tone === "result" && !entry.text?.trim(),
+  ).length;
+  const followupCount = visible.filter(
+    (entry) => entry.tone === "followup" && entry.text?.trim(),
+  ).length;
   return (
     <section
       id={chapter.chapter.replace(/\s+/g, "-").toLowerCase()}
@@ -75,7 +88,10 @@ function ConversationCard({
           </p>
           <h3 className="mt-1 text-lg font-semibold">{chapter.title}</h3>
           <p className="mt-1 text-xs text-[#8d7d66]">
-            답변 {answerCount}개 · 되묻기 {followupCount}개 · AI 결과 {resultCount}개
+            답변 {answerCount}개 · 되묻기 {followupCount}개 · AI 결과 {resultFilled}개
+            {resultMissing > 0 && (
+              <span className="ml-1 font-semibold text-[#b25a3b]">· 비어있음 {resultMissing}</span>
+            )}
           </p>
         </div>
         <span className="rounded-full border border-[#d8cbb8] px-3 py-1 text-xs text-[#5d4d3b]">
@@ -98,24 +114,37 @@ function ConversationCard({
 }
 
 function ConversationBubble({ entry }: { entry: ConversationEntry }) {
-  const styles = {
-    question: "border-[#eadfcf] bg-[#fffdf8]",
-    followup: "border-[#d9eee9] bg-[#f5fbf8]",
-    answer: "border-[#e2d8ca] bg-[#f8f2e8]",
-    result: "border-[#d9e6ef] bg-[#f4f9fb]",
-  }[entry.tone || "answer"];
+  const isEmpty = !entry.text?.trim();
+  const isMissingResult = isEmpty && entry.tone === "result";
 
-  const labelColor = {
-    question: "text-[#8d7d66]",
-    followup: "text-[#32766b]",
-    answer: "text-[#5d4d3b]",
-    result: "text-[#217282]",
-  }[entry.tone || "answer"];
+  const styles = isMissingResult
+    ? "border-dashed border-[#e2c8c2] bg-[#fbf1ee]"
+    : {
+        question: "border-[#eadfcf] bg-[#fffdf8]",
+        followup: "border-[#d9eee9] bg-[#f5fbf8]",
+        answer: "border-[#e2d8ca] bg-[#f8f2e8]",
+        result: "border-[#d9e6ef] bg-[#f4f9fb]",
+      }[entry.tone || "answer"];
+
+  const labelColor = isMissingResult
+    ? "text-[#9b4b3e]"
+    : {
+        question: "text-[#8d7d66]",
+        followup: "text-[#32766b]",
+        answer: "text-[#5d4d3b]",
+        result: "text-[#217282]",
+      }[entry.tone || "answer"];
 
   return (
     <div className={`rounded-md border p-4 ${styles}`}>
       <p className={`text-[11px] font-semibold tracking-[0.16em] ${labelColor}`}>{entry.label}</p>
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-[#34251b]">{entry.text}</p>
+      {isMissingResult ? (
+        <p className="mt-2 text-sm italic text-[#9b4b3e]">
+          (생성 안 됨 / 실패 — LLM 호출이 비어 있거나 실패했을 가능성)
+        </p>
+      ) : (
+        <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-[#34251b]">{entry.text}</p>
+      )}
     </div>
   );
 }

@@ -28,12 +28,26 @@ export function ClosingChoiceScene({
   spec: SceneSpec;
   onAdvance: (n: SceneId) => void;
 }) {
-  const { session, reset } = useV3Session();
+  const { session, patch, reset } = useV3Session();
   const [data, setData] = useState<MagazineData | null>(null);
   const [status, setStatus] = useState<PdfStatus>("loading");
   const [downloading, setDownloading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [magazineOpen, setMagazineOpen] = useState(false);
+
+  // 운영진에게 남기는 한 마디 (선택). 입력칸은 session 값으로 시드하고,
+  // "남기기" 누르면 patch → V3SessionContext 자동저장이 Supabase 까지 반영.
+  // 저장 후에도 다시 수정 가능 (다시 누르면 덮어쓰기).
+  const [feedbackDraft, setFeedbackDraft] = useState(session.closingFeedback || "");
+  const [feedbackSaved, setFeedbackSaved] = useState(
+    Boolean(session.closingFeedback && session.closingFeedback.trim()),
+  );
+  const handleSaveFeedback = () => {
+    const trimmed = feedbackDraft.trim();
+    if (!trimmed) return;
+    patch({ closingFeedback: trimmed });
+    setFeedbackSaved(true);
+  };
 
   useEffect(() => {
     registerPdfFonts();
@@ -135,6 +149,48 @@ export function ClosingChoiceScene({
 
   return (
     <div className="flex flex-1 flex-col">
+      {/* 여정을 마치며 — 운영진에게 한 마디 (선택). 강제 아님: 비워두고
+          매거진을 받아가도 OK. 입력 후 "남기기" 누르면 즉시 Supabase 반영. */}
+      <section className="mx-auto mb-6 w-full max-w-2xl rounded-md border border-[#b99b6b]/30 bg-white/55 px-5 py-5 shadow-sm md:mb-8 md:px-6 md:py-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9b8768]">
+          여정을 마치며
+        </p>
+        <h3
+          className="mt-1 font-serif text-[17px] italic leading-snug text-[#3d2414] md:text-[18px]"
+          style={{ fontFamily: "var(--font-ridi-batang), serif" }}
+        >
+          운영진에게 한 마디 남겨주세요 <span className="not-italic text-[#8b7050]">(선택)</span>
+        </h3>
+        <p className="mt-1.5 text-[12.5px] leading-relaxed text-[#6a5a44]">
+          이 여정을 거치며 떠오른 생각이나 운영진에게 전하고 싶은 말을 자유롭게 들려주세요.
+        </p>
+        <textarea
+          value={feedbackDraft}
+          onChange={(e) => {
+            setFeedbackDraft(e.target.value);
+            // 한 글자라도 다시 손대면 "저장됨" 표시는 풀어준다 — 사용자가
+            // 수정 중이라는 신호를 명확히 하기 위해.
+            if (feedbackSaved) setFeedbackSaved(false);
+          }}
+          rows={3}
+          placeholder="예: 처음엔 어색했는데 마지막엔 따뜻하게 마무리됐어요."
+          className="mt-3 block w-full resize-y rounded-md border border-[#b99b6b]/40 bg-[#fffaf0] px-3.5 py-2.5 text-[14px] leading-[1.65] text-[#3d2414] outline-none placeholder:text-[#b3a283] focus:border-[#8b7050]"
+        />
+        <div className="mt-2.5 flex items-center justify-between gap-3">
+          <p className="text-[11.5px] text-[#8b7050]">
+            {feedbackSaved ? "고마워요. 잘 전달됐어요." : "안 적고 매거진을 받으셔도 괜찮아요."}
+          </p>
+          <button
+            type="button"
+            onClick={handleSaveFeedback}
+            disabled={!feedbackDraft.trim() || feedbackSaved}
+            className="inline-flex h-9 items-center justify-center rounded-md border border-[#3d2414]/55 bg-transparent px-4 font-serif text-[13px] italic tracking-[0.04em] text-[#3d2414] transition hover:bg-[#3d2414]/5 disabled:opacity-40"
+          >
+            {feedbackSaved ? "전달됨" : "남기기"}
+          </button>
+        </div>
+      </section>
+
       <div className="grid flex-1 gap-6 md:grid-cols-2 md:gap-10">
         {/* 좌측 — 매거진 다시 보기 / 다운받기 */}
         <section className="flex flex-col items-center justify-center text-center">

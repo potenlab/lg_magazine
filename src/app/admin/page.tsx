@@ -296,21 +296,25 @@ export default function AdminPage() {
   // 그 항목들을 호출하고 결과는 어드민에서 어차피 휘발 (캐시 patch 는 사용자
   // 본인 세션에서만 이뤄짐 — 어드민이 임의로 다른 세션을 patch 하면 사용자가
   // 후에 받는 PDF 와 어긋남).
-  const [pdfBusyKey, setPdfBusyKey] = useState<string>("");
+  // PDF 다운로드 진행 상태 — { sessionId, variant }. 한 번에 한 작업만.
+  const [pdfBusy, setPdfBusy] = useState<{ sessionId: string; variant: "full" | "summary" } | null>(null);
   useEffect(() => {
     registerPdfFonts();
   }, []);
-  const downloadPdf = async (record: V3SessionRecord) => {
-    if (pdfBusyKey) return;
-    setPdfBusyKey(record.sessionId);
+  const downloadPdf = async (record: V3SessionRecord, variant: "full" | "summary") => {
+    if (pdfBusy) return;
+    setPdfBusy({ sessionId: record.sessionId, variant });
     try {
       const { data } = await assembleMagazineDataFromSession(record.data);
-      const blob = await pdf(<MagazinePDF data={data} />).toBlob();
+      // 요약본 = appendix 페이지 제거. cover/4챕터/editor's note 만.
+      const pdfData = variant === "summary" ? { ...data, appendix: undefined } : data;
+      const blob = await pdf(<MagazinePDF data={pdfData} />).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       const safeName = (record.data.name || record.userName || "unknown").replace(/[\\/:*?"<>|]/g, "_");
-      a.download = `STORY_Vol.${safeName}.pdf`;
+      const suffix = variant === "summary" ? "_summary" : "";
+      a.download = `STORY_Vol.${safeName}${suffix}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -319,7 +323,7 @@ export default function AdminPage() {
       console.error("[admin] PDF 생성 실패:", err);
       alert("PDF 생성 중 오류가 발생했어요: " + (err instanceof Error ? err.message : String(err)));
     } finally {
-      setPdfBusyKey("");
+      setPdfBusy(null);
     }
   };
 
@@ -508,20 +512,40 @@ export default function AdminPage() {
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       {selectedV3 && (
-                        <button
-                          type="button"
-                          onClick={() => downloadPdf(selectedV3)}
-                          disabled={!!pdfBusyKey}
-                          className="rounded-md border border-[#3d2414]/45 bg-transparent px-3 py-1.5 text-xs text-[#3d2414] hover:bg-[#3d2414]/5 disabled:opacity-40"
-                        >
-                          {pdfBusyKey === selectedV3.sessionId
-                            ? "PDF 생성 중…"
-                            : selectedV3.data.coverHeadline?.trim() &&
-                                selectedV3.data.editorIntro?.trim() &&
-                                selectedV3.data.editorOutro?.trim()
-                              ? "PDF 다운받기 (캐시)"
-                              : "PDF 다운받기"}
-                        </button>
+                        <>
+                          {(() => {
+                            const cached =
+                              !!selectedV3.data.coverHeadline?.trim() &&
+                              !!selectedV3.data.editorIntro?.trim() &&
+                              !!selectedV3.data.editorOutro?.trim();
+                            const busyFull =
+                              pdfBusy?.sessionId === selectedV3.sessionId && pdfBusy.variant === "full";
+                            const busySummary =
+                              pdfBusy?.sessionId === selectedV3.sessionId && pdfBusy.variant === "summary";
+                            return (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => downloadPdf(selectedV3, "summary")}
+                                  disabled={!!pdfBusy}
+                                  className="rounded-md border border-[#3d2414]/60 bg-[#3d2414]/5 px-3 py-1.5 text-xs font-semibold text-[#3d2414] hover:bg-[#3d2414]/10 disabled:opacity-40"
+                                  title="별첨(대화록) 제외 — 매거진 본문만"
+                                >
+                                  {busySummary ? "생성 중…" : `요약본 PDF${cached ? " (캐시)" : ""}`}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => downloadPdf(selectedV3, "full")}
+                                  disabled={!!pdfBusy}
+                                  className="rounded-md border border-[#3d2414]/45 bg-transparent px-3 py-1.5 text-xs text-[#3d2414] hover:bg-[#3d2414]/5 disabled:opacity-40"
+                                  title="별첨(전체 대화록) 포함"
+                                >
+                                  {busyFull ? "생성 중…" : `전체본 PDF${cached ? " (캐시)" : ""}`}
+                                </button>
+                              </>
+                            );
+                          })()}
+                        </>
                       )}
                       <button
                         type="button"

@@ -32,7 +32,8 @@ export function ClosingChoiceScene({
   const cacheAppliedRef = useRef(false);
   const [data, setData] = useState<MagazineData | null>(null);
   const [status, setStatus] = useState<PdfStatus>("loading");
-  const [downloading, setDownloading] = useState(false);
+  // "summary" 는 별첨(전체 대화록) 제외, "full" 은 포함. 한 번에 한 작업만.
+  const [downloading, setDownloading] = useState<null | "full" | "summary">(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [magazineOpen, setMagazineOpen] = useState(false);
 
@@ -79,15 +80,17 @@ export function ClosingChoiceScene({
     };
   }, [session, patch]);
 
-  const handleDownload = async () => {
+  const handleDownload = async (variant: "full" | "summary") => {
     if (!data || status !== "ready" || downloading) return;
-    setDownloading(true);
+    setDownloading(variant);
     try {
-      const blob = await pdf(<MagazinePDF data={data} />).toBlob();
+      const pdfData = variant === "summary" ? { ...data, appendix: undefined } : data;
+      const blob = await pdf(<MagazinePDF data={pdfData} />).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `STORY_Vol.${session.name}.pdf`;
+      const suffix = variant === "summary" ? "_매거진" : "";
+      a.download = `STORY_Vol.${session.name}${suffix}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -96,7 +99,7 @@ export function ClosingChoiceScene({
       console.error("[v3] PDF generation failed:", err);
       alert("PDF 생성 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
     } finally {
-      setDownloading(false);
+      setDownloading(null);
     }
   };
 
@@ -105,12 +108,11 @@ export function ClosingChoiceScene({
     onAdvance("intro");
   };
 
-  const downloadLabel =
-    status === "loading"
-      ? "매거진 생성중.."
-      : downloading
-        ? "다운로드 중…"
-        : "내 매거진 다운받기";
+  const labelFor = (variant: "full" | "summary") => {
+    if (status === "loading") return "매거진 생성중..";
+    if (downloading === variant) return "다운로드 중…";
+    return variant === "summary" ? "매거진만 받기 (요약)" : "전체본 받기 (별첨 포함)";
+  };
 
   return (
     <div className="flex flex-1 flex-col">
@@ -177,11 +179,21 @@ export function ClosingChoiceScene({
             />
             <button
               type="button"
-              onClick={() => void handleDownload()}
-              disabled={status !== "ready" || downloading}
-              className="inline-flex h-12 items-center justify-center rounded-md border border-[#3d2414]/55 bg-transparent px-6 font-serif italic tracking-[0.04em] text-[#3d2414] transition hover:bg-[#3d2414]/5 disabled:opacity-40"
+              onClick={() => void handleDownload("summary")}
+              disabled={status !== "ready" || !!downloading}
+              className="inline-flex h-12 items-center justify-center rounded-md border border-[#3d2414]/55 bg-transparent px-5 font-serif italic tracking-[0.04em] text-[#3d2414] transition hover:bg-[#3d2414]/5 disabled:opacity-40"
+              title="매거진 본문만 (대화록 별첨 제외)"
             >
-              {downloadLabel}
+              {labelFor("summary")}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleDownload("full")}
+              disabled={status !== "ready" || !!downloading}
+              className="inline-flex h-12 items-center justify-center rounded-md border border-[#3d2414]/35 bg-transparent px-5 font-serif italic tracking-[0.04em] text-[#3d2414]/80 transition hover:bg-[#3d2414]/5 disabled:opacity-40"
+              title="대화록 별첨까지 모두 포함"
+            >
+              {labelFor("full")}
             </button>
           </div>
         </section>

@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { pdf } from "@react-pdf/renderer";
 import type { V3SessionRecord } from "@/lib/v3/session/serverStorage";
 import {
   buildV3ChapterThreads,
   type ConversationEntry,
   type ChapterThread,
 } from "@/lib/v3/session/adminView";
+import { MagazinePDF } from "@/lib/v3/pdf/MagazinePDF";
+import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
+import { assembleMagazineDataFromSession } from "@/lib/v3/pdf/assembleFromSession";
 
 function formatDate(value: string) {
   if (!value) return "-";
@@ -287,6 +291,38 @@ export default function AdminPage() {
     });
   };
 
+  // PDF 다운로드 진행 상태 — 어드민에서 어떤 세션이라도 즉시 PDF 받을 수 있다.
+  // cover/editor/articles 가 캐시된 세션은 LLM 호출 0회로 즉시. 누락된 경우만
+  // 그 항목들을 호출하고 결과는 어드민에서 어차피 휘발 (캐시 patch 는 사용자
+  // 본인 세션에서만 이뤄짐 — 어드민이 임의로 다른 세션을 patch 하면 사용자가
+  // 후에 받는 PDF 와 어긋남).
+  const [pdfBusyKey, setPdfBusyKey] = useState<string>("");
+  useEffect(() => {
+    registerPdfFonts();
+  }, []);
+  const downloadPdf = async (record: V3SessionRecord) => {
+    if (pdfBusyKey) return;
+    setPdfBusyKey(record.sessionId);
+    try {
+      const { data } = await assembleMagazineDataFromSession(record.data);
+      const blob = await pdf(<MagazinePDF data={data} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const safeName = (record.data.name || record.userName || "unknown").replace(/[\\/:*?"<>|]/g, "_");
+      a.download = `STORY_Vol.${safeName}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("[admin] PDF 생성 실패:", err);
+      alert("PDF 생성 중 오류가 발생했어요: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setPdfBusyKey("");
+    }
+  };
+
   const deleteOne = (sessionId: string, name: string) => {
     if (!window.confirm(`'${name}' 응답을 삭제할까요? (되돌릴 수 없습니다)`)) return;
     fetch(`/api/v3/sessions?sessionId=${encodeURIComponent(sessionId)}`, { method: "DELETE" })
@@ -470,13 +506,31 @@ export default function AdminPage() {
                       대표 키워드:{" "}
                       {selectedV3?.data.topValue || selectedV3?.data.identityName || "-"}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => deleteOne(selected.key, selected.name)}
-                      className="rounded-md border border-[#e2c8c2] px-3 py-1.5 text-xs text-[#9b4b3e] hover:bg-[#fbeeea]"
-                    >
-                      이 응답 삭제
-                    </button>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      {selectedV3 && (
+                        <button
+                          type="button"
+                          onClick={() => downloadPdf(selectedV3)}
+                          disabled={!!pdfBusyKey}
+                          className="rounded-md border border-[#3d2414]/45 bg-transparent px-3 py-1.5 text-xs text-[#3d2414] hover:bg-[#3d2414]/5 disabled:opacity-40"
+                        >
+                          {pdfBusyKey === selectedV3.sessionId
+                            ? "PDF 생성 중…"
+                            : selectedV3.data.coverHeadline?.trim() &&
+                                selectedV3.data.editorIntro?.trim() &&
+                                selectedV3.data.editorOutro?.trim()
+                              ? "PDF 다운받기 (캐시)"
+                              : "PDF 다운받기"}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => deleteOne(selected.key, selected.name)}
+                        className="rounded-md border border-[#e2c8c2] px-3 py-1.5 text-xs text-[#9b4b3e] hover:bg-[#fbeeea]"
+                      >
+                        이 응답 삭제
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

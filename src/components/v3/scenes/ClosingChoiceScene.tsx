@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { MagazinePosterScene } from "@/components/v3/scenes/MagazinePosterScene";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
-import { llm } from "@/lib/v3/llm";
-import { cleanArticleField } from "@/lib/v3/llm/articleSanitize";
 import { MagazinePDF, type MagazineData } from "@/lib/v3/pdf/MagazinePDF";
 import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
-import { buildAppendixThreads } from "@/lib/v3/pdf/buildAppendix";
+import { assembleMagazineDataFromSession } from "@/lib/v3/pdf/assembleFromSession";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 type PdfStatus = "loading" | "ready" | "error";
@@ -29,6 +27,9 @@ export function ClosingChoiceScene({
   onAdvance: (n: SceneId) => void;
 }) {
   const { session, patch, reset } = useV3Session();
+  // 캐시 patch 는 한 세션 안에서 한 번만 적용 — 다음 효과에서 session.coverHeadline 등이
+  // 이미 채워져 있어도 다시 patch 하지 않도록 useRef로 가드.
+  const cacheAppliedRef = useRef(false);
   const [data, setData] = useState<MagazineData | null>(null);
   const [status, setStatus] = useState<PdfStatus>("loading");
   const [downloading, setDownloading] = useState(false);
@@ -57,52 +58,16 @@ export function ClosingChoiceScene({
     let cancelled = false;
     (async () => {
       try {
-        const cached = session.chapterArticles ?? {};
-        // 캐시에 있어도 body/headline 이 비어 있으면 stale 로 간주하고 재호출 —
-        // 빈 챕터 회귀(매거진 모달·PDF Ch3 빈칸) 회복.
-        const isUsable = (a: { headline: string; body: string } | undefined) =>
-          !!a && !!a.headline?.trim() && !!a.body?.trim();
-        const articleFor = (n: 1 | 2 | 3 | 4) =>
-          isUsable(cached[n])
-            ? cached[n]
-            : llm.writeChapterArticle({
-                name: session.name,
-                gender: session.gender,
-                job: session.job,
-                chapter: n,
-                session,
-              });
-        const [coverHeadline, editorIntro, editorOutro, ch1, ch2, ch3, ch4] = await Promise.all([
-          llm.writeCoverHeadline({ session }),
-          llm.writeEditorNote({ session, kind: "intro" }),
-          llm.writeEditorNote({ session, kind: "outro" }),
-          articleFor(1),
-          articleFor(2),
-          articleFor(3),
-          articleFor(4),
-        ]);
+        const { data: assembled, cachePatch } = await assembleMagazineDataFromSession(session);
         if (cancelled) return;
-        // 캐시된 stale 또는 새로 받은 응답 모두 raw markdown(`**`, `**PULL:**`) 을
-        // 흘릴 수 있어 PDF 직전에 일괄 sanitize.
-        const cleanArticle = (a: { headline: string; body: string; pullQuote: string | null }) => ({
-          headline: cleanArticleField(a.headline),
-          body: cleanArticleField(a.body),
-          pullQuote: a.pullQuote ? cleanArticleField(a.pullQuote) || null : null,
-        });
-        setData({
-          name: session.name,
-          date: new Date().toISOString().slice(0, 10),
-          coverHeadline,
-          editorIntro,
-          editorOutro,
-          chapters: {
-            1: cleanArticle(ch1),
-            2: cleanArticle(ch2),
-            3: cleanArticle(ch3),
-            4: cleanArticle(ch4),
-          },
-          appendix: buildAppendixThreads(session),
-        });
+        // 처음 생성한 cover/editor/articles 를 세션에 캐시해, 사용자가 "다시 받기"
+        // 누르거나 어드민에서 PDF 받을 때 정확히 같은 결과가 나오게 한다.
+        // 한 세션에 대해 한 번만 적용 (Object.keys 검사 + ref 가드).
+        if (!cacheAppliedRef.current && Object.keys(cachePatch).length > 0) {
+          cacheAppliedRef.current = true;
+          patch(cachePatch);
+        }
+        setData(assembled);
         setStatus("ready");
       } catch (err) {
         console.error("[v3] ClosingChoice PDF prep failed:", err);
@@ -112,7 +77,7 @@ export function ClosingChoiceScene({
     return () => {
       cancelled = true;
     };
-  }, [session]);
+  }, [session, patch]);
 
   const handleDownload = async () => {
     if (!data || status !== "ready" || downloading) return;

@@ -50,10 +50,12 @@ function ConversationCard({
   chapter,
   isOpen,
   onToggle,
+  sessionStatus,
 }: {
   chapter: ChapterThread;
   isOpen: boolean;
   onToggle: () => void;
+  sessionStatus: "in_progress" | "completed";
 }) {
   // result tone 은 비어 있어도 한 자리를 유지해서 "LLM 결과가 비었다(실패/미생성)" 가
   // 펼친 화면에서 한눈에 보이도록 한다. answer/question/followup 은 종전대로 숨김.
@@ -66,8 +68,9 @@ function ConversationCard({
   const resultFilled = visible.filter(
     (entry) => entry.tone === "result" && entry.text?.trim(),
   ).length;
+  // legacy 항목은 "사용 안 함" 으로 따로 표시하므로 "비어있음" 카운트에서 제외.
   const resultMissing = visible.filter(
-    (entry) => entry.tone === "result" && !entry.text?.trim(),
+    (entry) => entry.tone === "result" && !entry.text?.trim() && !entry.legacy,
   ).length;
   const followupCount = visible.filter(
     (entry) => entry.tone === "followup" && entry.text?.trim(),
@@ -104,7 +107,11 @@ function ConversationCard({
             <p className="text-sm text-[#7d705f]">아직 이 단계의 응답이 없습니다.</p>
           ) : (
             visible.map((entry, index) => (
-              <ConversationBubble key={`${entry.label}-${index}`} entry={entry} />
+              <ConversationBubble
+                key={`${entry.label}-${index}`}
+                entry={entry}
+                sessionStatus={sessionStatus}
+              />
             ))
           )}
         </div>
@@ -113,34 +120,70 @@ function ConversationCard({
   );
 }
 
-function ConversationBubble({ entry }: { entry: ConversationEntry }) {
+function ConversationBubble({
+  entry,
+  sessionStatus,
+}: {
+  entry: ConversationEntry;
+  sessionStatus: "in_progress" | "completed";
+}) {
   const isEmpty = !entry.text?.trim();
-  const isMissingResult = isEmpty && entry.tone === "result";
+  // legacy 가 우선. text 있으면 그대로 보여주되 라벨에 [구버전] 표기, 비어있으면
+  // 회색 "사용 안 함" placeholder.
+  const isLegacy = !!entry.legacy;
+  const isMissingResult = isEmpty && entry.tone === "result" && !isLegacy;
+  // 완료자인데 비면 거의 실패 (빨강), 진행중이면 아직 거기까지 안 갔거나
+  // 분기 우회 등 자연스러운 빈칸일 수 있어 회색으로 노이즈를 낮춘다.
+  const failureSuspected = isMissingResult && sessionStatus === "completed";
+  const pending = isMissingResult && sessionStatus === "in_progress";
 
-  const styles = isMissingResult
-    ? "border-dashed border-[#e2c8c2] bg-[#fbf1ee]"
-    : {
-        question: "border-[#eadfcf] bg-[#fffdf8]",
-        followup: "border-[#d9eee9] bg-[#f5fbf8]",
-        answer: "border-[#e2d8ca] bg-[#f8f2e8]",
-        result: "border-[#d9e6ef] bg-[#f4f9fb]",
-      }[entry.tone || "answer"];
+  const styles = isLegacy
+    ? "border-dashed border-[#cfc6b3] bg-[#f0ece4] opacity-70"
+    : failureSuspected
+      ? "border-dashed border-[#e2c8c2] bg-[#fbf1ee]"
+      : pending
+        ? "border-dashed border-[#d8cbb8] bg-[#f4efe4]"
+        : {
+            question: "border-[#eadfcf] bg-[#fffdf8]",
+            followup: "border-[#d9eee9] bg-[#f5fbf8]",
+            answer: "border-[#e2d8ca] bg-[#f8f2e8]",
+            result: "border-[#d9e6ef] bg-[#f4f9fb]",
+          }[entry.tone || "answer"];
 
-  const labelColor = isMissingResult
-    ? "text-[#9b4b3e]"
-    : {
-        question: "text-[#8d7d66]",
-        followup: "text-[#32766b]",
-        answer: "text-[#5d4d3b]",
-        result: "text-[#217282]",
-      }[entry.tone || "answer"];
+  const labelColor = isLegacy
+    ? "text-[#8b7d66]"
+    : failureSuspected
+      ? "text-[#9b4b3e]"
+      : pending
+        ? "text-[#8d7d66]"
+        : {
+            question: "text-[#8d7d66]",
+            followup: "text-[#32766b]",
+            answer: "text-[#5d4d3b]",
+            result: "text-[#217282]",
+          }[entry.tone || "answer"];
 
   return (
     <div className={`rounded-md border p-4 ${styles}`}>
-      <p className={`text-[11px] font-semibold tracking-[0.16em] ${labelColor}`}>{entry.label}</p>
-      {isMissingResult ? (
+      <p className={`text-[11px] font-semibold tracking-[0.16em] ${labelColor}`}>
+        {entry.label}
+        {isLegacy && (
+          <span className="ml-2 rounded-sm border border-[#c4b89e] px-1.5 py-0.5 text-[9px] font-normal tracking-normal text-[#8b7d66]">
+            구버전 · 현재 미사용
+          </span>
+        )}
+      </p>
+      {isLegacy && isEmpty ? (
+        <p className="mt-2 text-sm italic text-[#9a8d76]">
+          (현재 플로우에서 사용되지 않는 반향)
+        </p>
+      ) : failureSuspected ? (
         <p className="mt-2 text-sm italic text-[#9b4b3e]">
-          (생성 안 됨 / 실패 — LLM 호출이 비어 있거나 실패했을 가능성)
+          (LLM 결과 누락 — 완료 세션인데 비어 있음. 호출 실패 의심)
+        </p>
+      ) : pending ? (
+        <p className="mt-2 text-sm italic text-[#8b7050]">
+          (아직 채워지지 않음 — 진행중 세션. 도달 전이거나 분기 우회일 수 있음)
         </p>
       ) : (
         <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-[#34251b]">{entry.text}</p>
@@ -445,6 +488,7 @@ export default function AdminPage() {
                     chapter={chapter}
                     isOpen={openChapters.includes(chapter.chapter)}
                     onToggle={() => toggleChapter(chapter.chapter)}
+                    sessionStatus={selected.status}
                   />
                 ))}
               </div>

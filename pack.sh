@@ -12,7 +12,7 @@
 #     package*.json, next.config.ts, deploy.sh, etc. are all included
 #
 # Usage:
-#   ./pack.sh                       # packs production -> lg_magazine-production.tar.gz
+#   ./pack.sh                       # packs production -> lg_magazine-production-<timestamp>.tar.gz
 #   ./pack.sh <ref> <output.tgz>    # custom git ref / output path
 
 set -euo pipefail
@@ -21,7 +21,9 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_DIR"
 
 REF="${1:-production}"
-OUT="${2:-lg_magazine-production.tar.gz}"
+TS="$(date +%Y%m%d-%H%M%S)"               # local-time stamp, e.g. 20260629-184230
+OUT="${2:-lg_magazine-production-${TS}.tar.gz}"
+LATEST="lg_magazine-production-latest.tar.gz"
 PREFIX="lg_magazine/"
 
 command -v git >/dev/null || { echo "git not found"; exit 1; }
@@ -37,8 +39,12 @@ fi
 echo "==> Packing '$REF' -> $OUT"
 git archive --format=tar.gz --prefix="$PREFIX" -o "$OUT" "$REF"
 
+# Refresh the convenience "latest" pointer to this build.
+ln -sf "$OUT" "$LATEST"
+
 SIZE="$(du -h "$OUT" | cut -f1)"
 echo "==> Done: $OUT ($SIZE)"
+echo "    latest -> $OUT"
 if command -v shasum >/dev/null; then
   echo "    sha256: $(shasum -a 256 "$OUT" | cut -d' ' -f1)"
 fi

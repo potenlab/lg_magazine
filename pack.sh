@@ -42,6 +42,7 @@ git archive --format=tar.gz --prefix="$PREFIX" -o "$OUT" "$REF"
 # Refresh the convenience "latest" pointer to this build.
 ln -sf "$OUT" "$LATEST"
 
+ABS="$REPO_DIR/$OUT"
 SIZE="$(du -h "$OUT" | cut -f1)"
 echo "==> Done: $OUT ($SIZE)"
 echo "    latest -> $OUT"
@@ -49,7 +50,16 @@ if command -v shasum >/dev/null; then
   echo "    sha256: $(shasum -a 256 "$OUT" | cut -d' ' -f1)"
 fi
 echo ""
-echo "Next:"
-echo "  1) Copy to the server:   scp $OUT user@lg-server:/srv/"
+echo "LOCATION (open this in Finder):"
+echo "  $ABS"
+echo "  folder: $REPO_DIR"
+# macOS: reveal+select the file in Finder so the user can grab it directly.
+if command -v open >/dev/null; then
+  echo "  reveal: open -R \"$ABS\""
+  open -R "$ABS" 2>/dev/null || true
+fi
+echo ""
+echo "Next (deploy):"
+echo "  1) Copy to the server:   scp \"$ABS\" user@lg-server:/srv/"
 echo "  2) On the server:        cd /srv && tar xzf $(basename "$OUT") && cd lg_magazine"
 echo "  3) Deploy:               ./deploy.sh"

@@ -42,12 +42,16 @@ docker compose version >/dev/null 2>&1  || die "docker compose v2 not found"
 [ -f "$SCHEMA_FILE" ]                    || die "schema file missing: $SCHEMA_FILE (are you on the production branch?)"
 
 # ---------------------------------------------------------------------------
-# 1. pull latest production
+# 1. sync source (git mode) or use files on disk (tarball / offline mode)
 # ---------------------------------------------------------------------------
-log "Pulling latest production"
-git fetch origin
-git checkout production
-git pull --ff-only origin production
+if [ -d .git ] && git rev-parse --git-dir >/dev/null 2>&1 && git remote get-url origin >/dev/null 2>&1; then
+  log "Git repo detected — pulling latest production"
+  git fetch origin
+  git checkout production
+  git pull --ff-only origin production || warn "git pull failed — continuing with files on disk"
+else
+  log "No git remote — tarball/offline mode, deploying the files in this directory"
+fi
 
 # ---------------------------------------------------------------------------
 # 2. ensure MSSQL_* env (append-only; never clobber existing values)

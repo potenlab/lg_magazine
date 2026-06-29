@@ -52,7 +52,7 @@ function initSession(): V3Session {
 }
 
 /** Fire-and-forget POST to /api/v3/sessions. Failures are logged but never
- * thrown — local play must continue even if Supabase is down. */
+ * thrown — local play must continue even if MSSQL is down. */
 async function syncToServer(session: V3Session): Promise<void> {
   if (!session.sessionId) return;
   try {
@@ -85,7 +85,7 @@ export function V3SessionProvider({ children }: { children: ReactNode }) {
   // Debounced auto-save — session is always initialized by the time this runs.
   // localStorage write is immediate-ish (300ms); server sync runs at a longer
   // 1.5s debounce so a flurry of patches during a typed-in answer doesn't
-  // hammer Supabase. The two timers are independent so localStorage stays
+  // hammer MSSQL. The two timers are independent so localStorage stays
   // up to date even if the network is slow.
   const serverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {

@@ -7,7 +7,7 @@
 //   - listV3Sessions()                → SELECT TOP 200 ... ORDER BY updated_at DESC
 //   - deleteV3Sessions()              → DELETE all
 //   - deleteV3Session(sessionId)      → DELETE one
-//   - isSupabaseConfigured()          → kept by name on purpose (see note below)
+//   - isMssqlConfigured()             → renamed from main's isSupabaseConfigured
 //
 // The `data` JSONB column on Postgres becomes NVARCHAR(MAX) holding JSON text;
 // we JSON.stringify on write and JSON.parse on read.
@@ -49,10 +49,9 @@ interface V3SessionRow {
 }
 
 /** True when the MSSQL env vars are present. Route handlers check this first and
- * silently no-op when false. NOTE: the name is intentionally kept as
- * `isSupabaseConfigured` so `route.ts` (which tracks `main`) merges cleanly on
- * every /sync-main — only the body changed, not the contract. */
-export function isSupabaseConfigured(): boolean {
+ * silently no-op when false. Renamed from main's `isSupabaseConfigured`; the
+ * import in `route.ts` is rewritten to match during /sync-main. */
+export function isMssqlConfigured(): boolean {
   return Boolean(
     process.env.MSSQL_SERVER &&
       process.env.MSSQL_DATABASE &&

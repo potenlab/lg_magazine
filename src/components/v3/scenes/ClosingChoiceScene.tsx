@@ -38,7 +38,7 @@ export function ClosingChoiceScene({
   const [magazineOpen, setMagazineOpen] = useState(false);
 
   // 운영진에게 남기는 한 마디 (선택). 입력칸은 session 값으로 시드하고,
-  // "남기기" 누르면 patch → V3SessionContext 자동저장이 Supabase 까지 반영.
+  // "남기기" 누르면 patch → V3SessionContext 자동저장이 MSSQL 까지 반영.
   // 저장 후에도 다시 수정 가능 (다시 누르면 덮어쓰기).
   const [feedbackDraft, setFeedbackDraft] = useState(session.closingFeedback || "");
   const [feedbackSaved, setFeedbackSaved] = useState(
@@ -117,7 +117,7 @@ export function ClosingChoiceScene({
   return (
     <div className="flex flex-1 flex-col">
       {/* 여정을 마치며 — 운영진에게 한 마디 (선택). 강제 아님: 비워두고
-          매거진을 받아가도 OK. 입력 후 "남기기" 누르면 즉시 Supabase 반영. */}
+          매거진을 받아가도 OK. 입력 후 "남기기" 누르면 즉시 MSSQL 반영. */}
       <section className="mx-auto mb-6 w-full max-w-2xl rounded-md border border-[#b99b6b]/30 bg-white/55 px-5 py-5 shadow-sm md:mb-8 md:px-6 md:py-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9b8768]">
           여정을 마치며

@@ -5,23 +5,23 @@ import {
   listV3Sessions,
   deleteV3Sessions,
   deleteV3Session,
-  isSupabaseConfigured,
+  isMssqlConfigured,
 } from "@/lib/v3/session/serverStorage";
 
 export const runtime = "nodejs";
 
-// When Supabase env vars aren't set, the server-side session mirror is simply
+// When MSSQL env vars aren't set, the server-side session mirror is simply
 // disabled — local play continues working from localStorage. Every handler
 // below short-circuits with a 200 + `skipped:true` so the client's
 // fire-and-forget POST doesn't generate 500s on every state change.
-const SKIPPED_REASON = "supabase_not_configured";
+const SKIPPED_REASON = "mssql_not_configured";
 
 /** POST /api/v3/sessions
  *  body: { session: V3Session }
  *  Upserts the session by session.sessionId. Used by V3SessionContext's
- *  debounced auto-save to mirror the localStorage write to Supabase. */
+ *  debounced auto-save to mirror the localStorage write to MSSQL. */
 export async function POST(req: Request) {
-  if (!isSupabaseConfigured()) {
+  if (!isMssqlConfigured()) {
     return NextResponse.json({ skipped: true, reason: SKIPPED_REASON });
   }
   try {
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
 
 /** GET /api/v3/sessions  → admin list. Returns every v3 session row. */
 export async function GET() {
-  if (!isSupabaseConfigured()) {
+  if (!isMssqlConfigured()) {
     return NextResponse.json({ records: [], skipped: true, reason: SKIPPED_REASON });
   }
   try {
@@ -57,7 +57,7 @@ export async function GET() {
 /** DELETE /api/v3/sessions[?sessionId=...]
  *  Without query: 전체 삭제. With sessionId: 해당 row만 삭제. */
 export async function DELETE(req: Request) {
-  if (!isSupabaseConfigured()) {
+  if (!isMssqlConfigured()) {
     return NextResponse.json({ ok: true, skipped: true, reason: SKIPPED_REASON });
   }
   try {

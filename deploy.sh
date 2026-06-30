@@ -165,6 +165,22 @@ fi
 # ---------------------------------------------------------------------------
 # done
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# 7. static assets → nginx disk root (in-house CDN) + reload
+#    nginx serves /_next/static and /public from /var/www/lg_magazine_public,
+#    NOT from the containers. Skip this and a new build's chunk hashes go stale
+#    on disk → 503 on JS/CSS → blank page. extract-assets.sh re-syncs from the
+#    image; it self-sudoes its privileged ops.
+# ---------------------------------------------------------------------------
+if command -v nginx >/dev/null 2>&1; then
+  log "Extracting static assets → /var/www/lg_magazine_public"
+  IMAGE=lg-magazine:latest ./scripts/extract-assets.sh
+  log "Reloading nginx"
+  nginx -t && systemctl reload nginx
+else
+  warn "nginx not found — skipping static-asset extraction (dev/local mode)"
+fi
+
 log "Stack status"
 docker compose ps
 

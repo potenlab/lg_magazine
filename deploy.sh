@@ -109,11 +109,26 @@ docker compose config --services 2>/dev/null | grep -qx mssql && MSSQL_IN_COMPOS
 # ---------------------------------------------------------------------------
 # 3. build + start
 # ---------------------------------------------------------------------------
-log "Building image"
-docker compose build
+# Offline mode: if a prebuilt-images tarball is bundled (server can't reach
+# Docker Hub / mcr), load it and skip the build entirely. pack-images.sh makes
+# it. Looked for in the repo dir and the parent (where the .tar.gz is dropped).
+IMAGES_TAR=""
+for c in "lg_magazine-images.tar.gz" "../lg_magazine-images.tar.gz"; do
+  [ -f "$c" ] && { IMAGES_TAR="$c"; break; }
+done
 
-log "Starting stack"
-docker compose up -d
+if [ -n "$IMAGES_TAR" ]; then
+  log "Loading prebuilt images from $IMAGES_TAR (offline mode — skipping build)"
+  gunzip -c "$IMAGES_TAR" | docker load
+  log "Starting stack (--no-build)"
+  docker compose up -d --no-build
+else
+  log "Building image"
+  docker compose build
+
+  log "Starting stack"
+  docker compose up -d
+fi
 
 # ---------------------------------------------------------------------------
 # 4-6. DB bootstrap (only when MSSQL runs as a compose service)

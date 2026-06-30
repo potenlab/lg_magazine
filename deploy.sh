@@ -112,9 +112,12 @@ docker compose config --services 2>/dev/null | grep -qx mssql && MSSQL_IN_COMPOS
 # Offline mode: if a prebuilt-images tarball is bundled (server can't reach
 # Docker Hub / mcr), load it and skip the build entirely. pack-images.sh makes
 # it. Looked for in the repo dir and the parent (where the .tar.gz is dropped).
+# Pick the newest bundle (timestamped names sort chronologically); ignore the
+# -latest symlink (may not survive scp). Looks in the repo dir and its parent.
 IMAGES_TAR=""
-for c in "lg_magazine-images.tar.gz" "../lg_magazine-images.tar.gz"; do
-  [ -f "$c" ] && { IMAGES_TAR="$c"; break; }
+for dir in "." ".."; do
+  cand="$(ls -1 "$dir"/lg_magazine-images*.tar.gz 2>/dev/null | grep -v -- '-latest' | sort | tail -1)"
+  [ -n "$cand" ] && { IMAGES_TAR="$cand"; break; }
 done
 
 if [ -n "$IMAGES_TAR" ]; then

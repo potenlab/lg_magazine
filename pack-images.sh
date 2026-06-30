@@ -19,7 +19,9 @@ cd "$REPO_DIR"
 PLATFORM="linux/amd64"                                   # LG server arch (build host may be arm64)
 APP_IMAGE="lg-magazine:latest"                           # must match docker-compose.yml `image:`
 DB_IMAGE="mcr.microsoft.com/mssql/server:2022-latest"    # must match docker-compose.yml mssql `image:`
-OUT="lg_magazine-images.tar.gz"
+TS="$(date +%Y%m%d-%H%M%S)"                              # local-time stamp, matches pack.sh
+OUT="${1:-lg_magazine-images-${TS}.tar.gz}"
+LATEST="lg_magazine-images-latest.tar.gz"
 
 command -v docker >/dev/null || { echo "docker not found"; exit 1; }
 docker info >/dev/null 2>&1   || { echo "docker daemon not running"; exit 1; }
@@ -32,10 +34,12 @@ docker pull --platform "$PLATFORM" "$DB_IMAGE"
 
 echo "==> Saving both images -> $OUT"
 docker save "$APP_IMAGE" "$DB_IMAGE" | gzip > "$OUT"
+ln -sf "$OUT" "$LATEST"
 
 ABS="$REPO_DIR/$OUT"
 SIZE="$(du -h "$OUT" | cut -f1)"
 echo "==> Done: $OUT ($SIZE)"
+echo "    latest -> $OUT"
 echo "    $ABS"
 command -v shasum >/dev/null && echo "    sha256: $(shasum -a 256 "$OUT" | cut -d' ' -f1)"
 if command -v open >/dev/null; then open -R "$ABS" 2>/dev/null || true; fi

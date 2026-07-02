@@ -99,8 +99,11 @@ log "Creating database '$DB'"
 docker exec "$CTR" "$SQLCMD" -S localhost -U sa -P "$PW" -No \
   -Q "IF DB_ID('$DB') IS NULL CREATE DATABASE [$DB]"
 
-log "Applying schema: $SCHEMA"
-docker exec -i "$CTR" "$SQLCMD" -S localhost -U sa -P "$PW" -No -d "$DB" < "$SCHEMA"
+# every *.mssql.sql is IF NOT EXISTS-guarded, so applying all of them is idempotent
+for f in supabase/migrations/*.mssql.sql; do
+  log "Applying schema: $f"
+  docker exec -i "$CTR" "$SQLCMD" -S localhost -U sa -P "$PW" -No -d "$DB" < "$f"
+done
 
 # ---------------------------------------------------------------------------
 # 5. reconnect the app replicas (recreate so they read the new DB + password)

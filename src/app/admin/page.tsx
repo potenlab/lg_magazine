@@ -374,7 +374,7 @@ export default function AdminPage() {
   const [v3Records, setV3Records] = useState<V3SessionRecord[]>([]);
   const [cohortRules, setCohortRules] = useState<CohortRule[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
-  const [source, setSource] = useState<"supabase" | "unavailable">("unavailable");
+  const [source, setSource] = useState<"mssql" | "unavailable">("unavailable");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [openChapters, setOpenChapters] = useState<string[]>(["Chapter 1"]);
@@ -393,8 +393,8 @@ export default function AdminPage() {
       if (v3Res.ok) {
         const payload = (await v3Res.json()) as { records?: V3SessionRecord[]; skipped?: boolean };
         setV3Records(payload.records || []);
-        setSource(payload.skipped ? "unavailable" : "supabase");
-        if (payload.skipped) setError("Supabase가 설정되지 않았습니다.");
+        setSource(payload.skipped ? "unavailable" : "mssql");
+        if (payload.skipped) setError("MSSQL이 설정되지 않았습니다.");
       } else {
         setV3Records([]);
         setSource("unavailable");
@@ -591,10 +591,10 @@ export default function AdminPage() {
             <p className="text-[11px] font-semibold tracking-[0.24em] text-[#9b8768]">MAGAZINE ADMIN</p>
             <h1 className="mt-2 text-2xl font-semibold">응답 관리자</h1>
             <p className="mt-2 text-sm text-[#7d705f]">
-              Supabase에 저장된 v3 세션을 차수별로 모아보고, 챕터별 대화 흐름을 확인합니다.
+              MSSQL에 저장된 v3 세션을 차수별로 모아보고, 챕터별 대화 흐름을 확인합니다.
             </p>
             <p className="mt-2 text-xs text-[#9b8768]">
-              현재 데이터 소스: {source === "supabase" ? "Supabase" : "연결 없음"}
+              현재 데이터 소스: {source === "mssql" ? "MSSQL" : "연결 없음"}
               {error ? ` · ${error}` : ""}
             </p>
           </div>

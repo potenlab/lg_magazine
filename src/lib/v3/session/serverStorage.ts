@@ -86,8 +86,9 @@ function getConfig(): sql.config {
 }
 
 // Lazy singleton pool — survives across requests in the long-lived Node server.
+// Exported so other MSSQL call sites (e.g. src/lib/admin/cohortRules.ts) share it.
 let poolPromise: Promise<sql.ConnectionPool> | null = null;
-function getPool(): Promise<sql.ConnectionPool> {
+export function getPool(): Promise<sql.ConnectionPool> {
   if (!poolPromise) {
     poolPromise = new sql.ConnectionPool(getConfig()).connect().catch((err) => {
       poolPromise = null; // allow retry on next call

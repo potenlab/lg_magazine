@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
-import { listV3Sessions, isSupabaseConfigured } from "@/lib/v3/session/serverStorage";
+import { listV3Sessions, isMssqlConfigured } from "@/lib/v3/session/serverStorage";
 import { listCohortRules } from "@/lib/admin/cohortRules";
 import { assignCohort, UNASSIGNED_LABEL } from "@/lib/admin/assignCohort";
 
@@ -26,8 +26,8 @@ function fmtValueDefs(defs: Record<string, string> | undefined): string {
 }
 
 export async function GET(req: Request) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
+  if (!isMssqlConfigured()) {
+    return NextResponse.json({ error: "mssql_not_configured" }, { status: 503 });
   }
 
   const { searchParams } = new URL(req.url);

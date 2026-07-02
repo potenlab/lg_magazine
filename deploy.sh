@@ -149,17 +149,20 @@ if [ "$MSSQL_IN_COMPOSE" -eq 1 ]; then
   docker compose exec -T mssql "$SQLCMD" -S localhost -U "$DB_USER" -P "$PW" -No \
     -Q "IF DB_ID('$DB_NAME') IS NULL CREATE DATABASE [$DB_NAME];"
 
-  log "Applying schema ($SCHEMA_FILE)"
-  docker compose exec -T mssql "$SQLCMD" -S localhost -U "$DB_USER" -P "$PW" -No -d "$DB_NAME" \
-    -i /dev/stdin < "$SCHEMA_FILE"
+  # every *.mssql.sql is IF NOT EXISTS-guarded, so applying all of them is idempotent
+  for f in supabase/migrations/*.mssql.sql; do
+    log "Applying schema ($f)"
+    docker compose exec -T mssql "$SQLCMD" -S localhost -U "$DB_USER" -P "$PW" -No -d "$DB_NAME" \
+      -i /dev/stdin < "$f"
+  done
 
-  log "Verifying v3_sessions table"
+  log "Verifying tables"
   docker compose exec -T mssql "$SQLCMD" -S localhost -U "$DB_USER" -P "$PW" -No -d "$DB_NAME" \
-    -Q "SET NOCOUNT ON; SELECT CASE WHEN OBJECT_ID('dbo.v3_sessions') IS NULL THEN 'MISSING' ELSE 'OK' END AS v3_sessions;"
+    -Q "SET NOCOUNT ON; SELECT CASE WHEN OBJECT_ID('dbo.v3_sessions') IS NULL THEN 'MISSING' ELSE 'OK' END AS v3_sessions, CASE WHEN OBJECT_ID('dbo.cohort_rules') IS NULL THEN 'MISSING' ELSE 'OK' END AS cohort_rules;"
 else
   warn "No 'mssql' service in compose — assuming EXTERNAL MSSQL."
-  warn "Apply the schema yourself against MSSQL_SERVER:"
-  warn "  sqlcmd -S \$MSSQL_SERVER -U \$MSSQL_USER -P \$MSSQL_PASSWORD -No -d $DB_NAME -i $SCHEMA_FILE"
+  warn "Apply the schemas yourself against MSSQL_SERVER:"
+  warn "  for f in supabase/migrations/*.mssql.sql; do sqlcmd -S \$MSSQL_SERVER -U \$MSSQL_USER -P \$MSSQL_PASSWORD -No -d $DB_NAME -i \$f; done"
 fi
 
 # ---------------------------------------------------------------------------

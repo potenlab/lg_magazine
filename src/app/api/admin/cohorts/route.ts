@@ -4,20 +4,17 @@ import {
   upsertCohortRule,
   deleteCohortRule,
 } from "@/lib/admin/cohortRules";
+import { isMssqlConfigured } from "@/lib/v3/session/serverStorage";
 
 export const runtime = "nodejs";
 
 // proxy.ts 가 /api/admin/* 를 이미 ADMIN_COOKIE 로 게이트한다. 그래서 여기서는
-// Supabase 미설정만 방어하면 된다.
+// MSSQL 미설정만 방어하면 된다.
 
-function supabaseReady(): boolean {
-  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
-}
-
-const SKIPPED = { rules: [], skipped: true, reason: "supabase_not_configured" };
+const SKIPPED = { rules: [], skipped: true, reason: "mssql_not_configured" };
 
 export async function GET() {
-  if (!supabaseReady()) return NextResponse.json(SKIPPED);
+  if (!isMssqlConfigured()) return NextResponse.json(SKIPPED);
   try {
     const rules = await listCohortRules();
     return NextResponse.json({ rules });
@@ -28,7 +25,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  if (!supabaseReady()) return NextResponse.json({ skipped: true });
+  if (!isMssqlConfigured()) return NextResponse.json({ skipped: true });
   try {
     const body = (await req.json()) as {
       name?: string;
@@ -54,7 +51,7 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  if (!supabaseReady()) return NextResponse.json({ skipped: true });
+  if (!isMssqlConfigured()) return NextResponse.json({ skipped: true });
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");

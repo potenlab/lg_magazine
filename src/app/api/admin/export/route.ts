@@ -110,6 +110,8 @@ export async function GET(req: Request) {
   const loginStats = aggregateLogins(loginEvents, rules);
   const loginRows = loginStats.users.map((u) => ({
     userid: u.userid,
+    이메일: u.email ?? "",
+    이름: u.name ?? "",
     "로그인 횟수": u.count,
     "첫 로그인": u.firstLogin,
     "마지막 로그인": u.lastLogin,

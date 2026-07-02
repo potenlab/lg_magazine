@@ -46,9 +46,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "userinfo_failed", detail: message }, { status: 502 });
   }
 
-  // 로그인 이벤트 적재 (admin 통계용) — 실패해도 로그인은 계속되어야 한다.
+  // 로그인 이벤트 적재 (admin 통계용 — userid/email/name + raw 원본).
+  // 실패해도 로그인은 계속되어야 한다.
   if (isMssqlConfigured()) {
-    recordQriusLogin(user.userid).catch((err) => {
+    recordQriusLogin(user).catch((err) => {
       console.error("[qrius] login log failed:", err);
     });
   }

@@ -6,12 +6,17 @@ import { assignCohort, UNASSIGNED_LABEL } from "./assignCohort";
 
 export interface LoginEvent {
   userid: string;
+  email: string | null;
+  name: string | null;
   /** ISO string. */
   loggedInAt: string;
 }
 
 export interface LoginUserStat {
   userid: string;
+  /** 가장 최근 로그인에서 받은 값 (Qrius 가 안 주면 null). */
+  email: string | null;
+  name: string | null;
   count: number;
   firstLogin: string;
   lastLogin: string;
@@ -42,10 +47,19 @@ export function aggregateLogins(events: LoginEvent[], rules: CohortRule[]): Logi
     if (u) {
       u.count += 1;
       if (e.loggedInAt < u.firstLogin) u.firstLogin = e.loggedInAt;
-      if (e.loggedInAt > u.lastLogin) u.lastLogin = e.loggedInAt;
+      if (e.loggedInAt > u.lastLogin) {
+        u.lastLogin = e.loggedInAt;
+        if (e.email) u.email = e.email;
+        if (e.name) u.name = e.name;
+      }
+      // 최신 로그인에 값이 없으면 과거 값이라도 유지한다.
+      if (!u.email && e.email) u.email = e.email;
+      if (!u.name && e.name) u.name = e.name;
     } else {
       byUser.set(e.userid, {
         userid: e.userid,
+        email: e.email,
+        name: e.name,
         count: 1,
         firstLogin: e.loggedInAt,
         lastLogin: e.loggedInAt,

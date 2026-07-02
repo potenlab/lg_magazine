@@ -7,6 +7,8 @@ import {
   type ConversationEntry,
   type ChapterThread,
 } from "@/lib/v3/session/adminView";
+import type { CohortRule } from "@/lib/admin/cohortRules";
+import { assignCohort, UNASSIGNED_LABEL } from "@/lib/admin/assignCohort";
 
 function formatDate(value: string) {
   if (!value) return "-";
@@ -23,15 +25,25 @@ function clip(text: string, fallback = "-") {
   return text.length > 72 ? `${text.slice(0, 72)}...` : text;
 }
 
-function formatDuration(startISO: string, endISO: string | null) {
-  if (!startISO || !endISO) return "-";
+function durationMinutes(startISO: string, endISO: string | null): number | null {
+  if (!startISO || !endISO) return null;
   const ms = new Date(endISO).getTime() - new Date(startISO).getTime();
-  if (!Number.isFinite(ms) || ms < 0) return "-";
-  const totalMin = Math.round(ms / 60000);
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  return Math.round(ms / 60000);
+}
+
+function formatDuration(startISO: string, endISO: string | null) {
+  const totalMin = durationMinutes(startISO, endISO);
+  if (totalMin == null) return "-";
   if (totalMin < 60) return `${totalMin}분`;
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
   return m === 0 ? `${h}시간` : `${h}시간 ${m}분`;
+}
+
+function fromLocalInput(local: string): string {
+  // <input type="datetime-local"> 값(예: "2026-06-15T09:00")을 UTC ISO 로.
+  return local ? new Date(local).toISOString() : "";
 }
 
 type UnifiedItem = {
@@ -44,7 +56,18 @@ type UnifiedItem = {
   completedAt: string | null;
   lastSceneId: string | null;
   preview: string;
+  cohort: string; // "4차" | "미지정"
+  /** 완료면 시작~완료, 진행중이면 시작~최근업데이트 (분). null 은 계산 불가. */
+  durationMin: number | null;
 };
+
+const SORT_OPTIONS = [
+  { key: "updated", label: "최근 업데이트순" },
+  { key: "durationDesc", label: "소요시간 긴 순" },
+  { key: "durationAsc", label: "소요시간 짧은 순" },
+  { key: "createdDesc", label: "시작 최신순" },
+] as const;
+type SortKey = (typeof SORT_OPTIONS)[number]["key"];
 
 function ConversationCard({
   chapter,
@@ -55,8 +78,6 @@ function ConversationCard({
   isOpen: boolean;
   onToggle: () => void;
 }) {
-  // result tone 은 비어 있어도 한 자리를 유지해서 "LLM 결과가 비었다(실패/미생성)" 가
-  // 펼친 화면에서 한눈에 보이도록 한다. answer/question/followup 은 종전대로 숨김.
   const visible = chapter.entries.filter(
     (entry) => entry.text?.trim() || entry.tone === "result",
   );
@@ -149,19 +170,179 @@ function ConversationBubble({ entry }: { entry: ConversationEntry }) {
   );
 }
 
+function CohortRulesModal({
+  rules,
+  onClose,
+  onChanged,
+}: {
+  rules: CohortRule[];
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const [draftName, setDraftName] = useState("");
+  const [draftStart, setDraftStart] = useState("");
+  const [draftEnd, setDraftEnd] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const add = async () => {
+    setError("");
+    if (!draftName.trim() || !draftStart || !draftEnd) {
+      setError("차수 이름과 시작/종료 시각을 모두 입력해주세요.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/admin/cohorts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: draftName.trim(),
+          startAt: fromLocalInput(draftStart),
+          endAt: fromLocalInput(draftEnd),
+        }),
+      });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(payload.error || "저장에 실패했습니다.");
+        return;
+      }
+      setDraftName("");
+      setDraftStart("");
+      setDraftEnd("");
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (id: string, name: string) => {
+    if (!window.confirm(`'${name}' 규칙을 삭제할까요?`)) return;
+    await fetch(`/api/admin/cohorts?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    onChanged();
+  };
+
+  return (
+    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-2xl rounded-md border border-[#e4dccd] bg-white p-6 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.24em] text-[#9b8768]">
+              COHORT RULES
+            </p>
+            <h2 className="mt-1 text-lg font-semibold">차수 규칙 편집</h2>
+            <p className="mt-1 text-xs text-[#8d7d66]">
+              세션 시작 시각(created_at)이 아래 구간에 속하면 해당 차수로 자동 분류됩니다.
+              같은 이름으로 다시 저장하면 덮어씁니다.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-md border border-[#d8cbb8] px-3 py-1.5 text-xs text-[#5d4d3b]"
+          >
+            닫기
+          </button>
+        </div>
+
+        <div className="mt-5 rounded-md border border-[#eee7dc] bg-[#fffdf8] p-4">
+          <p className="text-xs font-semibold text-[#5d4d3b]">새 차수 규칙 추가</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
+            <input
+              value={draftName}
+              onChange={(e) => setDraftName(e.target.value)}
+              placeholder="차수 이름 (예: 4차)"
+              className="rounded-md border border-[#d8cbb8] bg-white px-3 py-2 text-sm"
+            />
+            <input
+              type="datetime-local"
+              value={draftStart}
+              onChange={(e) => setDraftStart(e.target.value)}
+              className="rounded-md border border-[#d8cbb8] bg-white px-3 py-2 text-sm"
+            />
+            <input
+              type="datetime-local"
+              value={draftEnd}
+              onChange={(e) => setDraftEnd(e.target.value)}
+              className="rounded-md border border-[#d8cbb8] bg-white px-3 py-2 text-sm"
+            />
+            <button
+              onClick={add}
+              disabled={busy}
+              className="rounded-md bg-[#34251b] px-4 py-2 text-sm font-semibold text-[#fffdf8] disabled:opacity-40"
+            >
+              {busy ? "저장..." : "추가"}
+            </button>
+          </div>
+          {error && <p className="mt-2 text-xs text-[#9b4b3e]">{error}</p>}
+        </div>
+
+        <div className="mt-5">
+          <p className="text-xs font-semibold text-[#5d4d3b]">등록된 규칙</p>
+          <div className="mt-2 max-h-72 overflow-y-auto rounded-md border border-[#eee7dc]">
+            {rules.length === 0 ? (
+              <p className="p-4 text-sm text-[#7d705f]">아직 등록된 차수 규칙이 없습니다.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-[#f7f3ea] text-left text-[11px] uppercase tracking-widest text-[#9b8768]">
+                  <tr>
+                    <th className="px-4 py-2">이름</th>
+                    <th className="px-4 py-2">시작</th>
+                    <th className="px-4 py-2">종료</th>
+                    <th className="px-4 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rules.map((r) => (
+                    <tr key={r.id} className="border-t border-[#eee7dc]">
+                      <td className="px-4 py-2 font-semibold">{r.name}</td>
+                      <td className="px-4 py-2">{formatDate(r.startAt)}</td>
+                      <td className="px-4 py-2">{formatDate(r.endAt)}</td>
+                      <td className="px-4 py-2 text-right">
+                        <button
+                          onClick={() => remove(r.id, r.name)}
+                          className="text-xs text-[#9b4b3e] hover:underline"
+                        >
+                          삭제
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          {rules.length > 0 && (
+            <p className="mt-2 text-[11px] text-[#8d7d66]">
+              최근에 추가한 규칙이 우선순위가 높습니다 (규칙이 겹치는 경우).
+              참고로 datetime 편집은 &lsquo;삭제 후 재추가&rsquo;로 처리해주세요.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [v3Records, setV3Records] = useState<V3SessionRecord[]>([]);
+  const [cohortRules, setCohortRules] = useState<CohortRule[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [source, setSource] = useState<"supabase" | "unavailable">("unavailable");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [openChapters, setOpenChapters] = useState<string[]>(["Chapter 1"]);
+  const [cohortFilter, setCohortFilter] = useState<string>(""); // "" = 전체
+  const [sortKey, setSortKey] = useState<SortKey>("updated");
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   const refresh = async () => {
     setError("");
     setLoading(true);
     try {
-      const v3Res = await fetch("/api/v3/sessions", { cache: "no-store" });
+      const [v3Res, ruleRes] = await Promise.all([
+        fetch("/api/v3/sessions", { cache: "no-store" }),
+        fetch("/api/admin/cohorts", { cache: "no-store" }),
+      ]);
       if (v3Res.ok) {
         const payload = (await v3Res.json()) as { records?: V3SessionRecord[]; skipped?: boolean };
         setV3Records(payload.records || []);
@@ -171,6 +352,10 @@ export default function AdminPage() {
         setV3Records([]);
         setSource("unavailable");
         setError("세션 데이터를 불러오지 못했습니다.");
+      }
+      if (ruleRes.ok) {
+        const payload = (await ruleRes.json()) as { rules?: CohortRule[] };
+        setCohortRules(payload.rules || []);
       }
     } catch (err) {
       setV3Records([]);
@@ -185,9 +370,12 @@ export default function AdminPage() {
     refresh();
   }, []);
 
-  const unifiedList = useMemo<UnifiedItem[]>(() => {
-    return v3Records
-      .map((r) => ({
+  const withCohort = useMemo<UnifiedItem[]>(() => {
+    return v3Records.map((r) => {
+      const cohort = assignCohort(r.createdAt, cohortRules) ?? UNASSIGNED_LABEL;
+      const endForDur =
+        r.status === "completed" && r.completedAt ? r.completedAt : r.updatedAt;
+      return {
         key: r.sessionId,
         name: r.data.name || r.userName || "이름 미입력",
         job: r.data.job || r.job || "직무 미입력",
@@ -197,29 +385,75 @@ export default function AdminPage() {
         completedAt: r.completedAt,
         lastSceneId: r.lastSceneId,
         preview: r.data.visionLine || r.data.identityName || r.data.flowExperience1 || "",
-      }))
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [v3Records]);
+        cohort,
+        durationMin: durationMinutes(r.createdAt, endForDur),
+      };
+    });
+  }, [v3Records, cohortRules]);
+
+  // 필터 탭 옵션: 전체 + 등록된 차수(startAt 오름차순) + 미지정
+  const cohortTabs = useMemo(() => {
+    const names = cohortRules.map((r) => r.name);
+    const hasUnassigned = withCohort.some((i) => i.cohort === UNASSIGNED_LABEL);
+    return ["", ...names, ...(hasUnassigned ? [UNASSIGNED_LABEL] : [])];
+  }, [cohortRules, withCohort]);
+
+  const filtered = useMemo<UnifiedItem[]>(() => {
+    const base = cohortFilter
+      ? withCohort.filter((item) => item.cohort === cohortFilter)
+      : withCohort;
+    const sorted = [...base].sort((a, b) => {
+      switch (sortKey) {
+        case "durationDesc":
+          return (b.durationMin ?? -1) - (a.durationMin ?? -1);
+        case "durationAsc":
+          return (a.durationMin ?? Number.MAX_SAFE_INTEGER) -
+            (b.durationMin ?? Number.MAX_SAFE_INTEGER);
+        case "createdDesc":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "updated":
+        default:
+          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      }
+    });
+    return sorted;
+  }, [withCohort, cohortFilter, sortKey]);
 
   useEffect(() => {
     setOpenChapters(["Chapter 1"]);
   }, [selectedId]);
 
   useEffect(() => {
-    if (!selectedId && unifiedList.length > 0) {
-      setSelectedId(unifiedList[0].key);
+    // 필터 바뀌면 선택이 필터 밖으로 벗어날 수 있으니 첫 항목으로 리셋.
+    if (filtered.length > 0 && !filtered.some((i) => i.key === selectedId)) {
+      setSelectedId(filtered[0].key);
     }
-  }, [unifiedList, selectedId]);
+    if (filtered.length === 0) setSelectedId("");
+  }, [filtered, selectedId]);
 
   const selected = useMemo(
-    () => unifiedList.find((item) => item.key === selectedId) || unifiedList[0],
-    [selectedId, unifiedList],
+    () => filtered.find((item) => item.key === selectedId) || filtered[0],
+    [selectedId, filtered],
   );
 
   const selectedV3 = selected ? v3Records.find((r) => r.sessionId === selected.key) : undefined;
 
   const chapterThreads: ChapterThread[] = selectedV3 ? buildV3ChapterThreads(selectedV3.data) : [];
-  const completed = unifiedList.filter((item) => item.status === "completed").length;
+
+  const stats = useMemo(() => {
+    const total = filtered.length;
+    const completed = filtered.filter((i) => i.status === "completed").length;
+    const durationsCompleted = filtered
+      .filter((i) => i.status === "completed" && i.durationMin != null)
+      .map((i) => i.durationMin as number);
+    const avgMin =
+      durationsCompleted.length > 0
+        ? Math.round(
+            durationsCompleted.reduce((s, v) => s + v, 0) / durationsCompleted.length,
+          )
+        : null;
+    return { total, completed, inProgress: total - completed, avgMin };
+  }, [filtered]);
 
   const toggleChapter = (chapter: string) => {
     setOpenChapters((prev) =>
@@ -253,6 +487,19 @@ export default function AdminPage() {
       });
   };
 
+  const downloadExcel = () => {
+    const q = cohortFilter ? `?cohort=${encodeURIComponent(cohortFilter)}` : "";
+    window.location.href = `/api/admin/export${q}`;
+  };
+
+  const formatAvg = (min: number | null) => {
+    if (min == null) return "-";
+    if (min < 60) return `${min}분`;
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return m === 0 ? `${h}시간` : `${h}시간 ${m}분`;
+  };
+
   return (
     <main className="min-h-screen bg-[#f7f3ea] text-[#2f261f]">
       <header className="border-b border-[#e4dccd] bg-[#fffaf0] px-6 py-5">
@@ -261,16 +508,30 @@ export default function AdminPage() {
             <p className="text-[11px] font-semibold tracking-[0.24em] text-[#9b8768]">MAGAZINE ADMIN</p>
             <h1 className="mt-2 text-2xl font-semibold">응답 관리자</h1>
             <p className="mt-2 text-sm text-[#7d705f]">
-              Supabase에 저장된 v3 세션을 모아보고, 챕터별 대화 흐름을 확인합니다.
+              Supabase에 저장된 v3 세션을 차수별로 모아보고, 챕터별 대화 흐름을 확인합니다.
             </p>
             <p className="mt-2 text-xs text-[#9b8768]">
               현재 데이터 소스: {source === "supabase" ? "Supabase" : "연결 없음"}
               {error ? ` · ${error}` : ""}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button onClick={refresh} className="rounded-md border border-[#d8cbb8] px-4 py-2 text-sm text-[#5d4d3b]">
               새로고침
+            </button>
+            <button
+              onClick={() => setRulesOpen(true)}
+              className="rounded-md border border-[#d8cbb8] px-4 py-2 text-sm text-[#5d4d3b]"
+            >
+              차수 규칙
+            </button>
+            <button
+              onClick={downloadExcel}
+              disabled={filtered.length === 0}
+              className="rounded-md bg-[#34251b] px-4 py-2 text-sm font-semibold text-[#fffdf8] disabled:opacity-40"
+            >
+              엑셀 다운로드
+              {cohortFilter ? ` (${cohortFilter})` : ""}
             </button>
             <button onClick={clearAll} className="rounded-md border border-[#d8cbb8] px-4 py-2 text-sm text-[#9b4b3e]">
               전체 삭제
@@ -286,38 +547,77 @@ export default function AdminPage() {
             </button>
           </div>
         </div>
+
+        <div className="mx-auto mt-4 flex max-w-7xl flex-wrap items-center gap-2">
+          {cohortTabs.map((tab) => {
+            const label = tab === "" ? "전체" : tab;
+            const count =
+              tab === ""
+                ? withCohort.length
+                : withCohort.filter((i) => i.cohort === tab).length;
+            const active = tab === cohortFilter;
+            return (
+              <button
+                key={tab || "__all__"}
+                onClick={() => setCohortFilter(tab)}
+                className="rounded-full border px-3 py-1.5 text-xs transition-colors"
+                style={{
+                  borderColor: active ? "#34251b" : "#d8cbb8",
+                  background: active ? "#34251b" : "transparent",
+                  color: active ? "#fffdf8" : "#5d4d3b",
+                }}
+              >
+                {label}
+                <span className="ml-1 opacity-70">({count})</span>
+              </button>
+            );
+          })}
+        </div>
       </header>
 
       <section className="mx-auto mt-6 grid max-w-7xl gap-5 px-6 pb-6 lg:grid-cols-[380px_1fr]">
         <aside className="space-y-4">
-          <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-md bg-white p-4 shadow-sm">
-              <p className="text-[11px] text-[#8d7d66]">전체</p>
-              <p className="mt-1 text-2xl font-semibold">{unifiedList.length}</p>
+          <div className="grid grid-cols-4 gap-2">
+            <div className="rounded-md bg-white p-3 shadow-sm">
+              <p className="text-[10px] text-[#8d7d66]">전체</p>
+              <p className="mt-1 text-xl font-semibold">{stats.total}</p>
             </div>
-            <div className="rounded-md bg-white p-4 shadow-sm">
-              <p className="text-[11px] text-[#8d7d66]">완료</p>
-              <p className="mt-1 text-2xl font-semibold">{completed}</p>
+            <div className="rounded-md bg-white p-3 shadow-sm">
+              <p className="text-[10px] text-[#8d7d66]">완료</p>
+              <p className="mt-1 text-xl font-semibold">{stats.completed}</p>
             </div>
-            <div className="rounded-md bg-white p-4 shadow-sm">
-              <p className="text-[11px] text-[#8d7d66]">진행중</p>
-              <p className="mt-1 text-2xl font-semibold">{unifiedList.length - completed}</p>
+            <div className="rounded-md bg-white p-3 shadow-sm">
+              <p className="text-[10px] text-[#8d7d66]">진행중</p>
+              <p className="mt-1 text-xl font-semibold">{stats.inProgress}</p>
+            </div>
+            <div className="rounded-md bg-white p-3 shadow-sm">
+              <p className="text-[10px] text-[#8d7d66]">평균 소요</p>
+              <p className="mt-1 text-xl font-semibold">{formatAvg(stats.avgMin)}</p>
             </div>
           </div>
 
           <div className="overflow-hidden rounded-md border border-[#e4dccd] bg-white shadow-sm">
-            <div className="border-b border-[#eee7dc] px-4 py-3">
+            <div className="flex items-center justify-between gap-2 border-b border-[#eee7dc] px-4 py-3">
               <p className="text-sm font-semibold">응답 목록</p>
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as SortKey)}
+                className="rounded-md border border-[#d8cbb8] bg-white px-2 py-1 text-xs text-[#5d4d3b]"
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.key} value={o.key}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="max-h-[calc(100vh_-_250px)] overflow-y-auto">
-              {unifiedList.length === 0 && (
+            <div className="max-h-[calc(100vh_-_320px)] overflow-y-auto">
+              {filtered.length === 0 && (
                 <div className="p-5 text-sm leading-6 text-[#7d705f]">
-                  {loading
-                    ? "응답을 불러오는 중입니다."
-                    : "아직 저장된 응답이 없어요."}
+                  {loading ? "응답을 불러오는 중입니다." : "이 조건에 해당하는 응답이 없어요."}
                 </div>
               )}
-              {unifiedList.map((item) => {
+              {filtered.map((item) => {
                 const active = item.key === selected?.key;
                 return (
                   <button
@@ -328,18 +628,29 @@ export default function AdminPage() {
                   >
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-semibold">{item.name}</p>
-                      <span
-                        className="rounded-full px-2 py-1 text-[10px] font-semibold"
-                        style={{
-                          background: item.status === "completed" ? "#e7f6ef" : "#f4ead4",
-                          color: item.status === "completed" ? "#257a52" : "#8a6a22",
-                        }}
-                      >
-                        {item.status === "completed" ? "완료" : "진행중"}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="rounded-full px-2 py-1 text-[10px] font-semibold"
+                          style={{ background: "#efe6d1", color: "#5d4d3b" }}
+                        >
+                          {item.cohort}
+                        </span>
+                        <span
+                          className="rounded-full px-2 py-1 text-[10px] font-semibold"
+                          style={{
+                            background: item.status === "completed" ? "#e7f6ef" : "#f4ead4",
+                            color: item.status === "completed" ? "#257a52" : "#8a6a22",
+                          }}
+                        >
+                          {item.status === "completed" ? "완료" : "진행중"}
+                        </span>
+                      </div>
                     </div>
                     <p className="mt-1 text-xs text-[#8d7d66]">
                       {item.job} · {formatDate(item.updatedAt)}
+                    </p>
+                    <p className="mt-1 text-[11px] text-[#6a5d4d]">
+                      소요 {item.durationMin != null ? `${item.durationMin}분` : "-"}
                     </p>
                     {item.status === "in_progress" && item.lastSceneId && (
                       <p className="mt-1 text-[10px] text-[#a06b3e]">
@@ -397,7 +708,12 @@ export default function AdminPage() {
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div>
                     <p className="text-[11px] font-semibold tracking-[0.18em] text-[#8d7d66]">RESPONSE DETAIL</p>
-                    <h2 className="mt-2 text-2xl font-semibold">{selected.name}</h2>
+                    <h2 className="mt-2 text-2xl font-semibold">
+                      {selected.name}
+                      <span className="ml-3 rounded-full bg-[#efe6d1] px-3 py-1 text-xs font-semibold text-[#5d4d3b] align-middle">
+                        {selected.cohort}
+                      </span>
+                    </h2>
                     <div className="mt-2 grid gap-1 text-sm text-[#7d705f] sm:grid-cols-2">
                       <p>직무: {selected.job}</p>
                       <p>상태: {selected.status === "completed" ? "완료" : "진행중"}</p>
@@ -452,6 +768,14 @@ export default function AdminPage() {
           )}
         </section>
       </section>
+
+      {rulesOpen && (
+        <CohortRulesModal
+          rules={cohortRules}
+          onClose={() => setRulesOpen(false)}
+          onChanged={refresh}
+        />
+      )}
     </main>
   );
 }

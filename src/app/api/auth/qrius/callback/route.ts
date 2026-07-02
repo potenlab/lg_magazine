@@ -10,6 +10,8 @@ import {
 import { exchangeCodeForUser } from "@/lib/qrius/client";
 import { buildSessionPayload, signSession } from "@/lib/qrius/session";
 import { redirectUrlForApp } from "@/lib/qrius/url";
+import { isMssqlConfigured } from "@/lib/v3/session/serverStorage";
+import { recordQriusLogin } from "@/lib/admin/qriusLogins";
 
 export const runtime = "nodejs";
 
@@ -42,6 +44,13 @@ export async function GET(request: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "exchange_failed";
     return NextResponse.json({ error: "userinfo_failed", detail: message }, { status: 502 });
+  }
+
+  // 로그인 이벤트 적재 (admin 통계용) — 실패해도 로그인은 계속되어야 한다.
+  if (isMssqlConfigured()) {
+    recordQriusLogin(user.userid).catch((err) => {
+      console.error("[qrius] login log failed:", err);
+    });
   }
 
   const token = await signSession(buildSessionPayload(user.userid), cfg.sessionSecret);

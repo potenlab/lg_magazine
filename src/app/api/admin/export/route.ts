@@ -109,7 +109,7 @@ export async function GET(req: Request) {
   // LG SSO 로그인 현황 — 사용자별 집계 (차수 필터와 무관하게 전체).
   const loginStats = aggregateLogins(loginEvents, rules);
   const loginRows = loginStats.users.map((u) => ({
-    userid: u.userid,
+    사용자: u.label,
     이메일: u.email ?? "",
     이름: u.name ?? "",
     "로그인 횟수": u.count,

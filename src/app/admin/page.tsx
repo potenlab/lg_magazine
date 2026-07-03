@@ -713,7 +713,7 @@ export default function AdminPage() {
                   <table className="w-full text-left text-[11px]">
                     <thead>
                       <tr className="text-[#8d7d66]">
-                        <th className="py-1 pr-2 font-normal">userid</th>
+                        <th className="py-1 pr-2 font-normal">사용자</th>
                         <th className="py-1 pr-2 font-normal">이메일</th>
                         <th className="py-1 pr-2 font-normal">횟수</th>
                         <th className="py-1 font-normal">마지막 로그인</th>
@@ -722,7 +722,7 @@ export default function AdminPage() {
                     <tbody>
                       {loginStats.users.map((u) => (
                         <tr key={u.userid} className="border-t border-[#f2ece0]">
-                          <td className="py-1 pr-2 break-all">{u.userid}</td>
+                          <td className="py-1 pr-2 break-all">{u.label}</td>
                           <td className="py-1 pr-2 break-all">{u.email ?? "-"}</td>
                           <td className="py-1 pr-2">{u.count}</td>
                           <td className="py-1 whitespace-nowrap">{formatDate(u.lastLogin)}</td>

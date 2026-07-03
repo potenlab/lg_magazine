@@ -48,8 +48,28 @@ export async function GET(request: Request) {
 
   // 로그인 이벤트 적재 (admin 통계용 — userid/email/name + raw 원본).
   // 실패해도 로그인은 계속되어야 한다.
+  //
+  // CNS userinfo API 미발급 동안(신원이 비어있는 동안)에도 "몇 명이 접속했는지"는
+  // 세어야 하므로, 1년짜리 익명 쿠키로 브라우저(기기) 단위 구분을 한다.
+  // admin 에는 user#N 으로 표시된다. 실제 신원이 오기 시작하면 자연히 대체된다.
+  let recorded = user;
+  if (!user.userid) {
+    const ANON_COOKIE = "qrius_anon";
+    let anonId = cookieStore.get(ANON_COOKIE)?.value;
+    if (!anonId || !anonId.startsWith("anon-")) {
+      anonId = `anon-${crypto.randomUUID()}`;
+    }
+    cookieStore.set(ANON_COOKIE, anonId, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: cfg.secureCookies,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+    recorded = { ...user, userid: anonId };
+  }
   if (isMssqlConfigured()) {
-    recordQriusLogin(user).catch((err) => {
+    recordQriusLogin(recorded).catch((err) => {
       console.error("[qrius] login log failed:", err);
     });
   }

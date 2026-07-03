@@ -14,6 +14,8 @@ export interface LoginEvent {
 
 export interface LoginUserStat {
   userid: string;
+  /** 표시용 이름 — 익명(anon-*) 사용자는 "user#N"(첫 로그인 순), 그 외에는 userid. */
+  label: string;
   /** 가장 최근 로그인에서 받은 값 (Qrius 가 안 주면 null). */
   email: string | null;
   name: string | null;
@@ -58,6 +60,7 @@ export function aggregateLogins(events: LoginEvent[], rules: CohortRule[]): Logi
     } else {
       byUser.set(e.userid, {
         userid: e.userid,
+        label: e.userid,
         email: e.email,
         name: e.name,
         count: 1,
@@ -71,6 +74,14 @@ export function aggregateLogins(events: LoginEvent[], rules: CohortRule[]): Logi
     if (!cohortUsers.has(cohort)) cohortUsers.set(cohort, new Set());
     cohortUsers.get(cohort)!.add(e.userid);
   }
+
+  // 익명 사용자는 첫 로그인 순서로 user#1, user#2 … 안정적인 번호를 붙인다.
+  [...byUser.values()]
+    .filter((u) => u.userid.startsWith("anon-"))
+    .sort((a, b) => (a.firstLogin < b.firstLogin ? -1 : 1))
+    .forEach((u, i) => {
+      u.label = `user#${i + 1}`;
+    });
 
   const users = [...byUser.values()].sort((a, b) => (a.lastLogin < b.lastLogin ? 1 : -1));
 

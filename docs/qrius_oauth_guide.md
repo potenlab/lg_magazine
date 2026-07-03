@@ -88,6 +88,10 @@ sequenceDiagram
 | Vendor session (after step 9) | HMAC-signed cookie — `src/lib/qrius/session.ts` |
 | Logout (incl. Qrius logout URL) | `src/app/api/auth/qrius/logout/route.ts` |
 
+> **2026-07-03 update:** login tracking + email capture are implemented and deployed;
+> the only remaining blocker is the CNS user-info API URL. Current status, spec sent to
+> CNS, and the activation runbook live in [qrius_login_tracking.md](qrius_login_tracking.md).
+
 ### Outstanding (vendor side)
 
 1. **Confirm the field set** with the LG Academy contact + HRD security manager

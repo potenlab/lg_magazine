@@ -1,4 +1,6 @@
-import { Image, Page, Text, View } from "@react-pdf/renderer";
+import { Page, Text, View } from "@react-pdf/renderer";
+import { MAG, MAG_FONT } from "../styles";
+import { MagazineFrame, MAG_MARGIN, MAG_CONTENT_TOP } from "../MagazineFrame";
 
 /**
  * Appendix — Editor's Note 뒷페이지.
@@ -37,17 +39,16 @@ interface Props {
   threads: AppendixThread[];
 }
 
-const TEXT = "#3d2414";
-const MUTED = "#7a5a3a";
-const WINE = "#59282E";
-const RULE = "#59282E";
-const GOLD = "#b99b6b";
-// 매거진 요약 (web) UI palette — bg-[#ede1c6]/40, bg-white/55. PDF 는 alpha
-// 합성이 약해 미리 섞인 톤으로 대체.
+const TEXT = MAG.text;
+const WINE = MAG.accent;
+const RULE = MAG.accent;
+const MUTED = "#7a5a3a"; // 카드 라벨(뮤트 브라운)
+const GOLD = "#b99b6b"; // 카드 골드 보더
+// 카드 배경 톤 (크림 계열).
 const RESULT_BG = "#f3e8cc";
 const ANSWER_BG = "#fbf6e8";
 const QUESTION_TEXT = "#6b5337";
-const PAPER = "/paper.jpg";
+const KOR = MAG_FONT.kor;
 
 export function Appendix({ name, threads }: Props) {
   return (
@@ -56,42 +57,22 @@ export function Appendix({ name, threads }: Props) {
     <Page
       size="A4"
       wrap
-      style={{ paddingHorizontal: 46, paddingTop: 71, paddingBottom: 50 }}
+      style={{ backgroundColor: MAG.bg, fontFamily: KOR, color: MAG.text, paddingHorizontal: MAG_MARGIN, paddingTop: MAG_CONTENT_TOP, paddingBottom: 70 }}
     >
-      {/* paper bg — fixed (모든 페이지 반복) */}
-      <Image
-        src={PAPER}
-        fixed
-        style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
-      />
+      {/* 공통 프레임 (헤더/푸터/페이지번호) */}
+      <MagazineFrame name={name} />
 
-      {/* fixed header — absolute 좌표로 모든 페이지 동일 위치에 고정.
-          flow 공간을 차지하지 않으므로 본문은 Page paddingTop(71) 부터 시작.
-          헤더 위 여백 20 + Vol 텍스트 ~14 + rule marginTop 12 + 1 = ~47pt 가
-          헤더가 차지하는 영역, 그 아래 71 - 47 = 24pt 가 breathing room. */}
-      <View fixed style={{ position: "absolute", top: 20, left: 46, right: 46 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
-        </View>
-        <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
-      </View>
-
-      {/* #1 — Title 블록. Page paddingTop 가 이미 헤더 아래 24pt 갭을 줘서
-          자체 marginTop 0. */}
+      {/* 타이틀 — "Appendix"(와인) + "{name}님이 직접 적어주신 기록"(갈색) */}
       <View>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>
-          APPENDIX
-        </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT, marginTop: 8 }}>
+        <Text style={{ fontFamily: KOR, fontSize: 16, color: WINE }}>Appendix</Text>
+        <Text style={{ fontFamily: KOR, fontSize: 25, fontWeight: 700, color: TEXT, marginTop: 10 }}>
           {name}님이 직접 적어주신 기록
         </Text>
-        <View style={{ height: 1, backgroundColor: RULE, marginTop: 20, width: 80 }} />
       </View>
 
       {/* 본문 — marginTop 16 (Ch1~4 본문 spacing). */}
       {threads.length === 0 ? (
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 13, color: MUTED, marginTop: 16 }}>
+        <Text style={{ fontFamily: KOR, fontSize: 13, color: MUTED, marginTop: 16 }}>
           기록할 답변이 아직 없어요.
         </Text>
       ) : (
@@ -114,10 +95,10 @@ export function Appendix({ name, threads }: Props) {
                     borderBottomColor: GOLD,
                   }}
                 >
-                  <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: MUTED, letterSpacing: 1.4 }}>
+                  <Text style={{ fontFamily: KOR, fontSize: 11, color: MUTED, letterSpacing: 1.4 }}>
                     {thread.chapter}
                   </Text>
-                  <Text style={{ fontFamily: "Noto Serif KR", fontSize: 15, fontWeight: 700, color: TEXT, marginTop: 2 }}>
+                  <Text style={{ fontFamily: KOR, fontSize: 15, fontWeight: 700, color: TEXT, marginTop: 2 }}>
                     {thread.title}
                   </Text>
                 </View>
@@ -195,16 +176,16 @@ function Entry({ entry, isFirst }: { entry: AppendixEntry; isFirst?: boolean }) 
     >
       {/* 라벨 + 첫 문장 — wrap=false 로 묶어 라벨만 페이지 끝에 남는 것 방지. */}
       <View wrap={false}>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: MUTED, letterSpacing: 0.6 }}>
+        <Text style={{ fontFamily: KOR, fontSize: 11, color: MUTED, letterSpacing: 0.6 }}>
           {entry.label}
         </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: bodyFontSize, color: bodyColor, marginTop: 3, lineHeight: 1.65, fontStyle: bodyFontStyle }}>
+        <Text style={{ fontFamily: KOR, fontSize: bodyFontSize, color: bodyColor, marginTop: 3, lineHeight: 1.65, fontStyle: bodyFontStyle }}>
           {firstSentence}
         </Text>
       </View>
       {/* 첫 문단의 나머지 문장 — 라인 레벨 wrap + orphans/widows 2. */}
       {firstRest ? (
-        <Text orphans={2} widows={2} style={{ fontFamily: "Noto Serif KR", fontSize: bodyFontSize, color: bodyColor, lineHeight: 1.65, fontStyle: bodyFontStyle }}>
+        <Text orphans={2} widows={2} style={{ fontFamily: KOR, fontSize: bodyFontSize, color: bodyColor, lineHeight: 1.65, fontStyle: bodyFontStyle }}>
           {firstRest}
         </Text>
       ) : null}
@@ -214,7 +195,7 @@ function Entry({ entry, isFirst }: { entry: AppendixEntry; isFirst?: boolean }) 
           key={i + 1}
           orphans={2}
           widows={2}
-          style={{ fontFamily: "Noto Serif KR", fontSize: bodyFontSize, color: bodyColor, marginTop: 8, lineHeight: 1.65, fontStyle: bodyFontStyle }}
+          style={{ fontFamily: KOR, fontSize: bodyFontSize, color: bodyColor, marginTop: 8, lineHeight: 1.65, fontStyle: bodyFontStyle }}
         >
           {p}
         </Text>

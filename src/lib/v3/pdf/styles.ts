@@ -8,6 +8,22 @@ export const COLORS = {
   wine: "#59282E",
 };
 
+/**
+ * 매거진 리디자인 디자인 토큰 (2026 시안). 색 통일·수정 용이를 위해 여기 한 곳에서
+ * 정의하고 모든 페이지가 이 토큰만 참조한다. 값 바꾸면 전 페이지 일괄 반영.
+ */
+export const MAG = {
+  bg: "#FCF6EE", // 배경 크림
+  text: "#4B2A2B", // 기본 텍스트(갈색)
+  accent: "#892224", // 포인트(붉은색) — 챕터 라벨·룰·강조
+};
+
+/** 매거진 폰트 토큰 — 한글 MaruBuri, 영문 디스플레이 Old Standard TT. */
+export const MAG_FONT = {
+  kor: "MaruBuri",
+  eng: "Old Standard TT",
+};
+
 // 라인(룰) 통일 토큰 — 모든 PDF 페이지가 같은 색·굵기 쓰도록.
 export const RULE_COLOR = "#59282E";
 export const RULE_WEIGHT = 1;

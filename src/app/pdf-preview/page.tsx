@@ -37,7 +37,9 @@ const SAMPLE = {
   chapters: {
     1: {
       headline: "내가 지나온 길",
-      body: "홍길동님은 스무 살 여름, 일산 호수공원에서 자전거 대여 사업을 시작했다. 당시 시급이 4천 원도 안 되던 시절, 하루에 50만 원을 벌어본 경험이 있었다. 그날 그는 '사업가의 피가 흐른다'는 것을 처음으로 느꼈다.\n\n몇 년 후, 200명이 넘는 대외활동 참가자 중 4명의 우수활동자로 선정되었다. 장학금을 받고 중국 탐방을 다녀온 그는 자신이 '생각보다 특별한 사람'이라는 사실을 깨달았다고 말했다.\n\n두 장면은 서로 연결된 느낌을 주었다. 막연한 자신감이 아닌, 명확한 숫자와 성과로 자신의 존재를 확실히 느끼는 순간이었다. 그에게 증명은 단순한 결과가 아니라, 자신이 누구인지 확인하는 방법처럼 보였다.",
+      // 레이아웃 확인용 임시 텍스트 (2단을 채우는 용도). 실제 PDF 는 LLM 이 작성한
+      // 각 참가자의 챕터 본문(data.chapters[n].body)이 그대로 들어간다.
+      body: "홍길동님은 스무 살 여름, 일산 호수공원에서 자전거 대여 사업을 시작했다. 당시 시급이 4천 원도 안 되던 시절, 하루에 50만 원을 벌어본 경험이 있었다. 그날 그는 '사업가의 피가 흐른다'는 것을 처음으로 느꼈다.\n\n몇 년 후, 200명이 넘는 대외활동 참가자 중 4명의 우수활동자로 선정되었다. 장학금을 받고 중국 탐방을 다녀온 그는 자신이 '생각보다 특별한 사람'이라는 사실을 깨달았다고 말했다. 그 경험은 이후의 선택에도 오래 남았다.\n\n두 장면은 서로 연결된 느낌을 주었다. 막연한 자신감이 아닌, 명확한 숫자와 성과로 자신의 존재를 확실히 느끼는 순간이었다. 그에게 증명은 단순한 결과가 아니라, 자신이 누구인지 확인하는 방법처럼 보였다.\n\n그는 그 두 순간을 오래 곱씹었다. 남이 정해준 길을 따라가는 대신, 자기 손으로 판을 짜고 결과를 만들어낼 때 비로소 살아있음을 느꼈다. 숫자와 성과는 그에게 목표가 아니라, 자신이 어떤 사람인지 스스로에게 증명하는 언어였다.",
       pullQuote: "하루에 50만원 벌어본 적도 있어. 그래서 나도 사업가의 피가 흐른다는 것을 느꼈지",
     },
     2: {
@@ -112,8 +114,8 @@ type PageKey =
 
 const TABS: { key: PageKey; label: string }[] = [
   { key: "cover", label: "Cover" },
-  { key: "editorIntro", label: "Editor Intro" },
   { key: "toc", label: "TOC" },
+  { key: "editorIntro", label: "Editor Intro" },
   { key: "ch1", label: "Ch 1" },
   { key: "ch2", label: "Ch 2" },
   { key: "ch3", label: "Ch 3" },
@@ -180,7 +182,6 @@ export default function PdfPreviewPage() {
           return (
             <>
               <Cover name={SAMPLE.name} date={SAMPLE.date} headline={SAMPLE.coverHeadline} />
-              <EditorIntro body={SAMPLE.editorIntro} name={SAMPLE.name} variant={variant} />
               <TOC
                 name={SAMPLE.name}
                 chapterHeadlines={[
@@ -190,6 +191,7 @@ export default function PdfPreviewPage() {
                   SAMPLE.chapters[4].headline,
                 ]}
               />
+              <EditorIntro body={SAMPLE.editorIntro} name={SAMPLE.name} variant={variant} />
               {ch(1)}
               {ch(2)}
               {ch(3)}

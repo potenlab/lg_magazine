@@ -1,132 +1,95 @@
 import { Image, Page, Text, View } from "@react-pdf/renderer";
-import { COLORS } from "../styles";
+import { MAG, MAG_FONT } from "../styles";
+import { MagazineFrame } from "../MagazineFrame";
 
-// 각 챕터의 라벨/한글 타이틀은 매거진 전반에 공통이고,
-// sub 는 해당 챕터의 dynamic headline (Chapter.tsx 에 동일 값 전달됨) 을 그대로 사용.
-const CHAPTER_META: { num: string; title: string }[] = [
-  { num: "CHAPTER 1.", title: "내가 지나온 길" },
-  { num: "CHAPTER 2.", title: "나는 누구인가" },
-  { num: "CHAPTER 3.", title: "내가 그리는 미래" },
-  { num: "CHAPTER 4.", title: "내일로 향하는 한 걸음" },
+/**
+ * TOC (Contents) — 시안(1122×1587) → A4(595×842) 스케일 ×0.5303 변환.
+ *   공통 프레임: 크림 배경 + 헤더(Vol./magazine STORY + 룰) + 푸터(룰 + 페이지번호)
+ *   Contents 대제목 + 우상단 ↗(arrow.png) + 2단 목차(좌: Letter/Ch1/Ch2, 우: Ch3/Ch4/Note/Appendix)
+ *   색·폰트는 전부 디자인 토큰(MAG / MAG_FONT) 참조.
+ */
+
+const BG = MAG.bg;
+const TEXT = MAG.text;
+const WINE = MAG.accent;
+const KOR = MAG_FONT.kor;
+
+// 각 챕터의 고정 라벨/한글 타이틀 (매거진 전반 공통).
+const KOR_TITLE: [string, string, string, string] = [
+  "내가 지나온 길",
+  "나는 누구인가",
+  "내가 그리는 미래",
+  "내일로 향하는 한 걸음",
 ];
 
-// Cover.tsx 패턴과 동일하게 — paper bg + 모든 콘텐츠 블록을 Page 직속 자식으로
-// position:absolute 두면 react-pdf 가 추가 페이지를 만들지 않는다.
-// View 래퍼를 두면 그 안의 자식이 flow 로 처리돼 두 번째 페이지가 생긴다.
-const PAGE_W = 595;
-const PAGE_H = 842;
-const PAD = 46;
-const RULE_TOP = 46;
-const TITLE_TOP = 80;
-const TITLE_FS = 56;
-const TITLE_GAP = 60;
-const CHAPTERS_TOP = TITLE_TOP + TITLE_FS + TITLE_GAP; // 216
-// 챕터 사이 사이클 간격 (top 좌표 차이).
-const CHAPTER_GAP = 110;
-
-export function TOC({
-  name,
-  chapterHeadlines,
-}: {
+interface Props {
   name: string;
-  /** Chapter 1~4 의 dynamic headline. 인덱스 0 → Ch1. */
+  /** Chapter 1~4 의 dynamic headline (TOC sub). 인덱스 0 → Ch1. */
   chapterHeadlines: [string, string, string, string];
-}) {
+}
+
+/** 목차 항목 위 짧은 와인 룰. */
+function EntryRule() {
+  return <View style={{ width: 51, height: 1.2, backgroundColor: WINE, marginBottom: 20 }} />;
+}
+
+/** 챕터 항목 — 룰 + "Chapter N. 한글타이틀"(와인) + sub(진한 회갈색 볼드). */
+function ChapterEntry({ n, korTitle, sub, first }: { n: number; korTitle: string; sub: string; first?: boolean }) {
   return (
-    <Page size={[PAGE_W, PAGE_H]} style={{ padding: 0, position: "relative", width: PAGE_W, height: PAGE_H, fontFamily: "Noto Serif KR", color: COLORS.text }}>
-      {/* paper bg — EditorIntro 등 다른 페이지와 공통 */}
-      <Image
-        src="/paper.jpg"
-        style={{ position: "absolute", top: 0, left: 0, width: PAGE_W, height: PAGE_H }}
-      />
+    <View style={{ marginTop: first ? 0 : 30 }}>
+      <EntryRule />
+      <View style={{ flexDirection: "row", marginBottom: 12 }}>
+        <Text style={{ fontFamily: KOR, fontWeight: 600, fontSize: 13, color: WINE }}>Chapter {n}.  </Text>
+        <Text style={{ fontFamily: KOR, fontWeight: 600, fontSize: 13, color: WINE }}>{korTitle}</Text>
+      </View>
+      <Text style={{ fontFamily: KOR, fontWeight: 700, fontSize: 16, color: TEXT }}>{sub}</Text>
+    </View>
+  );
+}
 
-      {/* 상단 마스트헤드 — Vol. {name} 좌 + magazine STORY 우 */}
-      <Text style={{ position: "absolute", top: 20, left: PAD, fontSize: 12, color: COLORS.text }}>
-        Vol. {name}
-      </Text>
-      <Text style={{ position: "absolute", top: 20, right: PAD, fontSize: 12, color: COLORS.wine, letterSpacing: 0 }}>
-        magazine <Text style={{ fontWeight: 700 }}>STORY</Text>
-      </Text>
-      <View
-        style={{
-          position: "absolute",
-          top: RULE_TOP,
-          left: PAD,
-          right: PAD,
-          height: 1,
-          backgroundColor: COLORS.wine,
-        }}
-      />
+/** 단일 타이틀 항목 (Editor's Letter 등) — 룰 + 타이틀. */
+function LabelEntry({ label, first }: { label: string; first?: boolean }) {
+  return (
+    <View style={{ marginTop: first ? 0 : 30 }}>
+      <EntryRule />
+      <Text style={{ fontFamily: KOR, fontWeight: 700, fontSize: 16, color: TEXT }}>{label}</Text>
+    </View>
+  );
+}
 
-      {/* Contents 타이틀 */}
-      <Text
-        style={{
-          position: "absolute",
-          top: TITLE_TOP,
-          left: PAD,
-          fontFamily: "Noto Serif KR",
-          fontWeight: 700,
-          fontSize: TITLE_FS,
-          color: COLORS.wine,
-          letterSpacing: 0,
-        }}
-      >
-        Contents
-      </Text>
+export function TOC({ name, chapterHeadlines }: Props) {
+  return (
+    <Page size="A4" style={{ position: "relative", width: 595, height: 842, backgroundColor: BG, fontFamily: KOR, color: TEXT }}>
+      {/* ── 공통 프레임 (헤더/푸터/페이지번호) ── */}
+      <MagazineFrame name={name} />
 
-      {/* 챕터 목록 */}
-      {CHAPTER_META.map((c, i) => {
-        const top = CHAPTERS_TOP + i * CHAPTER_GAP;
-        return (
-          <View key={c.num} style={{ position: "absolute", top, left: PAD, right: PAD }}>
-            <Text style={{ fontSize: 14, color: COLORS.wine, letterSpacing: 0, marginBottom: 6 }}>
-              {c.num}
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Noto Serif KR",
-                fontWeight: 700,
-                fontSize: 18,
-                color: COLORS.text,
-                marginBottom: 6,
-              }}
-            >
-              {c.title}
-            </Text>
-            <Text style={{ fontFamily: "Noto Serif KR", fontSize: 15, color: COLORS.muted }}>
-              {chapterHeadlines[i]}
-            </Text>
+      {/* ── ↗ 아이콘 (우상단) — arrow.png ── */}
+      <Image src="/arrow.png" style={{ position: "absolute", top: 85, right: 30, width: 80, height: 80 }} />
+
+      {/* ── 대제목 + 2단 목차 — 하단 90 anchor(밀리지 않게), 대제목↔목차 100 ── */}
+      <View style={{ position: "absolute", left: 30, right: 30, bottom: 90 }}>
+        <Text style={{ fontFamily: KOR, fontWeight: 700, fontSize: 64, color: TEXT }}>Contents</Text>
+
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 60 }}>
+          {/* 좌: Editor's Letter / Ch1 / Ch2 */}
+          <View style={{ width: 259 }}>
+            <LabelEntry label="Editor's Letter" first />
+            <ChapterEntry n={1} korTitle={KOR_TITLE[0]} sub={chapterHeadlines[0]} />
+            <ChapterEntry n={2} korTitle={KOR_TITLE[1]} sub={chapterHeadlines[1]} />
           </View>
-        );
-      })}
+          {/* 우: Ch3 / Ch4 / Editor's Note + Appendix — 좌 대비 180 내림(stagger) */}
+          <View style={{ width: 259, marginTop: 180 }}>
+            <ChapterEntry n={3} korTitle={KOR_TITLE[2]} sub={chapterHeadlines[2]} first />
+            <ChapterEntry n={4} korTitle={KOR_TITLE[3]} sub={chapterHeadlines[3]} />
+            <View style={{ marginTop: 30 }}>
+              <EntryRule />
+              <Text style={{ fontFamily: KOR, fontWeight: 700, fontSize: 16, color: TEXT }}>Editor&apos;s Note</Text>
+              <Text style={{ fontFamily: KOR, fontWeight: 700, fontSize: 16, color: TEXT, marginTop: 12 }}>Appendix</Text>
+            </View>
+          </View>
+        </View>
+      </View>
 
-      {/* EDITOR'S NOTE */}
-      <Text
-        style={{
-          position: "absolute",
-          top: CHAPTERS_TOP + 4 * CHAPTER_GAP + 12,
-          left: PAD,
-          fontSize: 14,
-          color: COLORS.wine,
-          letterSpacing: 0,
-        }}
-      >
-        EDITOR&apos;S NOTE
-      </Text>
-
-      {/* APPENDIX — EDITOR'S NOTE 아래 28pt */}
-      <Text
-        style={{
-          position: "absolute",
-          top: CHAPTERS_TOP + 4 * CHAPTER_GAP + 12 + 28,
-          left: PAD,
-          fontSize: 14,
-          color: COLORS.wine,
-          letterSpacing: 0,
-        }}
-      >
-        APPENDIX
-      </Text>
     </Page>
   );
 }

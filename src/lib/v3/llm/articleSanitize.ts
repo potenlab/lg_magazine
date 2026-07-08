@@ -24,7 +24,7 @@ export function cleanArticleField(s: string): string {
  *  이 캡으로 칸 안에 들어오게 줄이고, 항상 완결 문장으로 끝맺도록 보장.
  *  Ch1~3 은 pullQuote 가 함께 들어가 본문 여유가 더 적고, Ch4 는 pullQuote 가
  *  없어 여유가 더 많지만 — 단순화를 위해 공통 캡 사용. */
-export const CHAPTER_BODY_MAX_CHARS = 420;
+export const CHAPTER_BODY_MAX_CHARS = 520;
 
 /** 문장 종결 위치(마침표·물음표·느낌표 + 뒤따르는 닫는 따옴표/괄호)를 모두 찾아
  *  마지막 종결점의 끝 인덱스를 반환. 없으면 -1. */

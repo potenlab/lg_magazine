@@ -146,7 +146,7 @@ export interface LLMContract {
     visionLine: string;
     attraction: string;
     contribution: string;
-  }): Promise<{ horizon: string[] }>;
+  }): Promise<{ horizon: string[]; fromStub?: boolean }>;
 
   extractKeyword(input: {
     answer: string;

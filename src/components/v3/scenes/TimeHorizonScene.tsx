@@ -63,7 +63,7 @@ export function TimeHorizonScene({
           contribution: session.contribution,
         });
         if (cancelled) return;
-        if (r.horizon.length >= 3) {
+        if (!r.fromStub && r.horizon.length >= 3) {
           setHorizon(r.horizon.slice(0, 3));
         } else {
           setHorizon(FALLBACK_HORIZON);

@@ -253,8 +253,9 @@ export const realLLM: LLMContract = {
     try {
       return await callTask<{ directions: string[] }>("generateVisionDirections", input);
     } catch (err) {
-      console.warn("[v3 LLM] generateVisionDirections fell back to stub:", err);
-      return stubLLM.generateVisionDirections(input);
+      console.warn("[v3 LLM][STUB-FALLBACK] generateVisionDirections threw → using generic stub:", err);
+      const s = await stubLLM.generateVisionDirections(input);
+      return { ...s, fromStub: true };
     }
   },
 

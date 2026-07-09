@@ -5,21 +5,13 @@ import { motion } from "framer-motion";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { FALLBACK_VISION_DIRECTIONS } from "@/lib/v3/llm/stub";
 import { useEditorWait } from "@/lib/v3/useEditorWait";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId, V3Session } from "@/lib/v3/scenes/types";
 
-// Fallback 6 sentences — shown when the LLM call fails, JSON parsing fails, or
-// a generated sentence is over its length cap. Mirrors the fallback in stub.ts
-// so both layers surface the same defaults.
-const FALLBACK_DIRECTIONS: string[] = [
-  "지금 하는 일의 본질을 더 깊이 파고드는 사람",
-  "나만의 방식으로 같은 일을 다르게 해내는 사람",
-  "이미 가진 강점을 더 선명하게 쓰는 사람",
-  "새로운 영역으로 발을 넓혀가는 사람",
-  "내가 중요하다고 믿는 곳에 실질적인 변화를 만드는 사람",
-  "지금 하는 일을 통해, 언젠가 내가 닿고 싶은 곳에 가는 사람",
-];
+// Fallback 6 sentences — shown when the LLM call fails or JSON parsing fails.
+const FALLBACK_DIRECTIONS = [...FALLBACK_VISION_DIRECTIONS];
 
 /**
  * [17p] 성장 방향 선택기.
@@ -66,7 +58,7 @@ export function VisionSelectScene({
           contribution: session.contribution,
         });
         if (cancelled) return;
-        if (r.directions.length >= 6) {
+        if (!r.fromStub && r.directions.length >= 6) {
           setDirections(r.directions.slice(0, 6));
         } else {
           setDirections(FALLBACK_DIRECTIONS);

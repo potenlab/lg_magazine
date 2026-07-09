@@ -123,7 +123,7 @@ export interface LLMContract {
     currentTool: string[];
     growthTool: string[];
     contribution: string;
-  }): Promise<{ directions: string[] }>;
+  }): Promise<{ directions: string[]; fromStub?: boolean }>;
 
   /** [ch3 wireframe Zone B — 2026-06-15] Job-category-driven trend cards.
    * Generates 3 outside-the-self trend observations rooted in the participant's

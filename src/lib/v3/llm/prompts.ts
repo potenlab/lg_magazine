@@ -8,6 +8,7 @@ import type { V3Session } from "@/lib/v3/scenes/types";
 import { ALL_TOOL_OPTIONS } from "@/lib/v3/toolOptions";
 import { cleanArticleField, clampBodyToCompleteSentence, clampBodyKeepingEnding } from "@/lib/v3/llm/articleSanitize";
 import { judgeBranchHeuristic } from "@/lib/v3/judging/heuristics";
+import { FALLBACK_VISION_DIRECTIONS } from "@/lib/v3/llm/stub";
 
 // ── 객관식 선택지 의미 사전 ─────────────────────────────────────
 // Ch3에서 사용자가 고르는 객관식 라벨들은 4~6자 짧은 phrase("전문성 연결",
@@ -1600,17 +1601,19 @@ export async function v3GenerateVisionDirections(input: {
     );
   }
   const six = directions.slice(0, 6);
-  // Rule 4: sentences 1-5 cap at 40 chars, sentence 6 at 50. Over the cap →
-  // throw so realLLM falls back to the 6 default sentences (stub).
-  six.forEach((s, i) => {
+  // Rule 4: sentences 1-5 cap at 40 chars, sentence 6 at 50. LLMs can't count
+  // chars reliably (especially Korean), so one over-cap sentence must not sink
+  // the set — swap in the same-axis generic fallback and keep the other five
+  // personalized. (Previously this threw, discarding all six.)
+  const salvaged = six.map((s, i) => {
     const cap = i === 5 ? 50 : 40;
-    if (s.length > cap) {
-      throw new Error(
-        `v3GenerateVisionDirections: sentence ${i + 1} is ${s.length} chars (cap ${cap})`,
-      );
-    }
+    if (s.length <= cap) return s;
+    console.warn(
+      `[v3] v3GenerateVisionDirections: sentence ${i + 1} is ${s.length} chars (cap ${cap}) — using axis fallback`,
+    );
+    return FALLBACK_VISION_DIRECTIONS[i];
   });
-  return { directions: six };
+  return { directions: salvaged };
 }
 
 // ──────────────────────────────────────────────────────────────────────────

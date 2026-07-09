@@ -49,8 +49,9 @@ export function Ch1KeywordScene({ spec, onAdvance }: { spec: SceneSpec; onAdvanc
         storyB: session.flowExperience2,
       });
       if (cancelled) return;
-      patch({ ch1PoeticMirror: m });
-      setMirror(m);
+      setMirror(m.text);
+      // stub(fromStub) 은 화면엔 보여주되 세션 캐시 금지 — 재진입 시 재호출되도록.
+      if (!m.fromStub) patch({ ch1PoeticMirror: m.text });
     })();
     return () => {
       cancelled = true;

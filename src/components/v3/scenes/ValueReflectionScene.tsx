@@ -49,8 +49,9 @@ export function ValueReflectionScene({
     (async () => {
       const m = await llm.reflectValues({ name: session.name, values });
       if (cancelled) return;
-      patch({ valueReflection: m });
-      setReflection(m);
+      setReflection(m.text);
+      // stub(fromStub) 은 화면엔 보여주되 세션 캐시 금지 — 재진입 시 재호출되도록.
+      if (!m.fromStub) patch({ valueReflection: m.text });
     })();
     return () => {
       cancelled = true;

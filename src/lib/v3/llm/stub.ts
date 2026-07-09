@@ -3,6 +3,19 @@ import { judgeBranchHeuristic, ruleForScene } from "@/lib/v3/judging/heuristics"
 import { josa } from "@/lib/v3/scenes/josa";
 import { extractIdentityTitle } from "@/lib/v3/scenes/template";
 
+// Generic 6 vision directions — axis order: role / method / strength /
+// growth / impact / integration (fixed by v3GenerateVisionDirections' schema).
+// Used whole as the stub fallback, and per-axis by prompts.ts when one
+// generated sentence breaks its length cap.
+export const FALLBACK_VISION_DIRECTIONS: readonly string[] = [
+  "지금 하는 일의 본질을 더 깊이 파고드는 사람",
+  "나만의 방식으로 같은 일을 다르게 해내는 사람",
+  "이미 가진 강점을 더 선명하게 쓰는 사람",
+  "새로운 영역으로 발을 넓혀가는 사람",
+  "내가 중요하다고 믿는 곳에 실질적인 변화를 만드는 사람",
+  "지금 하는 일을 통해, 언젠가 내가 닿고 싶은 곳에 가는 사람",
+];
+
 function firstSentence(s: string): string {
   const m = s.split(/[.!?。]/)[0]?.trim();
   return m && m.length > 3 ? m : s.trim();
@@ -219,18 +232,8 @@ export const stubLLM: LLMContract = {
   },
 
   async generateVisionDirections() {
-    // Fixed fallback — used when the LLM call / parse fails. Mirrors
-    // FALLBACK_DIRECTIONS in VisionSelectScene so both layers show the same 6.
-    return {
-      directions: [
-        "지금 하는 일의 본질을 더 깊이 파고드는 사람",
-        "나만의 방식으로 같은 일을 다르게 해내는 사람",
-        "이미 가진 강점을 더 선명하게 쓰는 사람",
-        "새로운 영역으로 발을 넓혀가는 사람",
-        "내가 중요하다고 믿는 곳에 실질적인 변화를 만드는 사람",
-        "지금 하는 일을 통해, 언젠가 내가 닿고 싶은 곳에 가는 사람",
-      ],
-    };
+    // Fixed fallback — used when the LLM call / parse fails.
+    return { directions: [...FALLBACK_VISION_DIRECTIONS] };
   },
 
   async generateJobTrendCards() {

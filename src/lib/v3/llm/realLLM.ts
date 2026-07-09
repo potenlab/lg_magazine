@@ -313,8 +313,9 @@ export const realLLM: LLMContract = {
         input,
       );
     } catch (err) {
-      console.warn("[v3 LLM] writeChapterArticle fell back to stub:", err);
-      return stubLLM.writeChapterArticle(input);
+      console.warn("[v3 LLM][STUB-FALLBACK] writeChapterArticle threw → using template stub:", err);
+      const s = await stubLLM.writeChapterArticle(input);
+      return { ...s, fromStub: true };
     }
   },
 

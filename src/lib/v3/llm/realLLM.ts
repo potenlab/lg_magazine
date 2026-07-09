@@ -88,31 +88,63 @@ const JOB_POLL_MS = 1500;
 const JOB_CLIENT_DEADLINE_MS = 6 * 60_000;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Recoverable failures the server explicitly signals as such: HTTP 429
+// ("busy — Retry-After" from a saturated gate or a near-lift quota cooldown),
+// a job lost to a deploy/replica rebalance (poll 404), or a job that errored
+// on the busy signal. These recover in seconds, so retry a bounded number of
+// times before letting the caller fall back to the stub.
+const RESUBMIT_MAX = 2;
+const BUSY_RETRY_MS = 3_000;
+
+function isRecoverableJobError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("job expired or not found") || msg.includes("llm_busy");
+}
+
 async function callTask<T>(task: string, payload: unknown): Promise<T> {
   const { mode, deep } = readUrlConfig();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (mode) headers["x-llm-mode"] = mode;
   if (deep) headers["x-llm-deep"] = "1";
-  const res = await fetch("/api/v3/llm", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ task, payload }),
-  });
+  const body = JSON.stringify({ task, payload });
 
-  // Async server (LLM_ASYNC): 202 + { jobId } → poll until the job finishes.
-  // The request was never held open, so there's no server-side timeout to hit;
-  // the user simply waits in line. Sync server still returns 200 + { result }.
-  if (res.status === 202) {
-    const { jobId } = (await res.json()) as { jobId: string };
-    return pollJob<T>(jobId);
-  }
+  for (let resubmits = 0; ; resubmits++) {
+    const res = await fetch("/api/v3/llm", { method: "POST", headers, body });
 
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new Error(`v3 LLM /api error ${res.status}: ${detail.slice(0, 160)}`);
+    // Server said "busy, retry in N seconds" — honor it instead of treating
+    // a 3-second congestion blip as a hard failure (which put stub content
+    // on screen permanently for that scene).
+    if (res.status === 429 && resubmits < RESUBMIT_MAX) {
+      const after = Number(res.headers.get("Retry-After")) || 3;
+      await wait(Math.min(after, 120) * 1000);
+      continue;
+    }
+
+    // Async server (LLM_ASYNC): 202 + { jobId } → poll until the job finishes.
+    // The request was never held open, so there's no server-side timeout to hit;
+    // the user simply waits in line. Sync server still returns 200 + { result }.
+    if (res.status === 202) {
+      const { jobId } = (await res.json()) as { jobId: string };
+      try {
+        return await pollJob<T>(jobId);
+      } catch (err) {
+        // Jobs live in one replica's memory — a deploy/rebalance 404s every
+        // in-flight poll. Resubmitting the task is the intended recovery.
+        if (resubmits < RESUBMIT_MAX && isRecoverableJobError(err)) {
+          await wait(BUSY_RETRY_MS);
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new Error(`v3 LLM /api error ${res.status}: ${detail.slice(0, 160)}`);
+    }
+    const json = (await res.json()) as { result: T };
+    return json.result;
   }
-  const json = (await res.json()) as { result: T };
-  return json.result;
 }
 
 async function pollJob<T>(jobId: string): Promise<T> {

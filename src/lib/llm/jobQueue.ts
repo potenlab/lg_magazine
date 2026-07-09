@@ -32,6 +32,10 @@ interface Job {
 const MAX_CONCURRENCY = Math.max(1, Number(process.env.LLM_QUEUE_CONCURRENCY ?? 5));
 // How long a finished job's result is retained for polling before cleanup.
 const JOB_TTL_MS = Number(process.env.LLM_JOB_TTL_MS ?? 120_000);
+// Queued jobs older than the client's 6-minute polling deadline (realLLM
+// JOB_CLIENT_DEADLINE_MS) have no listener left — running them would burn
+// upstream slots on dead work and starve live users into fallback.
+const QUEUE_MAX_AGE_MS = Number(process.env.LLM_QUEUE_MAX_AGE_MS ?? 6 * 60_000);
 
 const jobs = new Map<string, Job>();
 const pending: string[] = []; // FIFO of queued job ids
@@ -52,6 +56,12 @@ function pump(): void {
     if (id === undefined) break;
     const job = jobs.get(id);
     if (!job || job.status !== "queued") continue;
+    if (Date.now() - job.createdAt > QUEUE_MAX_AGE_MS) {
+      job.status = "error";
+      job.error = "expired_in_queue";
+      job.finishedAt = Date.now();
+      continue;
+    }
     job.status = "running";
     running++;
     job

@@ -243,19 +243,33 @@ export const realLLM: LLMContract = {
 
   async reflectPoetic(input) {
     try {
-      return await callTask<string>("reflectPoetic", input);
+      const r = await callTask<string>("reflectPoetic", input);
+      if (!r?.trim()) {
+        console.warn("[v3 LLM][STUB-FALLBACK] reflectPoetic: empty output → using generic stub.");
+        const s = await stubLLM.reflectPoetic(input);
+        return { ...s, fromStub: true };
+      }
+      return { text: r };
     } catch (err) {
-      console.warn("[v3 LLM] reflectPoetic fell back to stub:", err);
-      return stubLLM.reflectPoetic(input);
+      console.warn("[v3 LLM][STUB-FALLBACK] reflectPoetic threw → using generic stub:", err);
+      const s = await stubLLM.reflectPoetic(input);
+      return { ...s, fromStub: true };
     }
   },
 
   async reflectValues(input) {
     try {
-      return await callTask<string>("reflectValues", input);
+      const r = await callTask<string>("reflectValues", input);
+      if (!r?.trim()) {
+        console.warn("[v3 LLM][STUB-FALLBACK] reflectValues: empty output → using generic stub.");
+        const s = await stubLLM.reflectValues(input);
+        return { ...s, fromStub: true };
+      }
+      return { text: r };
     } catch (err) {
-      console.warn("[v3 LLM] reflectValues fell back to stub:", err);
-      return stubLLM.reflectValues(input);
+      console.warn("[v3 LLM][STUB-FALLBACK] reflectValues threw → using generic stub:", err);
+      const s = await stubLLM.reflectValues(input);
+      return { ...s, fromStub: true };
     }
   },
 

@@ -37,7 +37,9 @@ export interface LLMContract {
     name: string;
     storyA: string;
     storyB: string;
-  }): Promise<string>;
+    // fromStub: stub fallback(API 실패·빈 출력) 시 true — 호출자는 세션에
+    // 캐싱하지 말 것. 재진입 시 재호출되도록(reflectStrength·synthesizeStrength 와 동일 규칙).
+  }): Promise<{ text: string; fromStub?: boolean }>;
 
   /** Weave all selected values + their personal definitions into one
    * sentence reflecting back the participant's value pattern (e.g.
@@ -46,7 +48,9 @@ export interface LLMContract {
   reflectValues(input: {
     name: string;
     values: { word: string; meaning: string }[];
-  }): Promise<string>;
+    // fromStub: stub fallback(API 실패·빈 출력) 시 true — 호출자는 세션에
+    // 캐싱하지 말 것. 재진입 시 재호출되도록(reflectStrength·synthesizeStrength 와 동일 규칙).
+  }): Promise<{ text: string; fromStub?: boolean }>;
 
   /** From the helpRequests answer + selected values, extract:
    * - commonAsk: a phrase summarizing what others commonly brought to the

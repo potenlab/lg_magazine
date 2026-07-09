@@ -60,17 +60,17 @@ export const stubLLM: LLMContract = {
     // "명사"를 뽑아 `${a}와 ${b} 사이에서`로 끼웠는데, extractNoun이 실제론 문장
     // 끝 종결어미를 잘라와("또렷했습니다"→"또렷했습니") 비문을 만들었다.
     // 안전망이 떠도 화면이 멀쩡하도록, 사용자 텍스트를 가공하지 않는 고정 문장으로.
-    return `두 이야기 사이에, 막막한 상황을 직접 움직이며 배워가는 결이 흐르는 것 같아요.`;
+    return { text: `두 이야기 사이에, 막막한 상황을 직접 움직이며 배워가는 결이 흐르는 것 같아요.` };
   },
 
   async reflectValues({ name, values }) {
-    if (values.length === 0) return `${name}님 안에는 단단한 결이 흐르고 있어요.`;
+    if (values.length === 0) return { text: `${name}님 안에는 단단한 결이 흐르고 있어요.` };
     const words = values.map((v) => v.word);
     const joined =
       words.length === 1
         ? words[0]
         : `${words.slice(0, -1).join(", ")}${words.length > 2 ? "," : ""} 그리고 ${words[words.length - 1]}`;
-    return `${joined}을(를) 함께 품고 일할 때 가장 힘이 나는 사람이시군요.`;
+    return { text: `${joined}을(를) 함께 품고 일할 때 가장 힘이 나는 사람이시군요.` };
   },
 
   async reflectStrength({ values }) {

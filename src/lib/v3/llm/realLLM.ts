@@ -101,6 +101,23 @@ function isRecoverableJobError(err: unknown): boolean {
   return msg.includes("job expired or not found") || msg.includes("llm_busy");
 }
 
+// Heavy synthesis tasks run behind explicit waiting screens, so a long quota
+// cooldown (Retry-After up to ~90s) is worth sitting out for real content.
+// Interactive dialog beats (judge, reflections) must not freeze — they only
+// retry the short "busy" case and otherwise fall back fast.
+const LONG_WAIT_TASKS = new Set([
+  "synthesizeStrength",
+  "synthesizeGrowthVision",
+  "writeChapterArticle",
+  "writeEditorNote",
+  "writeCoverHeadline",
+  "generateVisionDirections",
+  "generateTimeHorizon",
+  "generateJobTrendCards",
+  "reflectStrength",
+  "observePattern",
+]);
+
 async function callTask<T>(task: string, payload: unknown): Promise<T> {
   const { mode, deep } = readUrlConfig();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -116,8 +133,12 @@ async function callTask<T>(task: string, payload: unknown): Promise<T> {
     // on screen permanently for that scene).
     if (res.status === 429 && resubmits < RESUBMIT_MAX) {
       const after = Number(res.headers.get("Retry-After")) || 3;
-      await wait(Math.min(after, 120) * 1000);
-      continue;
+      if (LONG_WAIT_TASKS.has(task) || after <= 5) {
+        await wait(Math.min(after, 120) * 1000);
+        continue;
+      }
+      // Interactive task facing a long cooldown → fall back fast instead of
+      // freezing the dialog.
     }
 
     // Async server (LLM_ASYNC): 202 + { jobId } → poll until the job finishes.
@@ -242,8 +263,9 @@ export const realLLM: LLMContract = {
     try {
       return await callTask<{ commonAsk: string; linkedValue: string }>("reflectStrength", input);
     } catch (err) {
-      console.warn("[v3 LLM] reflectStrength fell back to stub:", err);
-      return stubLLM.reflectStrength(input);
+      console.warn("[v3 LLM][STUB-FALLBACK] reflectStrength threw → using generic stub:", err);
+      const s = await stubLLM.reflectStrength(input);
+      return { ...s, fromStub: true };
     }
   },
 
@@ -333,8 +355,9 @@ export const realLLM: LLMContract = {
     try {
       return await callTask<{ situationPattern: string; behaviorPattern: string }>("observePattern", input);
     } catch (err) {
-      console.warn("[v3 LLM] observePattern fell back to stub:", err);
-      return stubLLM.observePattern(input);
+      console.warn("[v3 LLM][STUB-FALLBACK] observePattern threw → using template stub:", err);
+      const s = await stubLLM.observePattern(input);
+      return { ...s, fromStub: true };
     }
   },
 

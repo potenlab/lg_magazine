@@ -88,7 +88,9 @@ export function MagazineHandoffScene({ spec, onAdvance }: { spec: SceneSpec; onA
         const newlyFetched: Record<number, { headline: string; body: string; pullQuote: string | null }> = {};
         const chaptersToCache: [1 | 2 | 3 | 4, typeof ch1][] = [[1, ch1], [2, ch2], [3, ch3], [4, ch4]];
         for (const [c, art] of chaptersToCache) {
-          if (!isUsable(cached[c]) && isUsable(art)) newlyFetched[c] = art;
+          // stub fallback은 캐시 금지 — 다음 진입 때 다시 호출되도록.
+          if (!isUsable(cached[c]) && isUsable(art) && !(art as { fromStub?: boolean }).fromStub)
+            newlyFetched[c] = art;
         }
         if (Object.keys(newlyFetched).length > 0) {
           patch({ chapterArticles: { ...cached, ...newlyFetched } });

@@ -171,6 +171,7 @@ export interface LLMContract {
     headline: string;
     body: string;
     pullQuote: string | null;
+    fromStub?: boolean;
   }>;
 
   writeEditorNote(input: {

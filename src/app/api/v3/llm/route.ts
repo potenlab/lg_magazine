@@ -153,7 +153,7 @@ export async function POST(req: Request) {
     if (err instanceof LlmBusyError) {
       return NextResponse.json(
         { error: "busy" },
-        { status: 429, headers: { "Retry-After": "3" } },
+        { status: 429, headers: { "Retry-After": String(err.retryAfterSec) } },
       );
     }
     const msg = err instanceof Error ? err.message : "unknown error";

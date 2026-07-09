@@ -142,3 +142,11 @@ export async function deleteV3Sessions(): Promise<void> {
     headers: { Prefer: "return=minimal" },
   });
 }
+
+export async function deleteV3Session(sessionId: string): Promise<void> {
+  const encoded = encodeURIComponent(sessionId);
+  await supabaseFetch(`${TABLE}?session_id=eq.${encoded}`, {
+    method: "DELETE",
+    headers: { Prefer: "return=minimal" },
+  });
+}

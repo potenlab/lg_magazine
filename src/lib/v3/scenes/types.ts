@@ -301,6 +301,13 @@ export interface V3Session {
    * is first viewed; reused later by MagazineHandoffScene so the PDF shows
    * the same text the participant saw in the chapter record page. */
   chapterArticles: Record<number, { headline: string; body: string; pullQuote: string | null }>;
+  /** Cached one-shot magazine front/back matter — generated at first PDF
+   * creation in ClosingChoiceScene, then reused for re-downloads (user
+   * "다시 받기" + 어드민 PDF 다운로드) so the same participant gets the
+   * same magazine bit-for-bit. Empty until the first PDF is produced. */
+  coverHeadline: string;
+  editorIntro: string;
+  editorOutro: string;
   lastSceneId: SceneId;
   startedAt: string;
   schemaVersion: 2;
@@ -355,6 +362,9 @@ export const EMPTY_V3_SESSION: V3Session = {
   closingFeedback: "",
   followupCounts: {},
   chapterArticles: {},
+  coverHeadline: "",
+  editorIntro: "",
+  editorOutro: "",
   lastSceneId: "intro",
   startedAt: "",
   schemaVersion: 2,

@@ -13,6 +13,10 @@ export type ConversationEntry = {
    *  배열·파생·뱃치 필드는 비워둘 것 — 클라이언트는 fieldKey 가 있고 tone 이
    *  "answer" 일 때만 "수정" 어피던스를 렌더한다. */
   fieldKey?: keyof V3Session & string;
+  /** 현재 플로우에서 더 이상 호출되지 않는 옛 LLM 반향. 스키마는 남아 있지만
+   *  생성하는 씬이 주석처리/제거된 필드. 어드민에서 "실패" 가 아닌 회색
+   *  "사용 안 함" 으로 구분 표시. */
+  legacy?: true;
 };
 
 export type ChapterThread = {
@@ -123,16 +127,17 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
         { label: "각 가치의 의미", tone: "answer", text: fmtValueDefs(s.valueDefinitions) },
         { label: "엘아울의 한마디", tone: "result", text: s.valueReflection },
         { label: "도움 요청받았던 경험", tone: "answer", text: s.helpRequests, fieldKey: "helpRequests" },
-        { label: "AI: 강점 공통 결", tone: "result", text: s.strengthCommonAsk },
+        { label: "AI: 강점 공통 결", tone: "result", text: s.strengthCommonAsk, legacy: true },
         { label: "타인이 보는 나", tone: "answer", text: s.othersDescription, fieldKey: "othersDescription" },
         { label: "엘아울의 발견", tone: "result", text: fmtStrengthSynthesis(s.strengthSynthesis) },
         { label: "자기 강점 정렬", tone: "answer", text: fmtAlignment(s.selfStrengthAlignment) },
-        { label: "AI: 패턴 미러 (상황)", tone: "result", text: s.patternMirrorSituation },
-        { label: "AI: 패턴 미러 (행동)", tone: "result", text: s.patternMirrorBehavior },
+        { label: "AI: 패턴 미러 (상황)", tone: "result", text: s.patternMirrorSituation, legacy: true },
+        { label: "AI: 패턴 미러 (행동)", tone: "result", text: s.patternMirrorBehavior, legacy: true },
         {
           label: "패턴 확인",
           tone: "answer",
           text: s.patternConfirmed ? "맞아요" : s.patternRevised,
+          legacy: true,
         },
         { label: "나의 정체성", tone: "answer", text: s.identityName, fieldKey: "identityName" },
         ...articleEntry(2),
@@ -164,6 +169,18 @@ export function buildV3ChapterThreads(s: V3Session): ChapterThread[] {
         { label: "내일부터의 첫 걸음", tone: "answer", text: s.firstStep, fieldKey: "firstStep" },
         { label: "함께할 사람", tone: "answer", text: s.supportPerson, fieldKey: "supportPerson" },
         { label: "필요한 자원", tone: "answer", text: s.neededResource, fieldKey: "neededResource" },
+      ],
+    },
+    {
+      chapter: "Closing",
+      title: "운영진에게 한 마디",
+      entries: [
+        {
+          label: "질문",
+          tone: "question",
+          text: "이 여정을 마치며, 운영진에게 전하고 싶은 말이 있다면 자유롭게 남겨주세요.",
+        },
+        { label: "참가자 소감", tone: "answer", text: s.closingFeedback, fieldKey: "closingFeedback" },
       ],
     },
   ];

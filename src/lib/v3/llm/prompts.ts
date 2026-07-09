@@ -178,7 +178,17 @@ async function askSynthesis(user: string, maxTokens = 2200, system: string = SYN
 // 이스케이프를 풀어 복구. 어느 쪽이 쓰였는지 + 실패 사유를 로그로 남겨,
 // 진짜 LLM이 도는지/왜 폴백되는지 서버 로그에서 바로 보이게 한다.
 function parseSynthesis(rawText: string, task: string): string {
-  const text = rawText.trim();
+  // Claude/Gemini 가 종종 ```json ... ``` 펜스로 감싸서 응답.
+  // 펜스 끝(```) 이 maxTokens 한계로 잘려 사라지면 정규식 매칭 실패로
+  // 이어지므로, 시작 펜스만이라도 떼어내고 진행한다. 종료 펜스가 있으면
+  // 그것도 함께 제거.
+  const text = rawText
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+  // (1) 정상 흐름: `{ ... }` 그리디 매치 후 JSON.parse.
   const match = text.match(/\{[\s\S]*\}/);
   if (match) {
     try {
@@ -187,25 +197,28 @@ function parseSynthesis(rawText: string, task: string): string {
       if (synthesis) return synthesis;
       console.warn(`[v3 LLM][${task}] JSON parsed but synthesis empty.`);
     } catch (err) {
-      // JSON.parse 실패 — 보통 본문 안 unescaped 줄바꿈/따옴표. 느슨하게 복구 시도.
       const msg = err instanceof Error ? err.message : String(err);
-      const loose = text.match(/"synthesis"\s*:\s*"([\s\S]*)"\s*\}?\s*$/);
-      if (loose?.[1]) {
-        const recovered = loose[1]
-          .replace(/\\n/g, "\n")
-          .replace(/\\"/g, '"')
-          .replace(/\\\\/g, "\\")
-          .trim();
-        if (recovered) {
-          console.warn(`[v3 LLM][${task}] strict JSON.parse failed (${msg}); recovered via loose extraction.`);
-          return recovered;
-        }
-      }
-      console.warn(`[v3 LLM][${task}] JSON.parse failed and loose recovery failed (${msg}). raw head: ${text.slice(0, 160)}`);
+      console.warn(`[v3 LLM][${task}] strict JSON.parse failed (${msg}); trying loose extraction.`);
     }
-  } else {
-    console.warn(`[v3 LLM][${task}] no JSON object found in model output. raw head: ${text.slice(0, 160)}`);
   }
+
+  // (2) 닫는 `}` 가 잘려서 매치 실패하거나 JSON.parse 실패한 경우의 폴백:
+  //     `"synthesis": "..."` 만 정규식으로 끝까지 끄집어내서 복구.
+  //     본문이 토큰 한계로 중간에 잘렸어도, 거기까지의 BEAT 들은 살린다.
+  const loose = text.match(/"synthesis"\s*:\s*"([\s\S]*?)(?:"\s*\}?\s*$|$)/);
+  if (loose?.[1]) {
+    const recovered = loose[1]
+      .replace(/\\n/g, "\n")
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, "\\")
+      .trim();
+    if (recovered) {
+      console.warn(`[v3 LLM][${task}] recovered via loose extraction (${recovered.length} chars).`);
+      return recovered;
+    }
+  }
+
+  console.warn(`[v3 LLM][${task}] could not recover synthesis. raw head: ${text.slice(0, 200)}`);
   return "";
 }
 

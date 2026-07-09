@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { MagazinePosterScene } from "@/components/v3/scenes/MagazinePosterScene";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
-import { llm } from "@/lib/v3/llm";
-import { cleanArticleField } from "@/lib/v3/llm/articleSanitize";
 import { MagazinePDF, type MagazineData } from "@/lib/v3/pdf/MagazinePDF";
 import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
-import { buildAppendixThreads } from "@/lib/v3/pdf/buildAppendix";
+import { assembleMagazineDataFromSession } from "@/lib/v3/pdf/assembleFromSession";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
 type PdfStatus = "loading" | "ready" | "error";
@@ -28,12 +26,30 @@ export function ClosingChoiceScene({
   spec: SceneSpec;
   onAdvance: (n: SceneId) => void;
 }) {
-  const { session, reset } = useV3Session();
+  const { session, patch, reset } = useV3Session();
+  // 캐시 patch 는 한 세션 안에서 한 번만 적용 — 다음 효과에서 session.coverHeadline 등이
+  // 이미 채워져 있어도 다시 patch 하지 않도록 useRef로 가드.
+  const cacheAppliedRef = useRef(false);
   const [data, setData] = useState<MagazineData | null>(null);
   const [status, setStatus] = useState<PdfStatus>("loading");
-  const [downloading, setDownloading] = useState(false);
+  // "summary" 는 별첨(전체 대화록) 제외, "full" 은 포함. 한 번에 한 작업만.
+  const [downloading, setDownloading] = useState<null | "full" | "summary">(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [magazineOpen, setMagazineOpen] = useState(false);
+
+  // 운영진에게 남기는 한 마디 (선택). 입력칸은 session 값으로 시드하고,
+  // "남기기" 누르면 patch → V3SessionContext 자동저장이 Supabase 까지 반영.
+  // 저장 후에도 다시 수정 가능 (다시 누르면 덮어쓰기).
+  const [feedbackDraft, setFeedbackDraft] = useState(session.closingFeedback || "");
+  const [feedbackSaved, setFeedbackSaved] = useState(
+    Boolean(session.closingFeedback && session.closingFeedback.trim()),
+  );
+  const handleSaveFeedback = () => {
+    const trimmed = feedbackDraft.trim();
+    if (!trimmed) return;
+    patch({ closingFeedback: trimmed });
+    setFeedbackSaved(true);
+  };
 
   useEffect(() => {
     registerPdfFonts();
@@ -43,52 +59,16 @@ export function ClosingChoiceScene({
     let cancelled = false;
     (async () => {
       try {
-        const cached = session.chapterArticles ?? {};
-        // 캐시에 있어도 body/headline 이 비어 있으면 stale 로 간주하고 재호출 —
-        // 빈 챕터 회귀(매거진 모달·PDF Ch3 빈칸) 회복.
-        const isUsable = (a: { headline: string; body: string } | undefined) =>
-          !!a && !!a.headline?.trim() && !!a.body?.trim();
-        const articleFor = (n: 1 | 2 | 3 | 4) =>
-          isUsable(cached[n])
-            ? cached[n]
-            : llm.writeChapterArticle({
-                name: session.name,
-                gender: session.gender,
-                job: session.job,
-                chapter: n,
-                session,
-              });
-        const [coverHeadline, editorIntro, editorOutro, ch1, ch2, ch3, ch4] = await Promise.all([
-          llm.writeCoverHeadline({ session }),
-          llm.writeEditorNote({ session, kind: "intro" }),
-          llm.writeEditorNote({ session, kind: "outro" }),
-          articleFor(1),
-          articleFor(2),
-          articleFor(3),
-          articleFor(4),
-        ]);
+        const { data: assembled, cachePatch } = await assembleMagazineDataFromSession(session);
         if (cancelled) return;
-        // 캐시된 stale 또는 새로 받은 응답 모두 raw markdown(`**`, `**PULL:**`) 을
-        // 흘릴 수 있어 PDF 직전에 일괄 sanitize.
-        const cleanArticle = (a: { headline: string; body: string; pullQuote: string | null }) => ({
-          headline: cleanArticleField(a.headline),
-          body: cleanArticleField(a.body),
-          pullQuote: a.pullQuote ? cleanArticleField(a.pullQuote) || null : null,
-        });
-        setData({
-          name: session.name,
-          date: new Date().toISOString().slice(0, 10),
-          coverHeadline,
-          editorIntro,
-          editorOutro,
-          chapters: {
-            1: cleanArticle(ch1),
-            2: cleanArticle(ch2),
-            3: cleanArticle(ch3),
-            4: cleanArticle(ch4),
-          },
-          appendix: buildAppendixThreads(session),
-        });
+        // 처음 생성한 cover/editor/articles 를 세션에 캐시해, 사용자가 "다시 받기"
+        // 누르거나 어드민에서 PDF 받을 때 정확히 같은 결과가 나오게 한다.
+        // 한 세션에 대해 한 번만 적용 (Object.keys 검사 + ref 가드).
+        if (!cacheAppliedRef.current && Object.keys(cachePatch).length > 0) {
+          cacheAppliedRef.current = true;
+          patch(cachePatch);
+        }
+        setData(assembled);
         setStatus("ready");
       } catch (err) {
         console.error("[v3] ClosingChoice PDF prep failed:", err);
@@ -98,17 +78,19 @@ export function ClosingChoiceScene({
     return () => {
       cancelled = true;
     };
-  }, [session]);
+  }, [session, patch]);
 
-  const handleDownload = async () => {
+  const handleDownload = async (variant: "full" | "summary") => {
     if (!data || status !== "ready" || downloading) return;
-    setDownloading(true);
+    setDownloading(variant);
     try {
-      const blob = await pdf(<MagazinePDF data={data} />).toBlob();
+      const pdfData = variant === "summary" ? { ...data, appendix: undefined } : data;
+      const blob = await pdf(<MagazinePDF data={pdfData} />).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `STORY_Vol.${session.name}.pdf`;
+      const suffix = variant === "summary" ? "_매거진" : "";
+      a.download = `STORY_Vol.${session.name}${suffix}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -117,7 +99,7 @@ export function ClosingChoiceScene({
       console.error("[v3] PDF generation failed:", err);
       alert("PDF 생성 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
     } finally {
-      setDownloading(false);
+      setDownloading(null);
     }
   };
 
@@ -126,15 +108,56 @@ export function ClosingChoiceScene({
     onAdvance("intro");
   };
 
-  const downloadLabel =
-    status === "loading"
-      ? "매거진 생성중.."
-      : downloading
-        ? "다운로드 중…"
-        : "내 매거진 다운받기";
+  const labelFor = (variant: "full" | "summary") => {
+    if (status === "loading") return "매거진 생성중..";
+    if (downloading === variant) return "다운로드 중…";
+    return variant === "summary" ? "매거진만 받기 (요약)" : "전체본 받기 (별첨 포함)";
+  };
 
   return (
     <div className="flex flex-1 flex-col">
+      {/* 여정을 마치며 — 운영진에게 한 마디 (선택). 강제 아님: 비워두고
+          매거진을 받아가도 OK. 입력 후 "남기기" 누르면 즉시 Supabase 반영. */}
+      <section className="mx-auto mb-6 w-full max-w-2xl rounded-md border border-[#b99b6b]/30 bg-white/55 px-5 py-5 shadow-sm md:mb-8 md:px-6 md:py-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9b8768]">
+          여정을 마치며
+        </p>
+        <h3
+          className="mt-1 font-serif text-[17px] italic leading-snug text-[#3d2414] md:text-[18px]"
+          style={{ fontFamily: "var(--font-ridi-batang), serif" }}
+        >
+          운영진에게 한 마디 남겨주세요 <span className="not-italic text-[#8b7050]">(선택)</span>
+        </h3>
+        <p className="mt-1.5 text-[12.5px] leading-relaxed text-[#6a5a44]">
+          이 여정을 거치며 떠오른 생각이나 운영진에게 전하고 싶은 말을 자유롭게 들려주세요.
+        </p>
+        <textarea
+          value={feedbackDraft}
+          onChange={(e) => {
+            setFeedbackDraft(e.target.value);
+            // 한 글자라도 다시 손대면 "저장됨" 표시는 풀어준다 — 사용자가
+            // 수정 중이라는 신호를 명확히 하기 위해.
+            if (feedbackSaved) setFeedbackSaved(false);
+          }}
+          rows={3}
+          placeholder="예: 처음엔 어색했는데 마지막엔 따뜻하게 마무리됐어요."
+          className="mt-3 block w-full resize-y rounded-md border border-[#b99b6b]/40 bg-[#fffaf0] px-3.5 py-2.5 text-[14px] leading-[1.65] text-[#3d2414] outline-none placeholder:text-[#b3a283] focus:border-[#8b7050]"
+        />
+        <div className="mt-2.5 flex items-center justify-between gap-3">
+          <p className="text-[11.5px] text-[#8b7050]">
+            {feedbackSaved ? "고마워요. 잘 전달됐어요." : "안 적고 매거진을 받으셔도 괜찮아요."}
+          </p>
+          <button
+            type="button"
+            onClick={handleSaveFeedback}
+            disabled={!feedbackDraft.trim() || feedbackSaved}
+            className="inline-flex h-9 items-center justify-center rounded-md border border-[#3d2414]/55 bg-transparent px-4 font-serif text-[13px] italic tracking-[0.04em] text-[#3d2414] transition hover:bg-[#3d2414]/5 disabled:opacity-40"
+          >
+            {feedbackSaved ? "전달됨" : "남기기"}
+          </button>
+        </div>
+      </section>
+
       <div className="grid flex-1 gap-6 md:grid-cols-2 md:gap-10">
         {/* 좌측 — 매거진 다시 보기 / 다운받기 */}
         <section className="flex flex-col items-center justify-center text-center">
@@ -156,11 +179,21 @@ export function ClosingChoiceScene({
             />
             <button
               type="button"
-              onClick={() => void handleDownload()}
-              disabled={status !== "ready" || downloading}
-              className="inline-flex h-12 items-center justify-center rounded-md border border-[#3d2414]/55 bg-transparent px-6 font-serif italic tracking-[0.04em] text-[#3d2414] transition hover:bg-[#3d2414]/5 disabled:opacity-40"
+              onClick={() => void handleDownload("summary")}
+              disabled={status !== "ready" || !!downloading}
+              className="inline-flex h-12 items-center justify-center rounded-md border border-[#3d2414]/55 bg-transparent px-5 font-serif italic tracking-[0.04em] text-[#3d2414] transition hover:bg-[#3d2414]/5 disabled:opacity-40"
+              title="매거진 본문만 (대화록 별첨 제외)"
             >
-              {downloadLabel}
+              {labelFor("summary")}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleDownload("full")}
+              disabled={status !== "ready" || !!downloading}
+              className="inline-flex h-12 items-center justify-center rounded-md border border-[#3d2414]/35 bg-transparent px-5 font-serif italic tracking-[0.04em] text-[#3d2414]/80 transition hover:bg-[#3d2414]/5 disabled:opacity-40"
+              title="대화록 별첨까지 모두 포함"
+            >
+              {labelFor("full")}
             </button>
           </div>
         </section>

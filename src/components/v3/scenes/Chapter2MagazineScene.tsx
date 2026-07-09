@@ -352,11 +352,47 @@ function BeatCard({ beat, delay }: { beat: Beat; delay: number }) {
           {beat.headline}
         </h3>
       ) : null}
-      <p className="mt-2 text-[14px] leading-[1.7] text-[#3d2414]">
-        {beat.body ? <BoldInline text={beat.body} /> : <span className="italic text-[#8b7050]">편집장이 정리하고 있어요…</span>}
-      </p>
+      {beat.body ? (
+        splitIntoParagraphs(beat.body).map((para, idx) => (
+          <p
+            key={idx}
+            className={`text-[14px] leading-[1.7] text-[#3d2414] ${idx === 0 ? "mt-2" : "mt-2.5"}`}
+          >
+            <BoldInline text={para} />
+          </p>
+        ))
+      ) : (
+        <p className="mt-2 text-[14px] leading-[1.7] text-[#3d2414]">
+          <span className="italic text-[#8b7050]">편집장이 정리하고 있어요…</span>
+        </p>
+      )}
     </motion.div>
   );
+}
+
+/** 한 BEAT 본문이 너무 길게 한 덩어리로 흐르는 걸 막기 위해, 한글 종결어미 기준으로
+ *  문장을 끊고 3문장마다 한 번 문단 나눔을 준다. `**bold**` 토큰은 문장 안쪽에만
+ *  존재한다는 LLM 출력 패턴을 가정하므로, 분리해도 강조 마크업이 깨지지 않는다. */
+function splitIntoParagraphs(text: string, sentencesPerPara = 3): string[] {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+  // 종결어미 + 마침표/물음표/느낌표 뒤가 문장 경계.
+  const SENTENCE_END = /([^\n]*?[.!?。！？])(\s+|$)/g;
+  const sentences: string[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = SENTENCE_END.exec(trimmed)) !== null) {
+    sentences.push(m[1]);
+    last = SENTENCE_END.lastIndex;
+  }
+  if (last < trimmed.length) sentences.push(trimmed.slice(last).trim());
+  if (sentences.length <= sentencesPerPara) return [trimmed];
+
+  const paragraphs: string[] = [];
+  for (let i = 0; i < sentences.length; i += sentencesPerPara) {
+    paragraphs.push(sentences.slice(i, i + sentencesPerPara).join(" ").trim());
+  }
+  return paragraphs;
 }
 
 /** `**xxx**` → <strong>, 나머지는 EditorialInline. */

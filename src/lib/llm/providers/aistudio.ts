@@ -1,4 +1,5 @@
 import type { LLMProvider, LLMRequest, LLMResult } from "../provider";
+import { getTier } from "../modeContext";
 
 // LG AI Studio (aistudio.singlex.com) provider.
 // Contract verified end-to-end against test_api_2/prompt/1 on 2026-04-30:
@@ -151,23 +152,37 @@ class Semaphore {
   }
 }
 
-// One gate per process, shared via the singleton provider (see provider.ts cache).
-const gate = new Semaphore(MAX_CONCURRENCY, QUEUE_TIMEOUT_MS);
+// Light tier (e.g. Gemini Flash) is a different upstream model with its own
+// concurrency budget; its calls are short and frequent, so it can run wider.
+// Falls back to the heavy ceiling when unset.
+const LIGHT_MAX_CONCURRENCY = Math.max(
+  1,
+  Number(process.env.AISTUDIO_LIGHT_MAX_CONCURRENCY ?? MAX_CONCURRENCY),
+);
+
+// A routing lane = one upstream model: its own API-code pool (for quota
+// failover), per-code cooldown, round-robin cursor, prompt index, and gate.
+interface Lane {
+  readonly codes: string[];
+  readonly cooldownUntil: number[];
+  cursor: number;
+  readonly gate: Semaphore;
+  readonly promptIndex: string;
+}
 
 export class AIStudioProvider implements LLMProvider {
   readonly name = "aistudio";
   private base: string;
   private workspaceId: string;
   private password: string;
-  private apiCodes: string[];
-  private promptIndex: string;
   private empNo: string;
   private cached: CachedToken | null = null;
-  // Round-robin cursor + per-code cooldown deadline (unix ms). Persisted on the
-  // singleton provider instance (see provider.ts cache), so load spreads across
-  // codes and exhausted codes stay parked between requests.
-  private cursor = 0;
-  private cooldownUntil: number[];
+  // Two lanes (heavy/light) so frequent one-liners can run on a cheap model
+  // while summaries/synthesis stay on the strong one. Each lane keeps its own
+  // code pool, cooldowns, cursor, and gate. Persisted on the singleton provider
+  // instance (see provider.ts cache), so load/cooldowns spread between requests.
+  private heavy: Lane;
+  private light: Lane;
 
   constructor() {
     const env = process.env;
@@ -175,32 +190,57 @@ export class AIStudioProvider implements LLMProvider {
     if (!env.AISTUDIO_WORKSPACE_ID) throw new Error("AISTUDIO_WORKSPACE_ID is not set");
     if (!env.AISTUDIO_API_KEY) throw new Error("AISTUDIO_API_KEY is not set");
     if (!env.AISTUDIO_EMP_NO) throw new Error("AISTUDIO_EMP_NO is not set");
-    // Prefer the multi-code pool (AISTUDIO_API_CODES, comma-separated) for quota
-    // failover; fall back to the single AISTUDIO_API_CODE.
-    const codes = (env.AISTUDIO_API_CODES || env.AISTUDIO_API_CODE || "")
-      .split(",")
-      .map((c) => c.trim())
-      .filter(Boolean);
-    if (codes.length === 0) {
+    const parseCodes = (raw: string | undefined): string[] =>
+      (raw || "")
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean);
+
+    // Heavy (default) pool — Sonnet on prod. Prefer the multi-code pool
+    // (AISTUDIO_API_CODES) for quota failover; fall back to AISTUDIO_API_CODE.
+    const heavyCodes = parseCodes(env.AISTUDIO_API_CODES || env.AISTUDIO_API_CODE);
+    if (heavyCodes.length === 0) {
       throw new Error("AISTUDIO_API_CODES (or AISTUDIO_API_CODE) is not set");
     }
     this.base = env.AISTUDIO_BASE_URL.replace(/\/+$/, "");
     this.workspaceId = env.AISTUDIO_WORKSPACE_ID;
     this.password = env.AISTUDIO_API_KEY;
-    this.apiCodes = codes;
-    this.promptIndex = env.AISTUDIO_PROMPT_INDEX || "1";
     this.empNo = env.AISTUDIO_EMP_NO;
-    this.cooldownUntil = new Array(codes.length).fill(0);
+
+    const heavyPromptIndex = env.AISTUDIO_PROMPT_INDEX || "1";
+    this.heavy = {
+      codes: heavyCodes,
+      cooldownUntil: new Array(heavyCodes.length).fill(0),
+      cursor: 0,
+      gate: new Semaphore(MAX_CONCURRENCY, QUEUE_TIMEOUT_MS),
+      promptIndex: heavyPromptIndex,
+    };
+
+    // Light pool — e.g. AISTUDIO_LIGHT_API_CODES=GEMINI_FLASH (same workspace, a
+    // code bound to a cheaper model). When unset, the light tier reuses the heavy
+    // lane, so behaviour is unchanged (safe default / opt-in feature).
+    const lightCodes = parseCodes(env.AISTUDIO_LIGHT_API_CODES);
+    this.light =
+      lightCodes.length === 0
+        ? this.heavy
+        : {
+            codes: lightCodes,
+            cooldownUntil: new Array(lightCodes.length).fill(0),
+            cursor: 0,
+            gate: new Semaphore(LIGHT_MAX_CONCURRENCY, QUEUE_TIMEOUT_MS),
+            promptIndex: env.AISTUDIO_LIGHT_PROMPT_INDEX || heavyPromptIndex,
+          };
   }
 
   // Public entry: serialize through the concurrency gate so we never exceed the
   // upstream account's ~20-concurrent ceiling. Excess requests queue; a request
   // that waits too long throws LlmBusyError (→ HTTP 429).
   async generateText(req: LLMRequest): Promise<LLMResult> {
-    return gate.run(() => this.generateGated(req));
+    const lane = getTier() === "light" ? this.light : this.heavy;
+    return lane.gate.run(() => this.generateGated(req, lane));
   }
 
-  private async generateGated(req: LLMRequest): Promise<LLMResult> {
+  private async generateGated(req: LLMRequest, lane: Lane): Promise<LLMResult> {
     const parameters: ParameterEntry[] = [
       { key: "SYSTEM", value: req.system },
       { key: "USER", value: req.user },
@@ -210,11 +250,11 @@ export class AIStudioProvider implements LLMProvider {
     let quotaHits = 0;
     let overloadRetries = OVERLOAD_MAX_RETRIES;
     // Try each code at most once per call, rotating past any that are quota-capped.
-    for (let attempt = 0; attempt < this.apiCodes.length; attempt++) {
-      const idx = this.nextAvailableCode();
+    for (let attempt = 0; attempt < lane.codes.length; attempt++) {
+      const idx = this.nextAvailableCode(lane);
       if (idx < 0) break; // every code is in cooldown
-      const code = this.apiCodes[idx];
-      const url = `${this.base}/genai/${code}/prompt/${this.promptIndex}`;
+      const code = lane.codes[idx];
+      const url = `${this.base}/genai/${code}/prompt/${lane.promptIndex}`;
 
       let res = await this.callPrompt(url, body, await this.getJwt());
       if (res.status === 401) {
@@ -226,7 +266,7 @@ export class AIStudioProvider implements LLMProvider {
       if (raw.includes(QUOTA_PHRASE)) {
         // Per-minute limits mention "분"(minute); anything else is the daily cap.
         const perMinute = raw.includes("분");
-        this.cooldownUntil[idx] =
+        lane.cooldownUntil[idx] =
           Date.now() + (perMinute ? MINUTE_COOLDOWN_MS : DAILY_COOLDOWN_MS);
         quotaHits++;
         continue; // rotate to the next code
@@ -267,18 +307,18 @@ export class AIStudioProvider implements LLMProvider {
     }
 
     throw new Error(
-      `aistudio: all ${this.apiCodes.length} API code(s) exhausted (${quotaHits} quota-capped) — raise quotas or add more codes via AISTUDIO_API_CODES`,
+      `aistudio: all ${lane.codes.length} API code(s) exhausted (${quotaHits} quota-capped) — raise quotas or add more codes`,
     );
   }
 
   // Round-robin to the next code whose cooldown has elapsed, advancing the cursor
   // so load spreads evenly. Returns -1 when every code is currently capped.
-  private nextAvailableCode(): number {
+  private nextAvailableCode(lane: Lane): number {
     const now = Date.now();
-    for (let n = 0; n < this.apiCodes.length; n++) {
-      const idx = (this.cursor + n) % this.apiCodes.length;
-      if (this.cooldownUntil[idx] <= now) {
-        this.cursor = (idx + 1) % this.apiCodes.length;
+    for (let n = 0; n < lane.codes.length; n++) {
+      const idx = (lane.cursor + n) % lane.codes.length;
+      if (lane.cooldownUntil[idx] <= now) {
+        lane.cursor = (idx + 1) % lane.codes.length;
         return idx;
       }
     }

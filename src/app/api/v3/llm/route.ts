@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { validateBody } from "@/lib/llmInput";
-import { runWithMode, type LLMMode } from "@/lib/llm/modeContext";
+import { runWithMode, type LLMMode, type LLMTier } from "@/lib/llm/modeContext";
 import { LlmBusyError } from "@/lib/llm/providers/aistudio";
 import { enqueue } from "@/lib/llm/jobQueue";
 
@@ -56,6 +56,25 @@ interface V3LLMBody {
   task: Task;
   payload: Record<string, unknown>;
   sessionId?: string;
+}
+
+// L-OWL one-liner tasks → light model tier (e.g. Gemini Flash). Everything else
+// (chapter summaries, result-page synthesis, cover/editor notes) stays heavy
+// (e.g. Sonnet). Routed by the AI Studio provider's per-lane code pool.
+const LIGHT_TASKS = new Set<Task>([
+  "judgeBranch",
+  "reflectShort",
+  "rephraseLight",
+  "comfortReassure",
+  "reflectPoetic",
+  "reflectValues",
+  "reflectStrength",
+  "extractKeyword",
+  "observePattern",
+]);
+
+function tierFor(task: Task): LLMTier {
+  return LIGHT_TASKS.has(task) ? "light" : "heavy";
 }
 
 async function dispatch(task: Task, payload: Record<string, unknown>): Promise<unknown> {
@@ -117,12 +136,16 @@ export async function POST(req: Request) {
 
     // Async path: enqueue and return a job id immediately — the client polls for
     // the result, so the request never waits (and never times out) under load.
+    const tier = tierFor(body.task);
+
     if (ASYNC_ENABLED) {
-      const jobId = enqueue(() => runWithMode(mode, deep, () => dispatch(body.task, body.payload)));
+      const jobId = enqueue(() =>
+        runWithMode(mode, deep, tier, () => dispatch(body.task, body.payload)),
+      );
       return NextResponse.json({ jobId }, { status: 202 });
     }
 
-    const result = await runWithMode(mode, deep, () => dispatch(body.task, body.payload));
+    const result = await runWithMode(mode, deep, tier, () => dispatch(body.task, body.payload));
     return NextResponse.json({ result });
   } catch (err) {
     // Concurrency queue saturated → tell the client to back off and retry,

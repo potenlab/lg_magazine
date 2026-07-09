@@ -66,8 +66,8 @@ export function clampBodyToCompleteSentence(
   return windowStr.trim();
 }
 
-/** Chapter 4 본문 최대 분량 — 공백 포함 430자(UI 영역 넘침 방지 상한). */
-export const CHAPTER4_BODY_MAX_CHARS = 430;
+/** Chapter 4 본문 최대 분량 — 다른 챕터(520자)와 통일. 맺음말은 clampBodyKeepingEnding 이 별도 보존. */
+export const CHAPTER4_BODY_MAX_CHARS = CHAPTER_BODY_MAX_CHARS;
 
 /** Chapter 4 전용 — 분량 캡을 적용하되 고정 맺음말("…만들어갈 다음 호를 기대해
  *  보자.")은 항상 보존한다. 일반 clamp 는 꼬리를 잘라 맺음말까지 날리므로,

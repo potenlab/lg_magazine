@@ -24,8 +24,9 @@ export function EditorOutro({ body, name }: Props) {
       <MagazineFrame name={name} />
 
       {/* 타이틀 (중앙) */}
-      <Text style={{ fontFamily: KOR, fontWeight: 700, fontSize: 26, color: MAG.text, marginTop: 36, letterSpacing: 1 }}>
-        Editor&apos;s Note
+      <Text style={{ fontFamily: KOR, fontSize: 26, color: MAG.text, marginTop: 36, letterSpacing: 1 }}>
+        <Text style={{ fontWeight: 600 }}>Editor&apos;s</Text>
+        <Text style={{ fontWeight: 700 }}> Note</Text>
       </Text>
 
       {/* hero (중앙) */}

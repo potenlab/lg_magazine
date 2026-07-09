@@ -43,10 +43,11 @@ const TEXT = MAG.text;
 const WINE = MAG.accent;
 const RULE = MAG.accent;
 const MUTED = "#7a5a3a"; // 카드 라벨(뮤트 브라운)
-const GOLD = "#b99b6b"; // 카드 골드 보더
+const GOLD = "#b99b6b"; // 챕터 구분선·질문 좌보더
+const CARD_BORDER = "#DCBBB5"; // 답변/결과 카드 보더
 // 카드 배경 톤 (크림 계열).
-const RESULT_BG = "#f3e8cc";
-const ANSWER_BG = "#fbf6e8";
+const RESULT_BG = "#F5E9E2";
+const ANSWER_BG = "#FDFAF5";
 const QUESTION_TEXT = "#6b5337";
 const KOR = MAG_FONT.kor;
 
@@ -64,9 +65,10 @@ export function Appendix({ name, threads }: Props) {
 
       {/* 타이틀 — "Appendix"(와인) + "{name}님이 직접 적어주신 기록"(갈색) */}
       <View>
-        <Text style={{ fontFamily: KOR, fontSize: 16, color: WINE }}>Appendix</Text>
-        <Text style={{ fontFamily: KOR, fontSize: 25, fontWeight: 700, color: TEXT, marginTop: 10 }}>
-          {name}님이 직접 적어주신 기록
+        <Text style={{ fontFamily: KOR, fontSize: 15, color: WINE }}>Appendix</Text>
+        <Text style={{ fontFamily: KOR, fontSize: 26, color: TEXT, marginTop: 12 }}>
+          <Text style={{ fontWeight: 700 }}>{name}님이 </Text>
+          <Text style={{ fontWeight: 600 }}>직접 적어주신 기록</Text>
         </Text>
       </View>
 
@@ -80,41 +82,42 @@ export function Appendix({ name, threads }: Props) {
           {threads.map((thread, ti) => {
             const [firstEntry, ...restEntries] = thread.entries;
             return (
-            // 간격은 thread 별 marginTop 으로 부여 — 페이지가 wrap 되어
-            // thread 가 새 페이지 상단에 떨어져도 동일 간격 유지된다.
-            // 첫 thread 는 부제(본문 marginTop 16) 아래에 위치.
-            <View key={ti} style={{ marginTop: ti === 0 ? 16 : 20 }}>
+            // thread 간 간격은 "앞 thread 의 marginBottom" 으로 부여 — 뒤 thread 가
+            // wrap 되어 새 페이지 최상단에 떨어질 때 marginTop 이 없어 정확히 top 80(paddingTop)
+            // 에서 시작한다. 첫 thread 만 부제 아래 marginTop 16. (inter-thread 간격:
+            // 앞 thread 의 마지막 entry marginBottom 10 + thread marginBottom 10 = 20)
+            <View key={ti} style={{ marginTop: ti === 0 ? 16 : 0, marginBottom: 10 }}>
               {/* 챕터 헤더 + 첫 entry 를 한 덩어리(wrap=false)로 묶는다.
                   → 페이지 하단 공간이 부족해 헤더만 남고 첫 질문이 다음 장으로
                   넘어가는 분리를 방지. 공간 부족 시 헤더째 다음 장 최상단으로 이동. */}
               <View wrap={false}>
                 <View
                   style={{
-                    paddingBottom: 6,
+                    paddingBottom: 20,
                     borderBottomWidth: 0.6,
-                    borderBottomColor: GOLD,
+                    borderBottomColor: WINE,
                   }}
                 >
-                  <Text style={{ fontFamily: KOR, fontSize: 11, color: MUTED, letterSpacing: 1.4 }}>
+                  <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 1.4 }}>
                     {thread.chapter}
                   </Text>
-                  <Text style={{ fontFamily: KOR, fontSize: 15, fontWeight: 700, color: TEXT, marginTop: 2 }}>
+                  <Text style={{ fontFamily: KOR, fontSize: 16, fontWeight: 700, color: TEXT, marginTop: 8 }}>
                     {thread.title}
                   </Text>
                 </View>
                 {firstEntry && (
-                  <View style={{ marginTop: 10 }}>
-                    <Entry entry={firstEntry} isFirst />
+                  <View style={{ marginTop: 20 }}>
+                    <Entry entry={firstEntry} />
                   </View>
                 )}
               </View>
 
-              {/* 나머지 entries — 자연 흐름(wrap 허용). 각 Entry 자체 marginTop 으로
-                  간격 부여 (wrap 시 새 페이지 상단에 떨어진 entry 도 동일 간격 유지). */}
+              {/* 나머지 entries — 자연 흐름(wrap 허용). 각 Entry 는 marginBottom 으로
+                  간격 부여 → wrap 시 새 페이지 상단에 떨어진 entry 도 marginTop 이 없어 top 80 에서 시작. */}
               {restEntries.length > 0 && (
                 <View>
                   {restEntries.map((e, i) => (
-                    <Entry key={i + 1} entry={e} isFirst={false} />
+                    <Entry key={i + 1} entry={e} />
                   ))}
                 </View>
               )}
@@ -133,7 +136,7 @@ export function Appendix({ name, threads }: Props) {
  *   answer:   흰 박스 + 골드 보더 (round 4)
  *   result:   베이지 박스 + 골드 보더 (round 4) — 엘아울 합성 강조
  */
-function Entry({ entry, isFirst }: { entry: AppendixEntry; isFirst?: boolean }) {
+function Entry({ entry }: { entry: AppendixEntry }) {
   const isQuestion = entry.tone === "question";
   const isResult = entry.tone === "result";
 
@@ -151,9 +154,10 @@ function Entry({ entry, isFirst }: { entry: AppendixEntry; isFirst?: boolean }) 
   const firstRest = sentMatch ? sentMatch[2].trim() : "";
   const restParagraphs = safeParagraphs.slice(1);
 
-  const bodyFontSize = isQuestion ? 12 : 13;
+  const bodyFontSize = isQuestion ? 15 : 14;
   const bodyColor = isQuestion ? QUESTION_TEXT : TEXT;
   const bodyFontStyle = isQuestion ? "italic" : "normal";
+  const bodyFontWeight = isQuestion ? 600 : 400;
 
   // 규칙 A — '질문'은 minPresenceAhead 로 break-after: avoid (뒤 답변 첫 줄과 유지).
   // 규칙 B — 답변/결과 박스는 wrap=true (break-inside auto) 로 자연 분할.
@@ -162,30 +166,31 @@ function Entry({ entry, isFirst }: { entry: AppendixEntry; isFirst?: boolean }) 
       wrap={!isQuestion}
       minPresenceAhead={isQuestion ? 64 : undefined}
       style={{
-        marginTop: isFirst ? 0 : 10,
-        paddingLeft: 10,
-        paddingRight: isQuestion ? 0 : 10,
-        paddingVertical: isQuestion ? 5 : 8,
+        marginBottom: 10,
+        paddingLeft: isQuestion ? 0 : 16,
+        paddingRight: isQuestion ? 0 : 16,
+        paddingTop: isQuestion ? 0 : 16,
+        paddingBottom: isQuestion ? 0 : 12,
         borderLeftWidth: isQuestion ? 2.5 : 0,
         borderLeftColor: isQuestion ? GOLD : undefined,
-        borderWidth: isQuestion ? 0 : 0.6,
-        borderColor: isQuestion ? undefined : GOLD,
-        borderRadius: isQuestion ? 0 : 4,
+        borderWidth: isQuestion ? 0 : 1,
+        borderColor: isQuestion ? undefined : CARD_BORDER,
+        borderRadius: isQuestion ? 0 : 8,
         backgroundColor: isQuestion ? undefined : isResult ? RESULT_BG : ANSWER_BG,
       }}
     >
       {/* 라벨 + 첫 문장 — wrap=false 로 묶어 라벨만 페이지 끝에 남는 것 방지. */}
       <View wrap={false}>
-        <Text style={{ fontFamily: KOR, fontSize: 11, color: MUTED, letterSpacing: 0.6 }}>
+        <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}>
           {entry.label}
         </Text>
-        <Text style={{ fontFamily: KOR, fontSize: bodyFontSize, color: bodyColor, marginTop: 3, lineHeight: 1.65, fontStyle: bodyFontStyle }}>
+        <Text style={{ fontFamily: KOR, fontSize: bodyFontSize, fontWeight: bodyFontWeight, color: bodyColor, marginTop: 12, lineHeight: 1.7, fontStyle: bodyFontStyle }}>
           {firstSentence}
         </Text>
       </View>
       {/* 첫 문단의 나머지 문장 — 라인 레벨 wrap + orphans/widows 2. */}
       {firstRest ? (
-        <Text orphans={2} widows={2} style={{ fontFamily: KOR, fontSize: bodyFontSize, color: bodyColor, lineHeight: 1.65, fontStyle: bodyFontStyle }}>
+        <Text orphans={2} widows={2} style={{ fontFamily: KOR, fontSize: bodyFontSize, fontWeight: bodyFontWeight, color: bodyColor, lineHeight: 1.7, fontStyle: bodyFontStyle }}>
           {firstRest}
         </Text>
       ) : null}
@@ -195,7 +200,7 @@ function Entry({ entry, isFirst }: { entry: AppendixEntry; isFirst?: boolean }) 
           key={i + 1}
           orphans={2}
           widows={2}
-          style={{ fontFamily: KOR, fontSize: bodyFontSize, color: bodyColor, marginTop: 8, lineHeight: 1.65, fontStyle: bodyFontStyle }}
+          style={{ fontFamily: KOR, fontSize: bodyFontSize, fontWeight: bodyFontWeight, color: bodyColor, marginTop: 8, lineHeight: 1.7, fontStyle: bodyFontStyle }}
         >
           {p}
         </Text>

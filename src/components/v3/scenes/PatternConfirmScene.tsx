@@ -16,6 +16,10 @@ export function PatternConfirmScene({ spec, onAdvance }: { spec: SceneSpec; onAd
   const waitMsg = useEditorWait();
   const [loaded, setLoaded] = useState(false);
   const [narrationDone, setNarrationDone] = useState(false);
+  const [mirror, setMirror] = useState({
+    situation: session.patternMirrorSituation,
+    behavior: session.patternMirrorBehavior,
+  });
 
   useEffect(() => {
     if (session.patternMirrorSituation && session.patternMirrorBehavior) {
@@ -32,7 +36,11 @@ export function PatternConfirmScene({ spec, onAdvance }: { spec: SceneSpec; onAd
         valueDef: session.valueDefinitions[session.topValue] ?? "",
       });
       if (cancelled) return;
-      patch({ patternMirrorSituation: r.situationPattern, patternMirrorBehavior: r.behaviorPattern });
+      setMirror({ situation: r.situationPattern, behavior: r.behaviorPattern });
+      // stub fallback은 캐시 금지 — 다음 진입 때 재호출되도록.
+      if (!r.fromStub) {
+        patch({ patternMirrorSituation: r.situationPattern, patternMirrorBehavior: r.behaviorPattern });
+      }
       setLoaded(true);
     })();
     return () => {
@@ -110,8 +118,8 @@ export function PatternConfirmScene({ spec, onAdvance }: { spec: SceneSpec; onAd
       <div className="flex-1 space-y-5">
         <div className="rounded-md border border-[#b99b6b]/40 bg-white/40 p-4">
           <p className="text-sm text-[#3d2414]">
-            {session.name}님은 <strong>{session.patternMirrorSituation}</strong>에서,{" "}
-            <strong>{session.patternMirrorBehavior}</strong> 유독 에너지가 생기는 것 같아요.
+            {session.name}님은 <strong>{mirror.situation}</strong>에서,{" "}
+            <strong>{mirror.behavior}</strong> 유독 에너지가 생기는 것 같아요.
           </p>
           <p className="mt-2 text-sm text-[#3d2414]">맞나요?</p>
         </div>

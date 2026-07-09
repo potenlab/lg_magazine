@@ -57,7 +57,7 @@ export interface LLMContract {
     name: string;
     helpRequests: string;
     values: { word: string; meaning: string }[];
-  }): Promise<{ commonAsk: string; linkedValue: string }>;
+  }): Promise<{ commonAsk: string; linkedValue: string; fromStub?: boolean }>;
 
   /** [22p] Editor synthesis — weave four ingredients (Ch1 flow common, Ch2
    * selected values, Ch2 strength common-ask pattern, Ch2 othersDescription)
@@ -159,7 +159,7 @@ export interface LLMContract {
     storyB: string;
     selectedValue: string;
     valueDef: string;
-  }): Promise<{ situationPattern: string; behaviorPattern: string }>;
+  }): Promise<{ situationPattern: string; behaviorPattern: string; fromStub?: boolean }>;
 
   writeChapterArticle(input: {
     name: string;

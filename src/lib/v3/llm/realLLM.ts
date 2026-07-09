@@ -282,8 +282,9 @@ export const realLLM: LLMContract = {
     try {
       return await callTask<{ horizon: string[] }>("generateTimeHorizon", input);
     } catch (err) {
-      console.warn("[v3 LLM] generateTimeHorizon fell back to stub:", err);
-      return stubLLM.generateTimeHorizon(input);
+      console.warn("[v3 LLM][STUB-FALLBACK] generateTimeHorizon threw → using generic stub:", err);
+      const s = await stubLLM.generateTimeHorizon(input);
+      return { ...s, fromStub: true };
     }
   },
 

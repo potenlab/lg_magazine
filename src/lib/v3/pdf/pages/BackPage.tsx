@@ -1,53 +1,50 @@
 import { Image, Page, Text, View } from "@react-pdf/renderer";
+import { MAG, MAG_FONT } from "../styles";
 
 /**
- * Back page — 매거진 마지막 페이지.
- *   /back page.jpg 가 와인 색 풀-블리드 + 로고 + 기차 일러스트를 베이크해놓음.
- *   동적 텍스트는 하단 콜로폰(Magazine STORY / Vol. / 발행일 / 코멘트) 만 오버레이.
- *   좌표: A4 (595 × 842pt) 기준.
+ * Back page (2026 리디자인) — 와인 풀블리드 + 중앙 "magazine STORY / VISION EXPRESS"
+ * + 우하단 콜로폰. 텍스트는 크림, 배경은 포인트 와인(단색 — 시안의 그라디언트 근사).
  */
 interface Props {
   name: string;
   date: string;
 }
 
-const TEXT = "#3d2414";
+const KOR = MAG_FONT.kor;
+const CREAM = MAG.bg;
 
+const MONTHS = [
+  "Jan.", "Feb.", "Mar.", "Apr.", "May", "Jun.",
+  "Jul.", "Aug.", "Sep.", "Oct.", "Nov.", "Dec.",
+];
 function formatDate(raw: string): string {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return `${m[3]} ${MONTHS[parseInt(m[2], 10) - 1] ?? m[2]} ${m[1]}`;
   return raw;
 }
 
 export function BackPage({ name, date }: Props) {
   return (
-    <Page size="A4" style={{ padding: 0 }}>
-      <View style={{ position: "relative", flexGrow: 1, width: 595 }}>
-      {/* back page.jpg — 와인 배경 + 로고 + 기차 + 하단 cream strip 까지 베이크. */}
-      <Image
-        src="/back page.jpg"
-        style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
-      />
+    <Page size="A4" style={{ backgroundColor: MAG.accent, position: "relative", width: 595, height: 842 }}>
+      {/* 중앙 로고 (magazine Logo.png — 1038×250, 비율 4.15) */}
+      <View style={{ position: "absolute", top: 360, left: 0, right: 0, alignItems: "center" }}>
+        <Image src="/magazine Logo.png" style={{ width: 260, height: 63 }} />
+      </View>
 
-      {/* 하단 cream strip 위 콜로폰 텍스트.
-          back page.jpg 하단 ~150pt 가 cream strip 으로 베이크됐다는 전제. */}
-      <View style={{ position: "absolute", bottom: 110, left: 52, right: 52 }}>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: TEXT, lineHeight: 1.8 }}>
-          Magazine STORY
+      {/* 우하단 콜로폰 */}
+      <View style={{ position: "absolute", bottom: 30, right: 30, alignItems: "flex-end" }}>
+        <Text style={{ fontFamily: KOR, fontSize: 16, color: CREAM, lineHeight: 1.9, textAlign: "right" }}>
+          magazine STORY Vol. {name}
         </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: TEXT, lineHeight: 1.8 }}>
-          Vol. {name}
+        <Text style={{ fontFamily: KOR, fontSize: 16, color: CREAM, lineHeight: 1.9, textAlign: "right" }}>인쇄부수 1부</Text>
+        <Text style={{ fontFamily: KOR, fontSize: 16, color: CREAM, lineHeight: 1.9, textAlign: "right" }}>{formatDate(date)}</Text>
+        <Text style={{ fontFamily: KOR, fontWeight: 600, fontSize: 16, color: CREAM, lineHeight: 1.9, textAlign: "right", marginTop: 16 }}>
+          오직 한 사람을 위한 단 한 호의 매거진
         </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: TEXT, lineHeight: 1.8 }}>
-          발행일 {formatDate(date)}  ·  인쇄부수 1부
-        </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: TEXT, lineHeight: 1.8 }}>
-          오직 한 사람을 위해 만들어진 특집호.
-        </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 14, color: TEXT, lineHeight: 1.8 }}>
+        <Text style={{ fontFamily: KOR, fontWeight: 600, fontSize: 16, color: CREAM, lineHeight: 1.9, textAlign: "right" }}>
           — 매거진 STORY 편집부
         </Text>
       </View>
-    </View>
     </Page>
   );
 }

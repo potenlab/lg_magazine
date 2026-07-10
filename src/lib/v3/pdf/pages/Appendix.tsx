@@ -1,4 +1,6 @@
-import { Image, Page, Text, View } from "@react-pdf/renderer";
+import { Page, Text, View } from "@react-pdf/renderer";
+import { MAG, MAG_FONT } from "../styles";
+import { MagazineFrame, MAG_MARGIN, MAG_CONTENT_TOP } from "../MagazineFrame";
 
 /**
  * Appendix — Editor's Note 뒷페이지.
@@ -37,17 +39,17 @@ interface Props {
   threads: AppendixThread[];
 }
 
-const TEXT = "#3d2414";
-const MUTED = "#7a5a3a";
-const WINE = "#59282E";
-const RULE = "#59282E";
-const GOLD = "#b99b6b";
-// 매거진 요약 (web) UI palette — bg-[#ede1c6]/40, bg-white/55. PDF 는 alpha
-// 합성이 약해 미리 섞인 톤으로 대체.
-const RESULT_BG = "#f3e8cc";
-const ANSWER_BG = "#fbf6e8";
+const TEXT = MAG.text;
+const WINE = MAG.accent;
+const RULE = MAG.accent;
+const MUTED = "#7a5a3a"; // 카드 라벨(뮤트 브라운)
+const GOLD = "#b99b6b"; // 챕터 구분선·질문 좌보더
+const CARD_BORDER = "#DCBBB5"; // 답변/결과 카드 보더
+// 카드 배경 톤 (크림 계열).
+const RESULT_BG = "#F5E9E2";
+const ANSWER_BG = "#FDFAF5";
 const QUESTION_TEXT = "#6b5337";
-const PAPER = "/paper.jpg";
+const KOR = MAG_FONT.kor;
 
 export function Appendix({ name, threads }: Props) {
   return (
@@ -56,90 +58,64 @@ export function Appendix({ name, threads }: Props) {
     <Page
       size="A4"
       wrap
-      style={{ paddingHorizontal: 46, paddingTop: 71, paddingBottom: 50 }}
+      style={{ backgroundColor: MAG.bg, fontFamily: KOR, color: MAG.text, paddingHorizontal: MAG_MARGIN, paddingTop: MAG_CONTENT_TOP, paddingBottom: 70 }}
     >
-      {/* paper bg — fixed (모든 페이지 반복) */}
-      <Image
-        src={PAPER}
-        fixed
-        style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
-      />
+      {/* 공통 프레임 (헤더/푸터/페이지번호) */}
+      <MagazineFrame name={name} />
 
-      {/* fixed header — absolute 좌표로 모든 페이지 동일 위치에 고정.
-          flow 공간을 차지하지 않으므로 본문은 Page paddingTop(71) 부터 시작.
-          헤더 위 여백 20 + Vol 텍스트 ~14 + rule marginTop 12 + 1 = ~47pt 가
-          헤더가 차지하는 영역, 그 아래 71 - 47 = 24pt 가 breathing room. */}
-      <View fixed style={{ position: "absolute", top: 20, left: 46, right: 46 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: TEXT }}>Vol. {name}</Text>
-          <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: WINE }}>magazine STORY</Text>
-        </View>
-        <View style={{ height: 1, backgroundColor: WINE, marginTop: 12 }} />
-      </View>
-
-      {/* #1 — Title 블록. Page paddingTop 가 이미 헤더 아래 24pt 갭을 줘서
-          자체 marginTop 0. */}
+      {/* 타이틀 — "Appendix"(와인) + "{name}님이 직접 적어주신 기록"(갈색) */}
       <View>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 12, color: MUTED, letterSpacing: 0 }}>
-          APPENDIX
+        <Text style={{ fontFamily: KOR, fontSize: 15, color: WINE }}>Appendix</Text>
+        <Text style={{ fontFamily: KOR, fontSize: 26, color: TEXT, marginTop: 12 }}>
+          <Text style={{ fontWeight: 700 }}>{name}님이 </Text>
+          <Text style={{ fontWeight: 600 }}>직접 적어주신 기록</Text>
         </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 26, fontWeight: 700, color: TEXT, marginTop: 8 }}>
-          {name}님이 직접 적어주신 기록
-        </Text>
-        <View style={{ height: 1, backgroundColor: RULE, marginTop: 20, width: 80 }} />
       </View>
 
       {/* 본문 — marginTop 16 (Ch1~4 본문 spacing). */}
       {threads.length === 0 ? (
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 13, color: MUTED, marginTop: 16 }}>
+        <Text style={{ fontFamily: KOR, fontSize: 13, color: MUTED, marginTop: 16 }}>
           기록할 답변이 아직 없어요.
         </Text>
       ) : (
         <View>
-          {threads.map((thread, ti) => {
-            const [firstEntry, ...restEntries] = thread.entries;
-            return (
-            // 간격은 thread 별 marginTop 으로 부여 — 페이지가 wrap 되어
-            // thread 가 새 페이지 상단에 떨어져도 동일 간격 유지된다.
-            // 첫 thread 는 부제(본문 marginTop 16) 아래에 위치.
-            <View key={ti} style={{ marginTop: ti === 0 ? 16 : 20 }}>
-              {/* 챕터 헤더 + 첫 entry 를 한 덩어리(wrap=false)로 묶는다.
-                  → 페이지 하단 공간이 부족해 헤더만 남고 첫 질문이 다음 장으로
-                  넘어가는 분리를 방지. 공간 부족 시 헤더째 다음 장 최상단으로 이동. */}
-              <View wrap={false}>
-                <View
-                  style={{
-                    paddingBottom: 6,
-                    borderBottomWidth: 0.6,
-                    borderBottomColor: GOLD,
-                  }}
-                >
-                  <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: MUTED, letterSpacing: 1.4 }}>
-                    {thread.chapter}
-                  </Text>
-                  <Text style={{ fontFamily: "Noto Serif KR", fontSize: 15, fontWeight: 700, color: TEXT, marginTop: 2 }}>
-                    {thread.title}
-                  </Text>
-                </View>
-                {firstEntry && (
-                  <View style={{ marginTop: 10 }}>
-                    <Entry entry={firstEntry} isFirst />
-                  </View>
-                )}
+          {threads.map((thread, ti) => (
+            // thread 간 간격은 "앞 thread 의 marginBottom" 으로 부여 — 뒤 thread 가
+            // wrap 되어 새 페이지 최상단에 떨어질 때 marginTop 이 없어 정확히 top 80(paddingTop)
+            // 에서 시작한다. 첫 thread 만 부제 아래 marginTop 16. (inter-thread 간격:
+            // 앞 thread 의 마지막 entry marginBottom 10 + thread marginBottom 10 = 20)
+            <View key={ti} style={{ marginTop: ti === 0 ? 16 : 0, marginBottom: 10 }}>
+              {/* 챕터 헤더(라벨+제목) — 자체는 wrap=false 로 원자(2줄뿐이라 페이지 초과 불가,
+                  분리 안 됨). minPresenceAhead 로 뒤 entry 와 함께 유지(헤더만 페이지 끝에 남는
+                  것 방지). ※ 첫 entry 를 헤더와 원자로 묶지는 않으므로, 긴 답변이 페이지를
+                  넘쳐 겹치는 일은 없다. */}
+              <View
+                wrap={false}
+                minPresenceAhead={130}
+                style={{
+                  paddingBottom: 20,
+                  borderBottomWidth: 0.6,
+                  borderBottomColor: WINE,
+                }}
+              >
+                <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 1.4 }}>
+                  {thread.chapter}
+                </Text>
+                <Text style={{ fontFamily: KOR, fontSize: 16, fontWeight: 700, color: TEXT, marginTop: 8 }}>
+                  {thread.title}
+                </Text>
               </View>
 
-              {/* 나머지 entries — 자연 흐름(wrap 허용). 각 Entry 자체 marginTop 으로
-                  간격 부여 (wrap 시 새 페이지 상단에 떨어진 entry 도 동일 간격 유지). */}
-              {restEntries.length > 0 && (
-                <View>
-                  {restEntries.map((e, i) => (
-                    <Entry key={i + 1} entry={e} isFirst={false} />
-                  ))}
+              {/* entries — 자연 흐름(각 박스 wrap 허용). 첫 entry 는 헤더 아래 marginTop 20,
+                  이후는 각 Entry 의 marginBottom 으로 간격. wrap 시 새 페이지 상단에 떨어져도
+                  marginTop 이 없어 top 80 에서 시작. */}
+              {thread.entries.map((e, i) => (
+                <View key={i} style={i === 0 ? { marginTop: 20 } : undefined}>
+                  <Entry entry={e} />
                 </View>
-              )}
+              ))}
             </View>
-            );
-          })}
+          ))}
         </View>
       )}
     </Page>
@@ -152,69 +128,49 @@ export function Appendix({ name, threads }: Props) {
  *   answer:   흰 박스 + 골드 보더 (round 4)
  *   result:   베이지 박스 + 골드 보더 (round 4) — 엘아울 합성 강조
  */
-function Entry({ entry, isFirst }: { entry: AppendixEntry; isFirst?: boolean }) {
+function Entry({ entry }: { entry: AppendixEntry }) {
   const isQuestion = entry.tone === "question";
   const isResult = entry.tone === "result";
 
   // 본문을 문단(\n\n) 단위로 split. 각 문단 <Text> 는 라인 레벨 wrap 허용
-  // (규칙 B: break-inside auto) + orphans/widows 2 로 분할 시 최소 2줄 유지.
+  // + orphans/widows 2 로 분할 시 최소 2줄 유지.
   const paragraphs = entry.text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   const safeParagraphs = paragraphs.length ? paragraphs : [entry.text];
 
-  // 라벨이 페이지 끝에 홀로 남는 것(제목 잘림) 방지 — 라벨 + '첫 문장' 만
-  // wrap=false 로 묶는다. (첫 문단 통째가 아니라 첫 문장만 묶어 atomic 블록을
-  // 작게 유지 → 하단 빈 여백 최소화.) 첫 문단의 나머지·이후 문단은 라인 분할.
-  const firstPara = safeParagraphs[0] || "";
-  const sentMatch = firstPara.match(/^([\s\S]*?[.!?。][”’"'』」)\]]*)\s*([\s\S]*)$/);
-  const firstSentence = sentMatch ? sentMatch[1].trim() : firstPara;
-  const firstRest = sentMatch ? sentMatch[2].trim() : "";
-  const restParagraphs = safeParagraphs.slice(1);
-
-  const bodyFontSize = isQuestion ? 12 : 13;
+  const bodyFontSize = isQuestion ? 15 : 14;
   const bodyColor = isQuestion ? QUESTION_TEXT : TEXT;
   const bodyFontStyle = isQuestion ? "italic" : "normal";
+  const bodyFontWeight = isQuestion ? 600 : 400;
 
-  // 규칙 A — '질문'은 minPresenceAhead 로 break-after: avoid (뒤 답변 첫 줄과 유지).
-  // 규칙 B — 답변/결과 박스는 wrap=true (break-inside auto) 로 자연 분할.
+  // 박스는 전부 wrap 허용(원자 블록 없음) → 아무리 긴 답변도 페이지 경계에서 자연
+  // 분할, 페이지를 넘쳐 겹치는 일이 없다. minPresenceAhead 로 (1) 박스가 페이지 끝
+  // 자투리에서 시작해 라벨만 남는 것 방지, (2) 라벨이 본문 첫 줄과 떨어지지 않게 유지.
   return (
     <View
-      wrap={!isQuestion}
-      minPresenceAhead={isQuestion ? 64 : undefined}
+      minPresenceAhead={44}
       style={{
-        marginTop: isFirst ? 0 : 10,
-        paddingLeft: 10,
-        paddingRight: isQuestion ? 0 : 10,
-        paddingVertical: isQuestion ? 5 : 8,
+        marginBottom: 10,
+        paddingLeft: isQuestion ? 0 : 16,
+        paddingRight: isQuestion ? 0 : 16,
+        paddingTop: isQuestion ? 0 : 16,
+        paddingBottom: isQuestion ? 0 : 12,
         borderLeftWidth: isQuestion ? 2.5 : 0,
         borderLeftColor: isQuestion ? GOLD : undefined,
-        borderWidth: isQuestion ? 0 : 0.6,
-        borderColor: isQuestion ? undefined : GOLD,
-        borderRadius: isQuestion ? 0 : 4,
+        borderWidth: isQuestion ? 0 : 1,
+        borderColor: isQuestion ? undefined : CARD_BORDER,
+        borderRadius: isQuestion ? 0 : 8,
         backgroundColor: isQuestion ? undefined : isResult ? RESULT_BG : ANSWER_BG,
       }}
     >
-      {/* 라벨 + 첫 문장 — wrap=false 로 묶어 라벨만 페이지 끝에 남는 것 방지. */}
-      <View wrap={false}>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: 11, color: MUTED, letterSpacing: 0.6 }}>
-          {entry.label}
-        </Text>
-        <Text style={{ fontFamily: "Noto Serif KR", fontSize: bodyFontSize, color: bodyColor, marginTop: 3, lineHeight: 1.65, fontStyle: bodyFontStyle }}>
-          {firstSentence}
-        </Text>
-      </View>
-      {/* 첫 문단의 나머지 문장 — 라인 레벨 wrap + orphans/widows 2. */}
-      {firstRest ? (
-        <Text orphans={2} widows={2} style={{ fontFamily: "Noto Serif KR", fontSize: bodyFontSize, color: bodyColor, lineHeight: 1.65, fontStyle: bodyFontStyle }}>
-          {firstRest}
-        </Text>
-      ) : null}
-      {/* 이후 문단들 — 라인 레벨 wrap + orphans/widows 2. */}
-      {restParagraphs.map((p, i) => (
+      <Text minPresenceAhead={24} style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}>
+        {entry.label}
+      </Text>
+      {safeParagraphs.map((p, i) => (
         <Text
-          key={i + 1}
+          key={i}
           orphans={2}
           widows={2}
-          style={{ fontFamily: "Noto Serif KR", fontSize: bodyFontSize, color: bodyColor, marginTop: 8, lineHeight: 1.65, fontStyle: bodyFontStyle }}
+          style={{ fontFamily: KOR, fontSize: bodyFontSize, fontWeight: bodyFontWeight, color: bodyColor, marginTop: i === 0 ? 12 : 8, lineHeight: 1.7, fontStyle: bodyFontStyle }}
         >
           {p}
         </Text>

@@ -34,8 +34,8 @@ export function MagazinePDF({ data, variant }: { data: MagazineData; variant?: I
   const v: ImageVariant = variant ?? pickRandomVariant();
   return (
     <Document title={`STORY Vol. ${data.name}`} author="Magazine STORY 편집부">
+      {/* 순서: Cover → TOC → Editor's Letter(EditorIntro) → Ch1~4 → … */}
       <Cover name={data.name} date={data.date} headline={data.coverHeadline} />
-      <EditorIntro body={data.editorIntro} name={data.name} variant={v} />
       <TOC
         name={data.name}
         chapterHeadlines={[
@@ -45,6 +45,7 @@ export function MagazinePDF({ data, variant }: { data: MagazineData; variant?: I
           data.chapters[4].headline,
         ]}
       />
+      <EditorIntro body={data.editorIntro} name={data.name} variant={v} />
       <Chapter chapter={1} headline={data.chapters[1].headline} body={data.chapters[1].body} pullQuote={data.chapters[1].pullQuote} name={data.name} variant={v} />
       <Chapter chapter={2} headline={data.chapters[2].headline} body={data.chapters[2].body} pullQuote={data.chapters[2].pullQuote} name={data.name} variant={v} />
       <Chapter chapter={3} headline={data.chapters[3].headline} body={data.chapters[3].body} pullQuote={data.chapters[3].pullQuote} name={data.name} variant={v} />

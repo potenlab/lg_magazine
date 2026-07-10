@@ -1,93 +1,63 @@
 import { Image, Page, Text, View } from "@react-pdf/renderer";
 import { sanitizeBody } from "../sanitize";
 import { getIntroImage, type ImageVariant } from "../imageSets";
+import { MAG, MAG_FONT } from "../styles";
+import { MagazineFrame, MAG_MARGIN, MAG_CONTENT_TOP } from "../MagazineFrame";
 
 /**
- * Editor Intro — 매거진 2번째 페이지.
- * TOC 와 동일한 상단 마스트헤드 (Vol. {name} / magazine STORY + 와인 룰).
- * 본문은 페이지 폭을 사용해 좌우 PAD 들여쓰기.
- * 배경: /paper.jpg.
+ * Editor's Letter (2026 리디자인) — 인트로 문장이 짧아 2단 대신 전폭 단일 본문.
+ *   하단 정렬(justifyContent flex-end): "Editor's Letter" 타이틀 → 전폭 본문 → hero 사진.
+ *   색·폰트·프레임은 디자인 토큰/MagazineFrame 재사용.
  */
-
 interface Props {
   body: string;
   name: string;
   variant: ImageVariant;
 }
 
-const TEXT = "#3d2414";
-const WINE = "#59282E";
-const PAPER = "/paper.jpg";
-const PAGE_W = 595;
-const PAGE_H = 842;
-const PAD = 46;
+const KOR = MAG_FONT.kor;
+const M = MAG_MARGIN;
+const CONTENT_W = 595 - M * 2; // 535
 
 export function EditorIntro({ body, name, variant }: Props) {
+  // 인트로는 몇 문장 안 되므로 문장마다 줄바꿈 (문장 = 종결부호 단위).
+  const perLine = sanitizeBody(body)
+    .split(/(?<=[.!?。])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join("\n");
+
   return (
-    <Page size={[PAGE_W, PAGE_H]} style={{ padding: 0, position: "relative", width: PAGE_W, height: PAGE_H, fontFamily: "Noto Serif KR", color: TEXT }}>
-      {/* paper bg */}
-      <Image
-        src={PAPER}
-        style={{ position: "absolute", top: 0, left: 0, width: PAGE_W, height: PAGE_H }}
-      />
+    // 하단(bottom) 기준 정렬 — 본문이 길어져도 텍스트·이미지가 겹치지 않게
+    // justifyContent flex-end 로 콘텐츠를 아래에서 위로 쌓는다.
+    <Page
+      size="A4"
+      style={{
+        backgroundColor: MAG.bg,
+        fontFamily: KOR,
+        color: MAG.text,
+        paddingTop: MAG_CONTENT_TOP,
+        paddingHorizontal: M,
+        paddingBottom: 80, // hero 하단 ↔ 푸터 룰(bottom 50) 간격 30
+        justifyContent: "flex-end",
+      }}
+    >
+      <MagazineFrame name={name} />
 
-      {/* 상단 마스트헤드 — Vol. {name} 좌 + magazine STORY 우 */}
-      <Text style={{ position: "absolute", top: 20, left: PAD, fontSize: 12, color: TEXT }}>
-        Vol. {name}
+      {/* 타이틀 — "Editor's" SemiBold + " Letter" Bold */}
+      <Text style={{ fontFamily: KOR, fontSize: 26, color: MAG.text }}>
+        <Text style={{ fontWeight: 600 }}>Editor&apos;s</Text>
+        <Text style={{ fontWeight: 700 }}> Letter</Text>
       </Text>
-      <Text style={{ position: "absolute", top: 20, right: PAD, fontSize: 12, color: WINE, letterSpacing: 0 }}>
-        magazine <Text style={{ fontWeight: 700 }}>STORY</Text>
+
+      {/* 전폭 단일 본문 — 문장마다 줄바꿈 */}
+      <Text style={{ fontFamily: KOR, fontSize: 14, lineHeight: 1.9, color: MAG.text, marginTop: 20 }}>
+        {perLine}
       </Text>
-      <View
-        style={{
-          position: "absolute",
-          top: 46,
-          left: PAD,
-          right: PAD,
-          height: 1,
-          backgroundColor: WINE,
-        }}
-      />
 
-      {/* 본문 — 페이지 폭 사용 (좌우 PAD). bottom 만 anchor (사진 상단 24pt 위).
-          사진 top = 842 - 46(bottom) - 260(height) = 536 → 컨테이너 bottom = 330 (= 842 - 512).
-          top 제약 없음 → 본문 길이만큼 위로 자라남. */}
-      <View
-        style={{
-          position: "absolute",
-          left: PAD,
-          right: PAD,
-          bottom: 330,
-        }}
-      >
-        <Text
-          style={{
-            fontFamily: "Noto Serif KR",
-            fontSize: 14,
-            lineHeight: 1.9,
-            color: TEXT,
-          }}
-        >
-          {sanitizeBody(body)}
-        </Text>
-        <View style={{ height: 1, backgroundColor: WINE, marginTop: 24 }} />
-      </View>
-
-      {/* 하단 사진 — intro(1).jpg */}
-      <View
-        style={{
-          position: "absolute",
-          left: PAD,
-          right: PAD,
-          bottom: 46,
-          height: 260,
-          overflow: "hidden",
-        }}
-      >
-        <Image
-          src={getIntroImage(variant)}
-          style={{ width: PAGE_W - PAD * 2, height: 260, objectFit: "cover" }}
-        />
+      {/* 하단 hero 사진 */}
+      <View style={{ width: CONTENT_W, height: 250, overflow: "hidden", marginTop: 40 }}>
+        <Image src={getIntroImage(variant)} style={{ width: CONTENT_W, height: 250, objectFit: "cover" }} />
       </View>
     </Page>
   );

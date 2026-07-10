@@ -1,18 +1,16 @@
 import { Image, Page, Text, View } from "@react-pdf/renderer";
 
 /**
- * 표지 — cover.jpg 풀-블리드 + 동적 텍스트 오버레이.
+ * 표지 — cover.jpg 풀-블리드(와인 배경 + magazine STORY + 기차 사진 + 목차 +
+ * 바코드가 모두 베이크됨) + 동적 텍스트 오버레이 3개.
  *
- *   모든 콘텐츠를 outer View(flexGrow:1, width:595) 안에 absolute 로 박는다.
- *   이전 패턴(`<Page>` 직속 children) 에서 react-pdf 가 Image bg 를 inline 으로
- *   잡아 Text 를 다음 페이지로 밀어내는 회귀가 났음 — 이 wrapper 가 핵심.
+ *   시안(1122×1587) → A4(595×842) 스케일 ×0.5303 로 좌표 변환.
+ *   동적 슬롯 (베이크 이미지의 빈 자리):
+ *     - 우상단        : {date}  (01 Jun. 2026 포맷)
+ *     - STORY 오른쪽  : VOL. {name}
+ *     - STORY 아래    : {headline}
  *
- *   동적 슬롯 (시안 좌표 참고용 임시 텍스트 포함):
- *     - 상단 우측: VOL. {name} + "오직 한 사람을 위한 / 단 한 호의 매거진"
- *     - 하단 좌측: - {headline} -
- *     - 하단 우측: {date}, "비매품"
- *
- *   좌표는 A4 (595 × 842pt) 기준.
+ *   폰트: MaruBuri (시안과 동일).
  */
 
 interface Props {
@@ -21,10 +19,22 @@ interface Props {
   headline: string;
 }
 
-const CREAM = "#FFFDF2";
+// orange-50 / orange-100 (시안의 크림 톤)
+const CREAM = "#fbf6ed";
+const CREAM_WARM = "#ffedd5";
 
+const MONTHS = [
+  "Jan.", "Feb.", "Mar.", "Apr.", "May", "Jun.",
+  "Jul.", "Aug.", "Sep.", "Oct.", "Nov.", "Dec.",
+];
+
+/** 2026-06-01 → "01 Jun. 2026" (시안 포맷). 형식이 다르면 원문 유지. */
 function formatDate(raw: string): string {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw.replace(/-/g, ".");
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) {
+    const mon = MONTHS[parseInt(m[2], 10) - 1] ?? m[2];
+    return `${m[3]} ${mon} ${m[1]}`;
+  }
   return raw;
 }
 
@@ -37,53 +47,51 @@ export function Cover({ name, date, headline }: Props) {
           style={{ position: "absolute", top: 0, left: 0, width: 595, height: 842 }}
         />
 
-        {/* 1·5 ("오직 한 사람을 위한 / 단 한 호의 매거진", "비매품" 박스) 는
-            cover.jpg 자체에 베이크돼 있어 오버레이 안 함.
-            동적으로 박는 슬롯은 2·3·4 만 — VOL.{name} / -{headline}- / {date}. */}
-
-        {/* VOL. {name} — "오직 한 사람을 위한 단 한 호의 매거진" 베이크 텍스트
-            바로 아래 줄에 위치. */}
-        {/* 이름 길이에 따라 좌측으로 밀리지 않도록 left-anchor 로 고정.
-            "오직 한 사람을 위한" 베이크 텍스트 왼쪽 끝에 맞춰 자람. */}
+        {/* 발행일 — 우상단 (시안 top 55 / right margin) */}
         <Text
           style={{
             position: "absolute",
-            top: 200,
-            left: 370,
-            fontSize: 22,
-            fontFamily: "Noto Serif KR",
+            top: 28,
+            right: 30,
+            fontSize: 11,
+            fontFamily: "MaruBuri",
+            fontWeight: 600,
             color: CREAM,
+            textAlign: "right",
+          }}
+        >
+          {formatDate(date)}
+        </Text>
+
+        {/* VOL. {name} — STORY 오른쪽 (시안 left 854 / top 368) */}
+        <Text
+          style={{
+            position: "absolute",
+            top: 210,
+            right: 30,
+            fontSize: 22,
+            fontFamily: "MaruBuri",
+            fontWeight: 600,
+            color: CREAM,
+            textAlign: "right",
           }}
         >
           VOL. {name}
         </Text>
 
-        {/* - {headline} - — 하단 와인 밴드 좌측 */}
+        {/* {headline} — STORY 아래 (시안 left 60 / top 465) */}
         <Text
           style={{
             position: "absolute",
-            bottom: 24,
-            left: 46,
-            fontSize: 14,
-            fontFamily: "Noto Serif KR",
-            color: CREAM,
+            top: 250,
+            left: 30,
+            fontSize: 16,
+            fontFamily: "MaruBuri",
+            fontWeight: 400,
+            color: CREAM_WARM,
           }}
         >
-          - {headline} -
-        </Text>
-
-        {/* 발행일 — 하단 와인 밴드 우측 (비매품 박스 좌측) */}
-        <Text
-          style={{
-            position: "absolute",
-            bottom: 24,
-            right: 100,
-            fontSize: 14,
-            fontFamily: "Noto Serif KR",
-            color: CREAM,
-          }}
-        >
-          {formatDate(date)}
+          {headline}
         </Text>
       </View>
     </Page>

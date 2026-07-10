@@ -24,7 +24,7 @@ export function cleanArticleField(s: string): string {
  *  이 캡으로 칸 안에 들어오게 줄이고, 항상 완결 문장으로 끝맺도록 보장.
  *  Ch1~3 은 pullQuote 가 함께 들어가 본문 여유가 더 적고, Ch4 는 pullQuote 가
  *  없어 여유가 더 많지만 — 단순화를 위해 공통 캡 사용. */
-export const CHAPTER_BODY_MAX_CHARS = 420;
+export const CHAPTER_BODY_MAX_CHARS = 520;
 
 /** 문장 종결 위치(마침표·물음표·느낌표 + 뒤따르는 닫는 따옴표/괄호)를 모두 찾아
  *  마지막 종결점의 끝 인덱스를 반환. 없으면 -1. */
@@ -66,8 +66,9 @@ export function clampBodyToCompleteSentence(
   return windowStr.trim();
 }
 
-/** Chapter 4 본문 최대 분량 — 공백 포함 430자(UI 영역 넘침 방지 상한). */
-export const CHAPTER4_BODY_MAX_CHARS = 430;
+/** Chapter 4 본문 최대 분량 — Ch4 는 하단 2단 영역(컬럼 높이 ≈332pt)만 써서 다른 챕터보다
+ *  가용 공간이 좁다. 우단 넘침 방지 상한 460자. 맺음말은 clampBodyKeepingEnding 이 별도 보존. */
+export const CHAPTER4_BODY_MAX_CHARS = 460;
 
 /** Chapter 4 전용 — 분량 캡을 적용하되 고정 맺음말("…만들어갈 다음 호를 기대해
  *  보자.")은 항상 보존한다. 일반 clamp 는 꼬리를 잘라 맺음말까지 날리므로,

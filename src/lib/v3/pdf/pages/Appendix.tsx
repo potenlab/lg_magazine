@@ -85,39 +85,38 @@ export function Appendix({ name, threads }: Props) {
             // 에서 시작한다. 첫 thread 만 부제 아래 marginTop 16. (inter-thread 간격:
             // 앞 thread 의 마지막 entry marginBottom 10 + thread marginBottom 10 = 20)
             <View key={ti} style={{ marginTop: ti === 0 ? 16 : 0, marginBottom: 10 }}>
-              {/* 챕터 헤더(라벨+제목) + 첫 entry 를 하나의 wrap=false 그룹으로 묶는다.
-                  → 헤더만 페이지 끝에 홀로 남지 않고(요구 #2), 공간 부족 시 헤더부터
-                  통째로 다음 페이지로 넘어간다. 챕터 첫 entry 는 대개 질문/짧은 답변이라
-                  그룹이 페이지를 초과하지 않는다. */}
-              <View wrap={false}>
-                <View
-                  style={{
-                    paddingBottom: 20,
-                    borderBottomWidth: 0.6,
-                    borderBottomColor: WINE,
-                  }}
-                >
-                  <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 1.4 }}>
-                    {thread.chapter}
-                  </Text>
-                  <Text style={{ fontFamily: KOR, fontSize: 16, fontWeight: 700, color: TEXT, marginTop: 8 }}>
-                    {thread.title}
-                  </Text>
-                </View>
-                {thread.entries[0] ? (
-                  <View style={{ marginTop: 20 }}>
-                    <Entry entry={thread.entries[0]} />
-                  </View>
-                ) : null}
+              {/* 챕터 헤더(라벨+제목) — 2줄뿐인 작은 블록이라 wrap=false 로 자체 분리는
+                  불가능(발생하지 않음). minPresenceAhead 로 "헤더만 페이지 끝에 홀로
+                  남는" 고립만 방지(첫 entry 라벨 한 줄 분량 확보) — 첫 entry 전체를
+                  헤더와 묶지 않으므로, 첫 entry 가 길어도 안전하게 그 아래에서부터
+                  자연스럽게 다음 페이지로 흘러간다(요구 #1: 불필요한 여백 방지).
+                  ※ minPresenceAhead 는 배경색 없는 보더 전용 블록에만 사용 —
+                  테두리+배경 박스(Entry)에 걸면 겹침 회귀가 남(요구 #3, 아래 Entry 주석). */}
+              <View
+                wrap={false}
+                minPresenceAhead={40}
+                style={{
+                  paddingBottom: 20,
+                  borderBottomWidth: 0.6,
+                  borderBottomColor: WINE,
+                }}
+              >
+                <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 1.4 }}>
+                  {thread.chapter}
+                </Text>
+                <Text style={{ fontFamily: KOR, fontSize: 16, fontWeight: 700, color: TEXT, marginTop: 8 }}>
+                  {thread.title}
+                </Text>
               </View>
 
-              {/* 나머지 entries — 각 박스는 Entry 내부에서 wrap=false 라 페이지 경계에서
-                  split 되지 않고 통째로 다음 페이지로 넘어간다(라벨↔본문 분리·겹침 방지).
-                  "질문" entry 앞에는 앞 카드(marginBottom 10)에 10 을 더해 총 20 간격. */}
-              {thread.entries.slice(1).map((e, idx) => {
-                const marginTop = e.tone === "question" ? 10 : 0;
+              {/* entries — 카드 자체는 wrap 허용(기본값, 고정 height 없음): 페이지 하단에
+                  걸치면 남는 공간까지 채우고 나머지 문단만 자연스럽게 다음 페이지로
+                  흘러간다(요구 #1). 라벨↔첫 문장 분리·겹침 방지는 Entry 내부에서 처리
+                  (요구 #2, #3). */}
+              {thread.entries.map((e, i) => {
+                const marginTop = i === 0 ? 20 : e.tone === "question" ? 10 : 0;
                 return (
-                  <View key={idx + 1} style={marginTop ? { marginTop } : undefined}>
+                  <View key={i} style={marginTop ? { marginTop } : undefined}>
                     <Entry entry={e} />
                   </View>
                 );
@@ -150,16 +149,20 @@ function Entry({ entry }: { entry: AppendixEntry }) {
   const bodyFontStyle = isQuestion ? "italic" : "normal";
   const bodyFontWeight = isQuestion ? 600 : 400;
 
-  // 박스는 wrap={false} — 페이지 경계에서 split 되지 않고 통째로 다음 페이지로
-  // 넘어간다. 이렇게 하면:
-  //   (1) 라벨만 페이지 끝에 남고 본문이 다음 장으로 떨어지는 분리가 없다(요구 #1),
-  //   (2) 테두리+배경 박스가 페이지 경계에서 split 될 때 여러 줄이 겹쳐 그려지던
-  //       react-pdf v4 회귀(요구 #3)가 근본적으로 사라진다.
-  // ※ 대가: 한 박스가 한 페이지보다 크면 넘칠 수 있으나, Appendix 답변은 그 정도로
-  //   길지 않다. (minPresenceAhead 는 split 상황에서만 의미 있으므로 더는 쓰지 않음.)
+  // 박스는 wrap 허용(기본값, 고정 height 없음) — 페이지 하단에 걸치면 남는 공간까지
+  // 채우고 나머지 문단은 자연스럽게 다음 페이지로 흘러간다(요구 #1). 카드가 페이지보다
+  // 커도 넘치지 않고 정상적으로 분할된다.
+  // ※ 테두리+배경 박스 자체에 minPresenceAhead 를 걸면 react-pdf v4 에서 페이지 넘김
+  //   시 텍스트가 겹쳐 그려지는 회귀가 있다 — 그래서 이 박스에는 절대 쓰지 않는다(요구 #3).
+  //   라벨을 첫 문단과 wrap=false 로 묶는 것도 피한다: 엘아울의 기사(article body)처럼
+  //   첫 문단 자체가 한 페이지보다 길 수 있는 entry 가 있어, 그 경우 묶음 자체가
+  //   페이지보다 커져 같은 오버플로우/겹침이 재발한다. 대신 라벨 Text 에만
+  //   minPresenceAhead 를 줘서(박스가 아니라 라벨 기준) 페이지 넘김 시 라벨이 페이지
+  //   끝에 홀로 남고 첫 문장이 다음 장으로 떨어지는 분리만 막는다(요구 #2, 라벨+첫
+  //   줄 확보). 라벨 자체는 항상 한 줄이라 안전하게 다음 페이지로 넘어갈 수 있다.
+  const LABEL_KEEP_AHEAD = 30; // 라벨 + 첫 줄(14pt·lineHeight 1.7 ≈ 24pt) 확보
   return (
     <View
-      wrap={false}
       style={{
         marginBottom: 10,
         paddingLeft: isQuestion ? 0 : 16,
@@ -174,7 +177,7 @@ function Entry({ entry }: { entry: AppendixEntry }) {
         backgroundColor: isQuestion ? undefined : isResult ? RESULT_BG : ANSWER_BG,
       }}
     >
-      <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}>
+      <Text minPresenceAhead={LABEL_KEEP_AHEAD} style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}>
         {entry.label}
       </Text>
       {safeParagraphs.map((p, i) => (

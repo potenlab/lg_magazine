@@ -55,16 +55,13 @@ const KOR = MAG_FONT.kor;
 // 첫 entry 의 여백(20) + 카드 상단 패딩(16) + 라벨(≈15) + 라벨↔본문(12) + 첫 줄(≈24) ≈ 87.
 const CHAPTER_KEEP_AHEAD = 88;
 
-// keeper(라벨+첫 문단) 를 wrap=false 로 묶을 때, 첫 문단이 한 페이지보다 커져
-// keeper 자체가 오버플로우(겹침 회귀)하는 것을 막기 위한 첫 문단 길이 상한(글자수).
-// 이보다 길면 keeper 는 라벨만 담고, 첫 문단은 wrap 허용 Text 로 분리한다.
-const KEEPER_FIRST_PARA_MAX = 220;
-
-// keeper 뒤로 확보할 최소 세로 공간(pt) — 라벨(≈15) + 첫 줄(14pt·lineHeight 1.7 ≈ 24) ≈ 40.
-// 긴 첫 문단이라 keeper 가 라벨만 담는 경우, 라벨이 페이지 끝에 홀로 남고 첫 문단이
-// 통째로 다음 장으로 떨어지는 분리를 막는다(요구 #3). keeper 는 배경/보더 없는 투명
-// 래퍼이므로 minPresenceAhead 겹침 회귀와 무관(보더+배경 박스에만 문제됨).
-const KEEPER_KEEP_AHEAD = 40;
+// 라벨 뒤로 확보해야 하는 최소 세로 공간(pt) — 라벨(≈15) + 첫 줄(14pt·lineHeight 1.7 ≈ 24) ≈ 40.
+// 라벨 Text 에 minPresenceAhead 로 부여 → 카드가 페이지 하단 가까이에서 시작해도 라벨이
+// 뒤에 이만큼 공간이 없으면 카드째 다음 페이지로 밀린다. 이게 요구 #3 "라벨 break-after:
+// avoid"(라벨↔첫 문장 결합)의 react-pdf 번역이자, 카드 첫 조각이 ≈0 높이로 쪼개져
+// 텍스트가 겹치던 회귀(요구 #4)의 근본 차단책 — wrap=false 래퍼(keeper)는 오히려 잘린
+// 첫 조각 안에서 오버플로우/겹침을 유발하므로 쓰지 않는다.
+const LABEL_KEEP_AHEAD = 40;
 
 export function Appendix({ name, threads }: Props) {
   return (
@@ -161,14 +158,9 @@ function Entry({ entry }: { entry: AppendixEntry }) {
   // 먼저 채우고 나머지 문단만 다음 페이지로 넘어간다(요구 #3: break-inside auto, 빈 여백
   // 최소화). 카드 통째 넘김(wrap=false)은 하단 여백 낭비를 유발하므로 쓰지 않는다.
   //
-  // 단, 카드가 잘리더라도 라벨과 본문 첫 문단은 분리되지 않아야 한다(요구 #3: label 에
-  //   break-after avoid). → 라벨+첫 문단을 wrap=false keeper 로 묶는다. 첫 문단이 keeper
-  //   상한보다 길면(엘아울 기사처럼) keeper 는 라벨만 담고 첫 문단은 wrap 허용 Text 로
-  //   분리하되, keeper 에 minPresenceAhead 를 줘 라벨↔첫 줄 분리를 막는다.
-  // 문단 분할 시 한 줄만 남는 것 방지 → 각 본문 Text 에 orphans/widows 2(요구 #3).
-  const firstPara = safeParagraphs[0] ?? "";
-  const restParas = safeParagraphs.slice(1);
-  const keepFirstWithLabel = firstPara.length <= KEEPER_FIRST_PARA_MAX;
+  // 라벨↔첫 문장 결합(요구 #3: label break-after avoid) 과 첫 조각 ≈0 겹침(요구 #4) 은
+  // 라벨 Text 의 minPresenceAhead 로 처리한다(아래 render 참고). wrap=false keeper 는
+  // 잘린 첫 조각 안에서 오버플로우/겹침을 유발하므로 쓰지 않는다.
   const bodyStyle = (i: number) => ({
     fontFamily: KOR,
     fontSize: bodyFontSize,
@@ -196,24 +188,21 @@ function Entry({ entry }: { entry: AppendixEntry }) {
         backgroundColor: isQuestion ? undefined : isResult ? RESULT_BG : ANSWER_BG,
       }}
     >
-      {/* keeper: 라벨(+짧은 첫 문단) 을 한 덩어리로. 남는 공간이 부족하면 통째로 다음
-          페이지로 — 라벨만 하단에 홀로 남거나 뭉개지는 일이 없다(요구 #2·#3·#4).
-          minPresenceAhead: keeper 가 라벨만 담는 긴-문단 경우에도 라벨↔첫 문단 분리를
-          막도록 뒤 여유(≈라벨+첫 줄)를 요구한다(요구 #3). */}
-      <View wrap={false} minPresenceAhead={KEEPER_KEEP_AHEAD}>
-        <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}>
-          {entry.label}
-        </Text>
-        {keepFirstWithLabel && firstPara !== "" && <Text style={bodyStyle(0)}>{firstPara}</Text>}
-      </View>
-      {/* 첫 문단이 너무 길어 keeper 에 못 담은 경우 — wrap 허용 Text 로 분리(줄 단위 분할). */}
-      {!keepFirstWithLabel && firstPara !== "" && (
-        <Text orphans={2} widows={2} style={bodyStyle(0)}>
-          {firstPara}
-        </Text>
-      )}
-      {restParas.map((p, i) => (
-        <Text key={i} orphans={2} widows={2} style={bodyStyle(i + 1)}>
+      {/* 라벨 — minPresenceAhead 로 라벨 뒤 여유(≈라벨+첫 줄)를 강제. 카드가 페이지 하단
+          가까이에서 시작하면 라벨째 다음 페이지로 밀려, 라벨↔첫 문장 분리(요구 #3) 및
+          첫 조각 ≈0 겹침(요구 #4)이 함께 차단된다. wrap=false 래퍼는 쓰지 않는다(잘린
+          첫 조각 안에서 오버플로우/겹침 유발). */}
+      <Text
+        minPresenceAhead={LABEL_KEEP_AHEAD}
+        style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}
+      >
+        {entry.label}
+      </Text>
+      {/* 본문 문단 — 카드는 wrap 허용(분할)이라 페이지 하단부터 채우고 나머지만 다음
+          장으로 넘어간다(요구 #3, 빈 여백 최소화). orphans/widows 2 로 문단 분할 시
+          한 줄 고아 방지. */}
+      {safeParagraphs.map((p, i) => (
+        <Text key={i} orphans={2} widows={2} style={bodyStyle(i)}>
           {p}
         </Text>
       ))}

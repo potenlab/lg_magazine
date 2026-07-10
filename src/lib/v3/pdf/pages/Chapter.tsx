@@ -123,7 +123,7 @@ export function Chapter({ chapter, headline, body, pullQuote, name, variant }: P
   if (chapter === 3) {
     // 본문 시작 y ≈ 80 + 헤딩(~66) + marginTop 40 = 186. 좌단은 책상 이미지 top(≈622)까지 채움(우단은 박스가 아래 채움).
     const [leftBody, rightBody] = splitColsToFit(cleanBody, COL_W, 600 - 186);
-    const deskImg = getChapter3Accent(); // 가로형 책상 장면(Chapter 3(1).jpg)
+    const deskImg = getChapter3Accent(variant); // 가로형 책상 장면(Chapter 3(N).jpg)
     // hero = getChapterImage(3) = 밤하늘(Chapter 3.jpg, 세로) — 하단 밴드 우측 backdrop
     return (
       <Page size="A4" style={pageStyle}>

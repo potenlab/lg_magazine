@@ -66,6 +66,14 @@ const KEEPER_FIRST_PARA_MAX = 220;
 // 래퍼이므로 minPresenceAhead 겹침 회귀와 무관(보더+배경 박스에만 문제됨).
 const KEEPER_KEEP_AHEAD = 40;
 
+// 카드 전체를 통짜(wrap=false)로 다룰지 판단하는 본문 길이(글자수) 상한.
+// 이보다 짧은 카드는 페이지 하단에 걸치면 쪼개져 겹치는 대신(요구 #4), 박스 통째로
+// 다음 페이지로 내려간다 — react-pdf 에서 가장 확실한 넘김 프리미티브.
+// 한 페이지 콘텐츠 높이(≈700pt)보다 훨씬 작은 카드에만 적용해야 오버플로우 회귀가
+// 없다(8960e72 롤백 원인: 긴 카드까지 통짜로 만들어 페이지 초과). 500자 ≈ 12~13줄
+// ≈ 340pt 로 안전. 이보다 길면 wrap 허용 + keeper 로 라벨↔첫 문단만 보호한다(요구 #3).
+const CARD_ATOMIC_MAX = 500;
+
 export function Appendix({ name, threads }: Props) {
   return (
     // Page 자체에 paddingTop/Horizontal/Bottom 부여 — wrap 페이지에도
@@ -94,55 +102,70 @@ export function Appendix({ name, threads }: Props) {
         </Text>
       ) : (
         <View>
-          {threads.map((thread, ti) => (
-            // thread 간 간격은 "앞 thread 의 marginBottom" 으로 부여 — 뒤 thread 가
-            // wrap 되어 새 페이지 최상단에 떨어질 때 marginTop 이 없어 정확히 top 80(paddingTop)
-            // 에서 시작한다. 첫 thread 만 부제 아래 marginTop 16. (inter-thread 간격:
-            // 앞 thread 의 마지막 entry marginBottom 10 + thread marginBottom 10 = 20)
-            <View key={ti} style={{ marginTop: ti === 0 ? 16 : 0, marginBottom: 10 }}>
-              {/* 챕터 헤더(라벨+제목) — wrap=false 로 헤더 자체는 절대 쪼개지지 않는다.
-                  헤더는 항상 한 페이지보다 작으므로, 남은 공간이 부족하면
-                  `shouldSplit && !canWrap` 경로를 타 통째로 다음 페이지로 내려간다(요구 #1).
-                  minPresenceAhead=CHAPTER_KEEP_AHEAD: 헤더가 페이지에 들어갈 땐(shouldSplit=false)
-                  이 값만큼 뒤 여유가 있어야 남는다 — 첫 entry 의 라벨+첫 줄 분량(≈80)을 확보해
-                  "헤더만 홀로 남고 첫 카드가 통째로 다음 장으로" 가는 고립을 막는다.
-                  ※ minPresenceAhead 는 배경색 없는 보더 전용 블록에만 사용 —
-                  테두리+배경 박스(Entry)에 걸면 겹침 회귀가 남(아래 Entry keeper 참고). */}
-              <View
-                wrap={false}
-                minPresenceAhead={CHAPTER_KEEP_AHEAD}
-                style={{
-                  paddingBottom: 20,
-                  borderBottomWidth: 0.6,
-                  borderBottomColor: WINE,
-                }}
-              >
-                <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 1.4 }}>
-                  {thread.chapter}
-                </Text>
-                <Text style={{ fontFamily: KOR, fontSize: 16, fontWeight: 700, color: TEXT, marginTop: 8 }}>
-                  {thread.title}
-                </Text>
-              </View>
-
-              {/* entries — 카드 자체는 wrap 허용(기본값, 고정 height 없음): 페이지 하단에
-                  걸치면 남는 공간까지 채우고 나머지 문단만 자연스럽게 다음 페이지로
-                  흘러간다(요구 #1). 라벨↔첫 문장 분리·겹침 방지는 Entry 내부에서 처리
-                  (요구 #2, #3). */}
-              {thread.entries.map((e, i) => {
-                const marginTop = i === 0 ? 20 : e.tone === "question" ? 10 : 0;
-                return (
-                  <View key={i} style={marginTop ? { marginTop } : undefined}>
-                    <Entry entry={e} />
+          {threads.map((thread, ti) => {
+            // 첫 entry 가 짧으면(atomic) 챕터 헤더와 한 wrap=false 그룹으로 묶어 절대
+            // 페이지 사이에서 갈리지 않게 한다(요구 #1: 제목↔첫 요소 keep-with-next).
+            // 헤더+짧은 카드는 항상 한 페이지보다 작아 그룹 오버플로우가 없다. 첫 entry 가
+            // 길면(카드가 페이지를 넘어야 함) 묶을 수 없으므로 헤더에 minPresenceAhead 만
+            // 걸어 "헤더만 홀로 남는" 고립을 완화한다.
+            const first = thread.entries[0];
+            const bindFirst = first != null && entryContentLen(first) <= CARD_ATOMIC_MAX;
+            return (
+              // thread 간 간격은 "앞 thread 의 marginBottom" 으로 부여 — 뒤 thread 가
+              // wrap 되어 새 페이지 최상단에 떨어질 때 marginTop 이 없어 정확히 top(paddingTop)
+              // 에서 시작한다. 첫 thread 만 부제 아래 marginTop 16.
+              <View key={ti} style={{ marginTop: ti === 0 ? 16 : 0, marginBottom: 10 }}>
+                {bindFirst ? (
+                  <View wrap={false}>
+                    <ChapterHeader thread={thread} />
+                    <View style={{ marginTop: 20 }}>
+                      <Entry entry={first} />
+                    </View>
                   </View>
-                );
-              })}
-            </View>
-          ))}
+                ) : (
+                  <ChapterHeader thread={thread} minPresenceAhead={CHAPTER_KEEP_AHEAD} />
+                )}
+
+                {/* 나머지 entries (bind 된 첫 entry 는 위 그룹에서 이미 렌더). 카드별
+                    분할/겹침 방지는 Entry 내부에서 처리(요구 #2·#3·#4). */}
+                {thread.entries.map((e, i) => {
+                  if (bindFirst && i === 0) return null;
+                  const marginTop = i === 0 ? 20 : e.tone === "question" ? 10 : 0;
+                  return (
+                    <View key={i} style={marginTop ? { marginTop } : undefined}>
+                      <Entry entry={e} />
+                    </View>
+                  );
+                })}
+              </View>
+            );
+          })}
         </View>
       )}
     </Page>
   );
+}
+
+/** 챕터 헤더(라벨+제목) — wrap=false 로 자체는 절대 쪼개지지 않는다. minPresenceAhead
+ *  는 헤더가 첫 entry 와 묶이지 않는(긴 첫 카드) 경우에만 전달해 고립을 완화한다. */
+function ChapterHeader({ thread, minPresenceAhead }: { thread: AppendixThread; minPresenceAhead?: number }) {
+  return (
+    <View
+      wrap={false}
+      minPresenceAhead={minPresenceAhead}
+      style={{ paddingBottom: 20, borderBottomWidth: 0.6, borderBottomColor: WINE }}
+    >
+      <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 1.4 }}>{thread.chapter}</Text>
+      <Text style={{ fontFamily: KOR, fontSize: 16, fontWeight: 700, color: TEXT, marginTop: 8 }}>{thread.title}</Text>
+    </View>
+  );
+}
+
+/** entry 본문 총 길이(글자수) — 카드를 통짜(atomic)로 다룰지, 헤더와 묶을지 판단용. */
+function entryContentLen(e: AppendixEntry): number {
+  const paras = e.text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  const safe = paras.length ? paras : [e.text];
+  return safe.reduce((n, p) => n + p.length, 0);
 }
 
 /**
@@ -180,6 +203,10 @@ function Entry({ entry }: { entry: AppendixEntry }) {
   const firstPara = safeParagraphs[0] ?? "";
   const restParas = safeParagraphs.slice(1);
   const keepFirstWithLabel = firstPara.length <= KEEPER_FIRST_PARA_MAX;
+  // 카드 본문 총 길이가 짧으면 카드 통째로 wrap=false — 페이지 하단에서 쪼개져
+  // 겹치지 않고 박스째 다음 장으로 넘어간다(요구 #4, 스샷 "선택한 가치 카드").
+  const totalLen = safeParagraphs.reduce((n, p) => n + p.length, 0);
+  const atomicCard = totalLen <= CARD_ATOMIC_MAX;
   const bodyStyle = (i: number) => ({
     fontFamily: KOR,
     fontSize: bodyFontSize,
@@ -193,6 +220,7 @@ function Entry({ entry }: { entry: AppendixEntry }) {
   });
   return (
     <View
+      wrap={!atomicCard}
       style={{
         marginBottom: 10,
         paddingLeft: isQuestion ? 0 : 16,

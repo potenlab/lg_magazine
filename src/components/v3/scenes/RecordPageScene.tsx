@@ -35,9 +35,13 @@ export function RecordPageScene({ spec, onAdvance }: { spec: SceneSpec; onAdvanc
       });
       if (cancelled) return;
       setArt(r);
-      patch({
-        chapterArticles: { ...session.chapterArticles, [chapter]: r },
-      });
+      // stub fallback(`fromStub: true`)일 때는 캐시 금지 — 일시적 실패가 템플릿
+      // 기사를 record 페이지와 최종 PDF에 영구 고정하는 것을 막는다.
+      if (!r.fromStub) {
+        patch({
+          chapterArticles: { ...session.chapterArticles, [chapter]: r },
+        });
+      }
     })();
     return () => {
       cancelled = true;

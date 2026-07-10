@@ -31,6 +31,7 @@ export function StrengthConfirmScene({
   const [loaded, setLoaded] = useState(
     Boolean(session.strengthCommonAsk && session.strengthLinkedValue),
   );
+  const [commonAsk, setCommonAsk] = useState(session.strengthCommonAsk);
   const narration = spec.narration ? renderTemplate(spec.narration, session) : undefined;
   const hasNarration = Boolean(narration);
   const [showLines, setShowLines] = useState(!hasNarration);
@@ -53,7 +54,15 @@ export function StrengthConfirmScene({
         values,
       });
       if (cancelled) return;
-      patch({ strengthCommonAsk: r.commonAsk, strengthLinkedValue: r.linkedValue });
+      setCommonAsk(r.commonAsk);
+      // stub의 commonAsk는 고정 일반 문구 — 세션에 캐시하면 Ch2 종합·비전
+      // 프롬프트 입력까지 오염된다. linkedValue는 사용자가 고른 가치 단어라
+      // 항상 안전. stub일 때 commonAsk를 비워두면 다음 진입 때 재호출된다.
+      patch(
+        r.fromStub
+          ? { strengthLinkedValue: r.linkedValue }
+          : { strengthCommonAsk: r.commonAsk, strengthLinkedValue: r.linkedValue },
+      );
       setLoaded(true);
     })();
     return () => {
@@ -95,8 +104,6 @@ export function StrengthConfirmScene({
       </div>
     );
   }
-
-  const commonAsk = session.strengthCommonAsk;
 
   return (
     <div className="flex flex-1 cursor-pointer flex-col" onClick={advance}>

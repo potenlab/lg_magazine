@@ -3,6 +3,8 @@ import * as XLSX from "xlsx";
 import { listV3Sessions, isSupabaseConfigured } from "@/lib/v3/session/serverStorage";
 import { listCohortRules } from "@/lib/admin/cohortRules";
 import { assignCohort, UNASSIGNED_LABEL } from "@/lib/admin/assignCohort";
+import { listQriusLogins } from "@/lib/admin/qriusLogins";
+import { aggregateLogins } from "@/lib/admin/loginStats";
 
 export const runtime = "nodejs";
 
@@ -33,7 +35,12 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const cohortFilter = searchParams.get("cohort"); // e.g. "4차" | "미지정" | null(=전체)
 
-  const [sessions, rules] = await Promise.all([listV3Sessions(), listCohortRules()]);
+  const [sessions, rules, loginEvents] = await Promise.all([
+    listV3Sessions(),
+    listCohortRules(),
+    // 로그인 로그는 조회 실패해도 세션 엑셀은 나가야 한다 (테이블 미생성 등).
+    listQriusLogins().catch(() => [] as Awaited<ReturnType<typeof listQriusLogins>>),
+  ]);
 
   const rows = sessions
     .map((r) => {
@@ -98,6 +105,18 @@ export async function GET(req: Request) {
   const worksheet = XLSX.utils.json_to_sheet(rows);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "v3_sessions");
+
+  // LG SSO 로그인 현황 — 사용자별 집계 (차수 필터와 무관하게 전체).
+  const loginStats = aggregateLogins(loginEvents, rules);
+  const loginRows = loginStats.users.map((u) => ({
+    사용자: u.label,
+    이메일: u.email ?? "",
+    이름: u.name ?? "",
+    "로그인 횟수": u.count,
+    "첫 로그인": u.firstLogin,
+    "마지막 로그인": u.lastLogin,
+  }));
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(loginRows), "로그인");
 
   const buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;
 

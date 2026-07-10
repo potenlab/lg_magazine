@@ -88,31 +88,84 @@ const JOB_POLL_MS = 1500;
 const JOB_CLIENT_DEADLINE_MS = 6 * 60_000;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Recoverable failures the server explicitly signals as such: HTTP 429
+// ("busy — Retry-After" from a saturated gate or a near-lift quota cooldown),
+// a job lost to a deploy/replica rebalance (poll 404), or a job that errored
+// on the busy signal. These recover in seconds, so retry a bounded number of
+// times before letting the caller fall back to the stub.
+const RESUBMIT_MAX = 2;
+const BUSY_RETRY_MS = 3_000;
+
+function isRecoverableJobError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("job expired or not found") || msg.includes("llm_busy");
+}
+
+// Heavy synthesis tasks run behind explicit waiting screens, so a long quota
+// cooldown (Retry-After up to ~90s) is worth sitting out for real content.
+// Interactive dialog beats (judge, reflections) must not freeze — they only
+// retry the short "busy" case and otherwise fall back fast.
+const LONG_WAIT_TASKS = new Set([
+  "synthesizeStrength",
+  "synthesizeGrowthVision",
+  "writeChapterArticle",
+  "writeEditorNote",
+  "writeCoverHeadline",
+  "generateVisionDirections",
+  "generateTimeHorizon",
+  "generateJobTrendCards",
+  "reflectStrength",
+  "observePattern",
+]);
+
 async function callTask<T>(task: string, payload: unknown): Promise<T> {
   const { mode, deep } = readUrlConfig();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (mode) headers["x-llm-mode"] = mode;
   if (deep) headers["x-llm-deep"] = "1";
-  const res = await fetch("/api/v3/llm", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ task, payload }),
-  });
+  const body = JSON.stringify({ task, payload });
 
-  // Async server (LLM_ASYNC): 202 + { jobId } → poll until the job finishes.
-  // The request was never held open, so there's no server-side timeout to hit;
-  // the user simply waits in line. Sync server still returns 200 + { result }.
-  if (res.status === 202) {
-    const { jobId } = (await res.json()) as { jobId: string };
-    return pollJob<T>(jobId);
-  }
+  for (let resubmits = 0; ; resubmits++) {
+    const res = await fetch("/api/v3/llm", { method: "POST", headers, body });
 
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new Error(`v3 LLM /api error ${res.status}: ${detail.slice(0, 160)}`);
+    // Server said "busy, retry in N seconds" — honor it instead of treating
+    // a 3-second congestion blip as a hard failure (which put stub content
+    // on screen permanently for that scene).
+    if (res.status === 429 && resubmits < RESUBMIT_MAX) {
+      const after = Number(res.headers.get("Retry-After")) || 3;
+      if (LONG_WAIT_TASKS.has(task) || after <= 5) {
+        await wait(Math.min(after, 120) * 1000);
+        continue;
+      }
+      // Interactive task facing a long cooldown → fall back fast instead of
+      // freezing the dialog.
+    }
+
+    // Async server (LLM_ASYNC): 202 + { jobId } → poll until the job finishes.
+    // The request was never held open, so there's no server-side timeout to hit;
+    // the user simply waits in line. Sync server still returns 200 + { result }.
+    if (res.status === 202) {
+      const { jobId } = (await res.json()) as { jobId: string };
+      try {
+        return await pollJob<T>(jobId);
+      } catch (err) {
+        // Jobs live in one replica's memory — a deploy/rebalance 404s every
+        // in-flight poll. Resubmitting the task is the intended recovery.
+        if (resubmits < RESUBMIT_MAX && isRecoverableJobError(err)) {
+          await wait(BUSY_RETRY_MS);
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new Error(`v3 LLM /api error ${res.status}: ${detail.slice(0, 160)}`);
+    }
+    const json = (await res.json()) as { result: T };
+    return json.result;
   }
-  const json = (await res.json()) as { result: T };
-  return json.result;
 }
 
 async function pollJob<T>(jobId: string): Promise<T> {
@@ -190,19 +243,33 @@ export const realLLM: LLMContract = {
 
   async reflectPoetic(input) {
     try {
-      return await callTask<string>("reflectPoetic", input);
+      const r = await callTask<string>("reflectPoetic", input);
+      if (!r?.trim()) {
+        console.warn("[v3 LLM][STUB-FALLBACK] reflectPoetic: empty output → using generic stub.");
+        const s = await stubLLM.reflectPoetic(input);
+        return { ...s, fromStub: true };
+      }
+      return { text: r };
     } catch (err) {
-      console.warn("[v3 LLM] reflectPoetic fell back to stub:", err);
-      return stubLLM.reflectPoetic(input);
+      console.warn("[v3 LLM][STUB-FALLBACK] reflectPoetic threw → using generic stub:", err);
+      const s = await stubLLM.reflectPoetic(input);
+      return { ...s, fromStub: true };
     }
   },
 
   async reflectValues(input) {
     try {
-      return await callTask<string>("reflectValues", input);
+      const r = await callTask<string>("reflectValues", input);
+      if (!r?.trim()) {
+        console.warn("[v3 LLM][STUB-FALLBACK] reflectValues: empty output → using generic stub.");
+        const s = await stubLLM.reflectValues(input);
+        return { ...s, fromStub: true };
+      }
+      return { text: r };
     } catch (err) {
-      console.warn("[v3 LLM] reflectValues fell back to stub:", err);
-      return stubLLM.reflectValues(input);
+      console.warn("[v3 LLM][STUB-FALLBACK] reflectValues threw → using generic stub:", err);
+      const s = await stubLLM.reflectValues(input);
+      return { ...s, fromStub: true };
     }
   },
 
@@ -210,8 +277,9 @@ export const realLLM: LLMContract = {
     try {
       return await callTask<{ commonAsk: string; linkedValue: string }>("reflectStrength", input);
     } catch (err) {
-      console.warn("[v3 LLM] reflectStrength fell back to stub:", err);
-      return stubLLM.reflectStrength(input);
+      console.warn("[v3 LLM][STUB-FALLBACK] reflectStrength threw → using generic stub:", err);
+      const s = await stubLLM.reflectStrength(input);
+      return { ...s, fromStub: true };
     }
   },
 
@@ -253,8 +321,9 @@ export const realLLM: LLMContract = {
     try {
       return await callTask<{ directions: string[] }>("generateVisionDirections", input);
     } catch (err) {
-      console.warn("[v3 LLM] generateVisionDirections fell back to stub:", err);
-      return stubLLM.generateVisionDirections(input);
+      console.warn("[v3 LLM][STUB-FALLBACK] generateVisionDirections threw → using generic stub:", err);
+      const s = await stubLLM.generateVisionDirections(input);
+      return { ...s, fromStub: true };
     }
   },
 
@@ -281,8 +350,9 @@ export const realLLM: LLMContract = {
     try {
       return await callTask<{ horizon: string[] }>("generateTimeHorizon", input);
     } catch (err) {
-      console.warn("[v3 LLM] generateTimeHorizon fell back to stub:", err);
-      return stubLLM.generateTimeHorizon(input);
+      console.warn("[v3 LLM][STUB-FALLBACK] generateTimeHorizon threw → using generic stub:", err);
+      const s = await stubLLM.generateTimeHorizon(input);
+      return { ...s, fromStub: true };
     }
   },
 
@@ -299,8 +369,9 @@ export const realLLM: LLMContract = {
     try {
       return await callTask<{ situationPattern: string; behaviorPattern: string }>("observePattern", input);
     } catch (err) {
-      console.warn("[v3 LLM] observePattern fell back to stub:", err);
-      return stubLLM.observePattern(input);
+      console.warn("[v3 LLM][STUB-FALLBACK] observePattern threw → using template stub:", err);
+      const s = await stubLLM.observePattern(input);
+      return { ...s, fromStub: true };
     }
   },
 
@@ -311,8 +382,9 @@ export const realLLM: LLMContract = {
         input,
       );
     } catch (err) {
-      console.warn("[v3 LLM] writeChapterArticle fell back to stub:", err);
-      return stubLLM.writeChapterArticle(input);
+      console.warn("[v3 LLM][STUB-FALLBACK] writeChapterArticle threw → using template stub:", err);
+      const s = await stubLLM.writeChapterArticle(input);
+      return { ...s, fromStub: true };
     }
   },
 

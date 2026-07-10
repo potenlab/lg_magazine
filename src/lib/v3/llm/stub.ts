@@ -3,6 +3,19 @@ import { judgeBranchHeuristic, ruleForScene } from "@/lib/v3/judging/heuristics"
 import { josa } from "@/lib/v3/scenes/josa";
 import { extractIdentityTitle } from "@/lib/v3/scenes/template";
 
+// Generic 6 vision directions — axis order: role / method / strength /
+// growth / impact / integration (fixed by v3GenerateVisionDirections' schema).
+// Used whole as the stub fallback, and per-axis by prompts.ts when one
+// generated sentence breaks its length cap.
+export const FALLBACK_VISION_DIRECTIONS: readonly string[] = [
+  "지금 하는 일의 본질을 더 깊이 파고드는 사람",
+  "나만의 방식으로 같은 일을 다르게 해내는 사람",
+  "이미 가진 강점을 더 선명하게 쓰는 사람",
+  "새로운 영역으로 발을 넓혀가는 사람",
+  "내가 중요하다고 믿는 곳에 실질적인 변화를 만드는 사람",
+  "지금 하는 일을 통해, 언젠가 내가 닿고 싶은 곳에 가는 사람",
+];
+
 function firstSentence(s: string): string {
   const m = s.split(/[.!?。]/)[0]?.trim();
   return m && m.length > 3 ? m : s.trim();
@@ -47,17 +60,17 @@ export const stubLLM: LLMContract = {
     // "명사"를 뽑아 `${a}와 ${b} 사이에서`로 끼웠는데, extractNoun이 실제론 문장
     // 끝 종결어미를 잘라와("또렷했습니다"→"또렷했습니") 비문을 만들었다.
     // 안전망이 떠도 화면이 멀쩡하도록, 사용자 텍스트를 가공하지 않는 고정 문장으로.
-    return `두 이야기 사이에, 막막한 상황을 직접 움직이며 배워가는 결이 흐르는 것 같아요.`;
+    return { text: `두 이야기 사이에, 막막한 상황을 직접 움직이며 배워가는 결이 흐르는 것 같아요.` };
   },
 
   async reflectValues({ name, values }) {
-    if (values.length === 0) return `${name}님 안에는 단단한 결이 흐르고 있어요.`;
+    if (values.length === 0) return { text: `${name}님 안에는 단단한 결이 흐르고 있어요.` };
     const words = values.map((v) => v.word);
     const joined =
       words.length === 1
         ? words[0]
         : `${words.slice(0, -1).join(", ")}${words.length > 2 ? "," : ""} 그리고 ${words[words.length - 1]}`;
-    return `${joined}을(를) 함께 품고 일할 때 가장 힘이 나는 사람이시군요.`;
+    return { text: `${joined}을(를) 함께 품고 일할 때 가장 힘이 나는 사람이시군요.` };
   },
 
   async reflectStrength({ values }) {
@@ -219,18 +232,8 @@ export const stubLLM: LLMContract = {
   },
 
   async generateVisionDirections() {
-    // Fixed fallback — used when the LLM call / parse fails. Mirrors
-    // FALLBACK_DIRECTIONS in VisionSelectScene so both layers show the same 6.
-    return {
-      directions: [
-        "지금 하는 일의 본질을 더 깊이 파고드는 사람",
-        "나만의 방식으로 같은 일을 다르게 해내는 사람",
-        "이미 가진 강점을 더 선명하게 쓰는 사람",
-        "새로운 영역으로 발을 넓혀가는 사람",
-        "내가 중요하다고 믿는 곳에 실질적인 변화를 만드는 사람",
-        "지금 하는 일을 통해, 언젠가 내가 닿고 싶은 곳에 가는 사람",
-      ],
-    };
+    // Fixed fallback — used when the LLM call / parse fails.
+    return { directions: [...FALLBACK_VISION_DIRECTIONS] };
   },
 
   async generateJobTrendCards() {

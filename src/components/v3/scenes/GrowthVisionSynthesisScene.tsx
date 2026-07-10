@@ -147,7 +147,9 @@ export function GrowthVisionSynthesisScene({
         if (cancelled) return;
         const dirs = (r.directions ?? []).map((d) => d.trim()).filter(Boolean);
         setRecommendations(dirs);
-        if (dirs.length > 0) patch({ growthDirectionRecommendations: dirs });
+        // stub fallback일 때는 캐시 금지 — 일시적 실패가 세션에 generic 문장을
+        // 영구 고정하는 것을 막는다 (synthesizeGrowthVision 동일 사유).
+        if (dirs.length > 0 && !r.fromStub) patch({ growthDirectionRecommendations: dirs });
         setRecLoaded(true);
       } catch (err) {
         console.error("[v3] generateVisionDirections failed:", err);

@@ -87,12 +87,15 @@ const OVERLOAD_BASE_MS = 400;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-/** Thrown when the concurrency queue is saturated and no slot freed in time.
+/** Thrown when the concurrency queue is saturated and no slot freed in time,
+ *  or when every API code is quota-cooled but the cooldown lifts soon.
  *  The route maps this to HTTP 429 (busy, retry) rather than a 500/504. */
 export class LlmBusyError extends Error {
-  constructor() {
+  readonly retryAfterSec: number;
+  constructor(retryAfterSec = 3) {
     super("llm_busy");
     this.name = "LlmBusyError";
+    this.retryAfterSec = retryAfterSec;
   }
 }
 
@@ -306,6 +309,13 @@ export class AIStudioProvider implements LLMProvider {
       };
     }
 
+    // Every code is quota-cooled. A per-minute trip lifts in ≤60s — surface it
+    // as busy/retryable (429 + Retry-After) so the client waits it out instead
+    // of rendering stub content. Only the 30-min daily cap stays a hard error.
+    const soonestMs = Math.min(...lane.cooldownUntil) - Date.now();
+    if (soonestMs > 0 && soonestMs <= MINUTE_COOLDOWN_MS + 30_000) {
+      throw new LlmBusyError(Math.ceil(soonestMs / 1000) + 1);
+    }
     throw new Error(
       `aistudio: all ${lane.codes.length} API code(s) exhausted (${quotaHits} quota-capped) — raise quotas or add more codes`,
     );

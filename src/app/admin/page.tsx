@@ -13,6 +13,7 @@ import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
 import { assembleMagazineDataFromSession } from "@/lib/v3/pdf/assembleFromSession";
 import type { CohortRule } from "@/lib/admin/cohortRules";
 import { assignCohort, UNASSIGNED_LABEL } from "@/lib/admin/assignCohort";
+import type { LoginStats } from "@/lib/admin/loginStats";
 
 function formatDate(value: string) {
   if (!value) return "-";
@@ -381,14 +382,16 @@ export default function AdminPage() {
   const [cohortFilter, setCohortFilter] = useState<string>(""); // "" = 전체
   const [sortKey, setSortKey] = useState<SortKey>("updated");
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [loginStats, setLoginStats] = useState<LoginStats | null>(null);
 
   const refresh = async () => {
     setError("");
     setLoading(true);
     try {
-      const [v3Res, ruleRes] = await Promise.all([
+      const [v3Res, ruleRes, loginRes] = await Promise.all([
         fetch("/api/v3/sessions", { cache: "no-store" }),
         fetch("/api/admin/cohorts", { cache: "no-store" }),
+        fetch("/api/admin/logins", { cache: "no-store" }),
       ]);
       if (v3Res.ok) {
         const payload = (await v3Res.json()) as { records?: V3SessionRecord[]; skipped?: boolean };
@@ -403,6 +406,10 @@ export default function AdminPage() {
       if (ruleRes.ok) {
         const payload = (await ruleRes.json()) as { rules?: CohortRule[] };
         setCohortRules(payload.rules || []);
+      }
+      if (loginRes.ok) {
+        const payload = (await loginRes.json()) as { stats?: LoginStats };
+        setLoginStats(payload.stats ?? null);
       }
     } catch (err) {
       setV3Records([]);
@@ -678,6 +685,55 @@ export default function AdminPage() {
               <p className="mt-1 text-xl font-semibold">{formatAvg(stats.avgMin)}</p>
             </div>
           </div>
+
+          {loginStats && (
+            <div className="overflow-hidden rounded-md border border-[#e4dccd] bg-white shadow-sm">
+              <div className="flex items-center justify-between gap-2 border-b border-[#eee7dc] px-4 py-3">
+                <p className="text-sm font-semibold">로그인 현황 (LG SSO)</p>
+                <p className="text-xs text-[#8d7d66]">
+                  등록 {loginStats.uniqueUsers}명 · 로그인 {loginStats.totalLogins}회
+                </p>
+              </div>
+              {loginStats.byCohort.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 border-b border-[#f2ece0] px-4 py-2.5">
+                  {loginStats.byCohort.map((c) => (
+                    <span
+                      key={c.name}
+                      className="rounded-full border border-[#d8cbb8] px-2 py-0.5 text-[11px] text-[#5d4d3b]"
+                    >
+                      {c.name} {c.uniqueUsers}명 · {c.logins}회
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="max-h-52 overflow-y-auto px-4 py-2">
+                {loginStats.users.length === 0 ? (
+                  <p className="py-2 text-xs text-[#7d705f]">아직 로그인 기록이 없습니다.</p>
+                ) : (
+                  <table className="w-full text-left text-[11px]">
+                    <thead>
+                      <tr className="text-[#8d7d66]">
+                        <th className="py-1 pr-2 font-normal">사용자</th>
+                        <th className="py-1 pr-2 font-normal">이메일</th>
+                        <th className="py-1 pr-2 font-normal">횟수</th>
+                        <th className="py-1 font-normal">마지막 로그인</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loginStats.users.map((u) => (
+                        <tr key={u.userid} className="border-t border-[#f2ece0]">
+                          <td className="py-1 pr-2 break-all">{u.label}</td>
+                          <td className="py-1 pr-2 break-all">{u.email ?? "-"}</td>
+                          <td className="py-1 pr-2">{u.count}</td>
+                          <td className="py-1 whitespace-nowrap">{formatDate(u.lastLogin)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="overflow-hidden rounded-md border border-[#e4dccd] bg-white shadow-sm">
             <div className="flex items-center justify-between gap-2 border-b border-[#eee7dc] px-4 py-3">

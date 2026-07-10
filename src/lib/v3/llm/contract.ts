@@ -37,7 +37,9 @@ export interface LLMContract {
     name: string;
     storyA: string;
     storyB: string;
-  }): Promise<string>;
+    // fromStub: stub fallback(API 실패·빈 출력) 시 true — 호출자는 세션에
+    // 캐싱하지 말 것. 재진입 시 재호출되도록(reflectStrength·synthesizeStrength 와 동일 규칙).
+  }): Promise<{ text: string; fromStub?: boolean }>;
 
   /** Weave all selected values + their personal definitions into one
    * sentence reflecting back the participant's value pattern (e.g.
@@ -46,7 +48,9 @@ export interface LLMContract {
   reflectValues(input: {
     name: string;
     values: { word: string; meaning: string }[];
-  }): Promise<string>;
+    // fromStub: stub fallback(API 실패·빈 출력) 시 true — 호출자는 세션에
+    // 캐싱하지 말 것. 재진입 시 재호출되도록(reflectStrength·synthesizeStrength 와 동일 규칙).
+  }): Promise<{ text: string; fromStub?: boolean }>;
 
   /** From the helpRequests answer + selected values, extract:
    * - commonAsk: a phrase summarizing what others commonly brought to the
@@ -57,7 +61,7 @@ export interface LLMContract {
     name: string;
     helpRequests: string;
     values: { word: string; meaning: string }[];
-  }): Promise<{ commonAsk: string; linkedValue: string }>;
+  }): Promise<{ commonAsk: string; linkedValue: string; fromStub?: boolean }>;
 
   /** [22p] Editor synthesis — weave four ingredients (Ch1 flow common, Ch2
    * selected values, Ch2 strength common-ask pattern, Ch2 othersDescription)
@@ -123,7 +127,7 @@ export interface LLMContract {
     currentTool: string[];
     growthTool: string[];
     contribution: string;
-  }): Promise<{ directions: string[] }>;
+  }): Promise<{ directions: string[]; fromStub?: boolean }>;
 
   /** [ch3 wireframe Zone B — 2026-06-15] Job-category-driven trend cards.
    * Generates 3 outside-the-self trend observations rooted in the participant's
@@ -146,7 +150,7 @@ export interface LLMContract {
     visionLine: string;
     attraction: string;
     contribution: string;
-  }): Promise<{ horizon: string[] }>;
+  }): Promise<{ horizon: string[]; fromStub?: boolean }>;
 
   extractKeyword(input: {
     answer: string;
@@ -159,7 +163,7 @@ export interface LLMContract {
     storyB: string;
     selectedValue: string;
     valueDef: string;
-  }): Promise<{ situationPattern: string; behaviorPattern: string }>;
+  }): Promise<{ situationPattern: string; behaviorPattern: string; fromStub?: boolean }>;
 
   writeChapterArticle(input: {
     name: string;
@@ -171,6 +175,7 @@ export interface LLMContract {
     headline: string;
     body: string;
     pullQuote: string | null;
+    fromStub?: boolean;
   }>;
 
   writeEditorNote(input: {

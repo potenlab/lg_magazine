@@ -98,14 +98,19 @@ export function MagazinePosterScene({
         }),
       );
       if (cancelled) return;
-      // 빈 응답(headline/body 비어 있음) 은 캐시 금지 — 다음 진입 때 다시 호출되도록.
-      const patchArticles: Record<number, Article> = {};
+      // 빈 응답(headline/body 비어 있음) + stub(fromStub) 은 세션 캐시 금지 —
+      // 다음 진입 때 재호출되도록. stub은 화면엔 보여주되 영구 캐시하면 진짜 LLM
+      // 결과로 덮어쓸 기회가 사라진다 (RecordPageScene·MagazineHandoffScene 과 동일 규칙).
+      const displayArticles: Record<number, Article> = {};
       for (const [c, r] of results) {
-        if (r && r.headline?.trim() && r.body?.trim()) patchArticles[c] = r;
+        if (r && r.headline?.trim() && r.body?.trim()) displayArticles[c] = r;
       }
-      setArticles({ ...articles, ...patchArticles });
-      if (Object.keys(patchArticles).length > 0) {
-        patch({ chapterArticles: { ...session.chapterArticles, ...patchArticles } });
+      setArticles({ ...articles, ...displayArticles });
+      const persist = Object.fromEntries(
+        Object.entries(displayArticles).filter(([, a]) => !(a as { fromStub?: boolean }).fromStub),
+      );
+      if (Object.keys(persist).length > 0) {
+        patch({ chapterArticles: { ...session.chapterArticles, ...persist } });
       }
     })();
     return () => {

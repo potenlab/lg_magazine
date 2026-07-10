@@ -79,51 +79,43 @@ export function Appendix({ name, threads }: Props) {
         </Text>
       ) : (
         <View>
-          {threads.map((thread, ti) => {
-            const [firstEntry, ...restEntries] = thread.entries;
-            return (
+          {threads.map((thread, ti) => (
             // thread 간 간격은 "앞 thread 의 marginBottom" 으로 부여 — 뒤 thread 가
             // wrap 되어 새 페이지 최상단에 떨어질 때 marginTop 이 없어 정확히 top 80(paddingTop)
             // 에서 시작한다. 첫 thread 만 부제 아래 marginTop 16. (inter-thread 간격:
             // 앞 thread 의 마지막 entry marginBottom 10 + thread marginBottom 10 = 20)
             <View key={ti} style={{ marginTop: ti === 0 ? 16 : 0, marginBottom: 10 }}>
-              {/* 챕터 헤더 + 첫 entry 를 한 덩어리(wrap=false)로 묶는다.
-                  → 페이지 하단 공간이 부족해 헤더만 남고 첫 질문이 다음 장으로
-                  넘어가는 분리를 방지. 공간 부족 시 헤더째 다음 장 최상단으로 이동. */}
-              <View wrap={false}>
-                <View
-                  style={{
-                    paddingBottom: 20,
-                    borderBottomWidth: 0.6,
-                    borderBottomColor: WINE,
-                  }}
-                >
-                  <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 1.4 }}>
-                    {thread.chapter}
-                  </Text>
-                  <Text style={{ fontFamily: KOR, fontSize: 16, fontWeight: 700, color: TEXT, marginTop: 8 }}>
-                    {thread.title}
-                  </Text>
-                </View>
-                {firstEntry && (
-                  <View style={{ marginTop: 20 }}>
-                    <Entry entry={firstEntry} />
-                  </View>
-                )}
+              {/* 챕터 헤더(라벨+제목) — 자체는 wrap=false 로 원자(2줄뿐이라 페이지 초과 불가,
+                  분리 안 됨). minPresenceAhead 로 뒤 entry 와 함께 유지(헤더만 페이지 끝에 남는
+                  것 방지). ※ 첫 entry 를 헤더와 원자로 묶지는 않으므로, 긴 답변이 페이지를
+                  넘쳐 겹치는 일은 없다. */}
+              <View
+                wrap={false}
+                minPresenceAhead={130}
+                style={{
+                  paddingBottom: 20,
+                  borderBottomWidth: 0.6,
+                  borderBottomColor: WINE,
+                }}
+              >
+                <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 1.4 }}>
+                  {thread.chapter}
+                </Text>
+                <Text style={{ fontFamily: KOR, fontSize: 16, fontWeight: 700, color: TEXT, marginTop: 8 }}>
+                  {thread.title}
+                </Text>
               </View>
 
-              {/* 나머지 entries — 자연 흐름(wrap 허용). 각 Entry 는 marginBottom 으로
-                  간격 부여 → wrap 시 새 페이지 상단에 떨어진 entry 도 marginTop 이 없어 top 80 에서 시작. */}
-              {restEntries.length > 0 && (
-                <View>
-                  {restEntries.map((e, i) => (
-                    <Entry key={i + 1} entry={e} />
-                  ))}
+              {/* entries — 자연 흐름(각 박스 wrap 허용). 첫 entry 는 헤더 아래 marginTop 20,
+                  이후는 각 Entry 의 marginBottom 으로 간격. wrap 시 새 페이지 상단에 떨어져도
+                  marginTop 이 없어 top 80 에서 시작. */}
+              {thread.entries.map((e, i) => (
+                <View key={i} style={i === 0 ? { marginTop: 20 } : undefined}>
+                  <Entry entry={e} />
                 </View>
-              )}
+              ))}
             </View>
-            );
-          })}
+          ))}
         </View>
       )}
     </Page>
@@ -141,30 +133,21 @@ function Entry({ entry }: { entry: AppendixEntry }) {
   const isResult = entry.tone === "result";
 
   // 본문을 문단(\n\n) 단위로 split. 각 문단 <Text> 는 라인 레벨 wrap 허용
-  // (규칙 B: break-inside auto) + orphans/widows 2 로 분할 시 최소 2줄 유지.
+  // + orphans/widows 2 로 분할 시 최소 2줄 유지.
   const paragraphs = entry.text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   const safeParagraphs = paragraphs.length ? paragraphs : [entry.text];
-
-  // 라벨이 페이지 끝에 홀로 남는 것(제목 잘림) 방지 — 라벨 + '첫 문장' 만
-  // wrap=false 로 묶는다. (첫 문단 통째가 아니라 첫 문장만 묶어 atomic 블록을
-  // 작게 유지 → 하단 빈 여백 최소화.) 첫 문단의 나머지·이후 문단은 라인 분할.
-  const firstPara = safeParagraphs[0] || "";
-  const sentMatch = firstPara.match(/^([\s\S]*?[.!?。][”’"'』」)\]]*)\s*([\s\S]*)$/);
-  const firstSentence = sentMatch ? sentMatch[1].trim() : firstPara;
-  const firstRest = sentMatch ? sentMatch[2].trim() : "";
-  const restParagraphs = safeParagraphs.slice(1);
 
   const bodyFontSize = isQuestion ? 15 : 14;
   const bodyColor = isQuestion ? QUESTION_TEXT : TEXT;
   const bodyFontStyle = isQuestion ? "italic" : "normal";
   const bodyFontWeight = isQuestion ? 600 : 400;
 
-  // 규칙 A — '질문'은 minPresenceAhead 로 break-after: avoid (뒤 답변 첫 줄과 유지).
-  // 규칙 B — 답변/결과 박스는 wrap=true (break-inside auto) 로 자연 분할.
+  // 박스는 전부 wrap 허용(원자 블록 없음) → 아무리 긴 답변도 페이지 경계에서 자연
+  // 분할, 페이지를 넘쳐 겹치는 일이 없다. minPresenceAhead 로 (1) 박스가 페이지 끝
+  // 자투리에서 시작해 라벨만 남는 것 방지, (2) 라벨이 본문 첫 줄과 떨어지지 않게 유지.
   return (
     <View
-      wrap={!isQuestion}
-      minPresenceAhead={isQuestion ? 64 : undefined}
+      minPresenceAhead={44}
       style={{
         marginBottom: 10,
         paddingLeft: isQuestion ? 0 : 16,
@@ -179,28 +162,15 @@ function Entry({ entry }: { entry: AppendixEntry }) {
         backgroundColor: isQuestion ? undefined : isResult ? RESULT_BG : ANSWER_BG,
       }}
     >
-      {/* 라벨 + 첫 문장 — wrap=false 로 묶어 라벨만 페이지 끝에 남는 것 방지. */}
-      <View wrap={false}>
-        <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}>
-          {entry.label}
-        </Text>
-        <Text style={{ fontFamily: KOR, fontSize: bodyFontSize, fontWeight: bodyFontWeight, color: bodyColor, marginTop: 12, lineHeight: 1.7, fontStyle: bodyFontStyle }}>
-          {firstSentence}
-        </Text>
-      </View>
-      {/* 첫 문단의 나머지 문장 — 라인 레벨 wrap + orphans/widows 2. */}
-      {firstRest ? (
-        <Text orphans={2} widows={2} style={{ fontFamily: KOR, fontSize: bodyFontSize, fontWeight: bodyFontWeight, color: bodyColor, lineHeight: 1.7, fontStyle: bodyFontStyle }}>
-          {firstRest}
-        </Text>
-      ) : null}
-      {/* 이후 문단들 — 라인 레벨 wrap + orphans/widows 2. */}
-      {restParagraphs.map((p, i) => (
+      <Text minPresenceAhead={24} style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}>
+        {entry.label}
+      </Text>
+      {safeParagraphs.map((p, i) => (
         <Text
-          key={i + 1}
+          key={i}
           orphans={2}
           widows={2}
-          style={{ fontFamily: KOR, fontSize: bodyFontSize, fontWeight: bodyFontWeight, color: bodyColor, marginTop: 8, lineHeight: 1.7, fontStyle: bodyFontStyle }}
+          style={{ fontFamily: KOR, fontSize: bodyFontSize, fontWeight: bodyFontWeight, color: bodyColor, marginTop: i === 0 ? 12 : 8, lineHeight: 1.7, fontStyle: bodyFontStyle }}
         >
           {p}
         </Text>

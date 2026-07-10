@@ -11,7 +11,7 @@ import { splitColsToFit, DropCapText, BodyText, QuoteBox, QUOTE_MARK } from "../
  *   Ch1: 좌(라벨·부제·드롭캡) / 우(hero + 와인 인용박스 + 본문)  — 나란한 2단
  *   Ch2: 상단 인용부(hero 우상단 + 여는/닫는 따옴표 + 인용문) → 라벨 → 2단 순수 본문
  *   Ch3: 라벨 → 2단 순수 본문 → 하단 밴드(이미지 좌 + 와인 인용박스 우)
- *   Ch4: Ch1 과 동일 골격이되 인용(pullQuote) 없음.
+ *   Ch4: hero 우상단 + 타이틀 좌측 중간(히어로 하단 높이) → 정렬된 2단 본문(하단). 인용 없음.
  *   색·폰트·프레임은 전부 디자인 토큰/MagazineFrame 재사용.
  */
 interface Props {
@@ -162,7 +162,37 @@ export function Chapter({ chapter, headline, body, pullQuote, name, variant }: P
     );
   }
 
-  // ── Ch1 · Ch4 ── 좌(라벨·부제·드롭캡) / 우(hero + 인용박스 + 본문).
+  // ── Ch4 ── hero 우상단 + 타이틀 좌측 중간 → 정렬된 2단 본문(하단). 인용 없음.
+  if (chapter === 4) {
+    // hero(폭 260·비율 0.82 → 높이 ≈317) top 80 → bottom ≈397(페이지 아래서 445).
+    // 타이틀은 bottom 445 로 하단을 히어로 하단에 맞춤. 본문은 그 아래 top 430.
+    const CH4_BODY_TOP = 430;
+    const [leftBody, rightBody] = splitColsToFit(cleanBody, COL_W, BODY_BOTTOM - CH4_BODY_TOP);
+    return (
+      <Page size="A4" style={pageStyle}>
+        <MagazineFrame name={name} />
+        {/* hero — 우상단(원본 비율, 폭만 지정) */}
+        <Image src={hero} style={{ position: "absolute", top: 80, right: 0, width: 260 }} />
+        {/* 타이틀 — 좌측, 하단을 히어로 하단(≈397)에 맞춤(bottom 445 = 842−397) */}
+        <View style={{ position: "absolute", bottom: 445, left: COL_L, width: 255 }}>
+          <Heading chapter={chapter} sub={sub} />
+        </View>
+        {/* 정렬된 2단 본문 — 좌·우단 같은 top. 컬럼 간격 20(width 530 = 255×2+20) */}
+        <View style={{ position: "absolute", top: CH4_BODY_TOP, left: COL_L, width: COL_W * 2 + 20, flexDirection: "row", justifyContent: "space-between" }}>
+          <View style={{ width: COL_W }}>
+            <DropCapText text={leftBody} />
+          </View>
+          {rightBody ? (
+            <View style={{ width: COL_W }}>
+              <BodyText text={rightBody} />
+            </View>
+          ) : null}
+        </View>
+      </Page>
+    );
+  }
+
+  // ── Ch1 ── 좌(라벨·부제·드롭캡) / 우(hero + 인용박스 + 본문).
   // 본문 시작 y ≈ 좌단 top 80 + 헤딩(~67) + marginTop 40 = 185. 좌단을 762까지 채우고 넘치면 우단.
   const [leftBody, rightBody] = splitColsToFit(cleanBody, LEFT_W, BODY_BOTTOM - 185);
   return (

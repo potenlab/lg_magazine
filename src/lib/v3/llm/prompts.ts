@@ -1499,6 +1499,103 @@ ${EDITORIAL_PROSE_CONSTRAINT}`;
   return r.text.trim();
 }
 
+// generateVisionDirections 응답 파서 — parseSynthesis와 같은 사다리.
+// (1) 펜스 제거 + 정상 JSON.parse → (2) 실패 시 "text":"..." 값들만 정규식으로
+// 끄집어내는 loose 추출. 쉼표 누락·요소 번호 붙이기·멀티라인 pretty-print 등
+// 흔한 포맷 슬립에도 개별 text 필드가 멀쩡하면 6개를 살려낸다.
+function parseVisionDirectionTexts(rawText: string): string[] {
+  const text = rawText
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+  const m = text.match(/\{[\s\S]*\}/);
+  if (m) {
+    try {
+      const obj = JSON.parse(m[0]) as {
+        directions?: Array<{ id?: number; type?: string; text?: string }>;
+      };
+      const texts = (obj.directions ?? [])
+        .map((d) => (d.text ?? "").trim())
+        .filter(Boolean);
+      if (texts.length >= 6) return texts;
+      console.warn(
+        `[v3 LLM][generateVisionDirections] JSON parsed but only ${texts.length} texts; trying loose extraction.`,
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[v3 LLM][generateVisionDirections] strict JSON.parse failed (${msg}); trying loose extraction.`,
+      );
+    }
+  }
+
+  const texts: string[] = [];
+  const re = /"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+  for (let mm = re.exec(text); mm; mm = re.exec(text)) {
+    const t = mm[1]
+      .replace(/\\n/g, " ")
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, "\\")
+      .trim();
+    if (t) texts.push(t);
+  }
+  if (texts.length > 0) {
+    console.warn(
+      `[v3 LLM][generateVisionDirections] loose extraction recovered ${texts.length} texts.`,
+    );
+  }
+  return texts;
+}
+
+// generateTimeHorizon 응답 파서 — 위와 동일한 사다리. loose 추출은 따옴표로
+// 감싼 문자열 중 시간 접두어(1년/3년/언젠가)로 시작하는 것만 취해, 키 이름
+// ("horizon")이나 잡음 문자열이 섞여 들어오는 것을 막는다.
+function parseHorizonLines(rawText: string): string[] {
+  const text = rawText
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+  const m = text.match(/\{[\s\S]*\}/);
+  if (m) {
+    try {
+      const obj = JSON.parse(m[0]) as { horizon?: string[] };
+      const lines = (obj.horizon ?? [])
+        .map((s) => String(s).trim())
+        .filter(Boolean);
+      if (lines.length >= 3) return lines;
+      console.warn(
+        `[v3 LLM][generateTimeHorizon] JSON parsed but only ${lines.length} lines; trying loose extraction.`,
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[v3 LLM][generateTimeHorizon] strict JSON.parse failed (${msg}); trying loose extraction.`,
+      );
+    }
+  }
+
+  const lines: string[] = [];
+  const re = /"((?:[^"\\]|\\.)*)"/g;
+  for (let mm = re.exec(text); mm; mm = re.exec(text)) {
+    const t = mm[1]
+      .replace(/\\n/g, " ")
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, "\\")
+      .trim();
+    if (/^(1년|3년|언젠가)/.test(t)) lines.push(t);
+  }
+  if (lines.length > 0) {
+    console.warn(
+      `[v3 LLM][generateTimeHorizon] loose extraction recovered ${lines.length} lines.`,
+    );
+  }
+  return lines;
+}
+
 export async function v3GenerateVisionDirections(input: {
   name: string;
   job: string;
@@ -1584,20 +1681,20 @@ export async function v3GenerateVisionDirections(input: {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {"directions":[{"id":1,"type":"role","text":"문장1"},{"id":2,"type":"method","text":"문장2"},{"id":3,"type":"strength","text":"문장3"},{"id":4,"type":"growth","text":"문장4"},{"id":5,"type":"impact","text":"문장5"},{"id":6,"type":"integration","text":"문장6"}]}`;
 
-  const r = await ask(user, 1200);
-  const text = r.text.trim();
-  // Match the outermost JSON object
-  const m = text.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error("v3GenerateVisionDirections: no JSON in response");
-  const obj = JSON.parse(m[0]) as {
-    directions?: Array<{ id?: number; type?: string; text?: string }>;
-  };
-  const directions = (obj.directions ?? [])
-    .map((d) => (d.text ?? "").trim())
-    .filter(Boolean);
+  // Strict parse → loose extraction → one re-ask (fresh sample), same recovery
+  // ladder that took the synthesis tasks to 0 parse failures (parseSynthesis).
+  // A malformed reply is a per-call formatting dice roll — one re-roll converts
+  // most of the ~10% parse failures observed at 600-user load into successes.
+  let directions = parseVisionDirectionTexts((await ask(user, 1200)).text);
+  if (directions.length < 6) {
+    console.warn(
+      `[v3 LLM][generateVisionDirections] ${directions.length}/6 after parse — re-asking once.`,
+    );
+    directions = parseVisionDirectionTexts((await ask(user, 1200)).text);
+  }
   if (directions.length < 6) {
     throw new Error(
-      `v3GenerateVisionDirections: expected 6 directions, got ${directions.length}`,
+      `v3GenerateVisionDirections: expected 6 directions, got ${directions.length} (after one re-ask)`,
     );
   }
   const six = directions.slice(0, 6);
@@ -1707,15 +1804,18 @@ export async function v3GenerateTimeHorizon(input: {
 [출력 형식 — JSON만]
 {"horizon":["1년 안에, ...","3년 후에, ...","언젠가, ..."]}`;
 
-  const r = await ask(user, 500);
-  const text = r.text.trim();
-  const m = text.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error("v3GenerateTimeHorizon: no JSON in response");
-  const obj = JSON.parse(m[0]) as { horizon?: string[] };
-  const horizon = (obj.horizon ?? []).map((s) => s.trim()).filter(Boolean);
+  // Same recovery ladder as generateVisionDirections: strict parse → loose
+  // extraction → one re-ask. See parseHorizonLines.
+  let horizon = parseHorizonLines((await ask(user, 500)).text);
+  if (horizon.length < 3) {
+    console.warn(
+      `[v3 LLM][generateTimeHorizon] ${horizon.length}/3 after parse — re-asking once.`,
+    );
+    horizon = parseHorizonLines((await ask(user, 500)).text);
+  }
   if (horizon.length < 3) {
     throw new Error(
-      `v3GenerateTimeHorizon: expected 3 horizon lines, got ${horizon.length}`,
+      `v3GenerateTimeHorizon: expected 3 horizon lines, got ${horizon.length} (after one re-ask)`,
     );
   }
   // Ensure the time prefixes are present (the LLM occasionally drops them).

@@ -109,11 +109,17 @@ export function Appendix({ name, threads }: Props) {
               {/* entries — 자연 흐름(각 박스 wrap 허용). 첫 entry 는 헤더 아래 marginTop 20,
                   이후는 각 Entry 의 marginBottom 으로 간격. wrap 시 새 페이지 상단에 떨어져도
                   marginTop 이 없어 top 80 에서 시작. */}
-              {thread.entries.map((e, i) => (
-                <View key={i} style={i === 0 ? { marginTop: 20 } : undefined}>
-                  <Entry entry={e} />
-                </View>
-              ))}
+              {thread.entries.map((e, i) => {
+                // 첫 entry 는 헤더 아래 marginTop 20. 이후 "질문" entry 앞에는
+                // 앞 카드(marginBottom 10)에 10 을 더해 총 20 간격을 준다
+                // (답변카드 ↔ 다음 질문 사이 간격 20 요구).
+                const marginTop = i === 0 ? 20 : e.tone === "question" ? 10 : 0;
+                return (
+                  <View key={i} style={marginTop ? { marginTop } : undefined}>
+                    <Entry entry={e} />
+                  </View>
+                );
+              })}
             </View>
           ))}
         </View>
@@ -143,11 +149,16 @@ function Entry({ entry }: { entry: AppendixEntry }) {
   const bodyFontWeight = isQuestion ? 600 : 400;
 
   // 박스는 전부 wrap 허용(원자 블록 없음) → 아무리 긴 답변도 페이지 경계에서 자연
-  // 분할, 페이지를 넘쳐 겹치는 일이 없다. minPresenceAhead 로 (1) 박스가 페이지 끝
-  // 자투리에서 시작해 라벨만 남는 것 방지, (2) 라벨이 본문 첫 줄과 떨어지지 않게 유지.
+  // 분할, 페이지를 넘쳐 겹치는 일이 없다.
+  // ※ react-pdf v4 에서 테두리+배경 "박스(View)" 에 minPresenceAhead 를 걸면, 페이지
+  //   끝 여백에서 그 값이 충족되지 못할 때 다음 요소가 이전 콘텐츠 위에 겹쳐 그려지는
+  //   회귀가 있다. → 박스 View 에는 minPresenceAhead 를 절대 쓰지 않는다.
+  //   대신 라벨 Text 에만 minPresenceAhead 를 줘서(박스가 아니라 라벨 기준),
+  //   페이지 넘김 시 라벨이 페이지 끝에 홀로 남고 첫 문장이 다음 장으로 떨어지는
+  //   분리를 막는다(라벨 + 첫 줄 함께 이동). 라인 레벨 orphans/widows 는 보조.
+  const LABEL_KEEP_AHEAD = 30; // 라벨 + 첫 줄(14pt·lineHeight 1.7 ≈ 24pt) 확보
   return (
     <View
-      minPresenceAhead={44}
       style={{
         marginBottom: 10,
         paddingLeft: isQuestion ? 0 : 16,
@@ -162,7 +173,7 @@ function Entry({ entry }: { entry: AppendixEntry }) {
         backgroundColor: isQuestion ? undefined : isResult ? RESULT_BG : ANSWER_BG,
       }}
     >
-      <Text minPresenceAhead={24} style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}>
+      <Text minPresenceAhead={LABEL_KEEP_AHEAD} style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}>
         {entry.label}
       </Text>
       {safeParagraphs.map((p, i) => (

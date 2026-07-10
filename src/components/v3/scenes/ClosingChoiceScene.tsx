@@ -111,25 +111,25 @@ export function ClosingChoiceScene({
   const labelFor = (variant: "full" | "summary") => {
     if (status === "loading") return "매거진 생성중..";
     if (downloading === variant) return "다운로드 중…";
-    return variant === "summary" ? "매거진만 받기 (요약)" : "전체본 받기 (별첨 포함)";
+    return "매거진 다운로드";
   };
 
   return (
     <div className="flex flex-1 flex-col">
       {/* 여정을 마치며 — 운영진에게 한 마디 (선택). 강제 아님: 비워두고
           매거진을 받아가도 OK. 입력 후 "남기기" 누르면 즉시 Supabase 반영. */}
-      <section className="mx-auto mb-6 w-full max-w-2xl rounded-md border border-[#b99b6b]/30 bg-white/55 px-5 py-5 shadow-sm md:mb-8 md:px-6 md:py-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9b8768]">
+      <section className="mx-auto mb-5 w-full max-w-3xl rounded-lg border border-[#b99b6b]/30 bg-[#f6efdf]/95 px-7 py-7 shadow-sm md:px-9 md:py-9">
+        <p className="text-[13px] font-semibold uppercase tracking-[0.18em] text-[#9b8768]">
           여정을 마치며
         </p>
         <h3
-          className="mt-1 font-serif text-[17px] italic leading-snug text-[#3d2414] md:text-[18px]"
+          className="mt-2 font-serif text-[20px] italic leading-snug text-[#3d2414]"
           style={{ fontFamily: "var(--font-ridi-batang), serif" }}
         >
-          운영진에게 한 마디 남겨주세요 <span className="not-italic text-[#8b7050]">(선택)</span>
+          엘아울과 나를 돌아보는 여정, 어떠셨나요? <span className="not-italic text-[#8b7050]">(선택)</span>
         </h3>
-        <p className="mt-1.5 text-[12.5px] leading-relaxed text-[#6a5a44]">
-          이 여정을 거치며 떠오른 생각이나 운영진에게 전하고 싶은 말을 자유롭게 들려주세요.
+        <p className="mt-2 text-[14px] leading-relaxed text-[#6a5a44]">
+          자유로운 소감을 남겨주세요.
         </p>
         <textarea
           value={feedbackDraft}
@@ -139,58 +139,49 @@ export function ClosingChoiceScene({
             // 수정 중이라는 신호를 명확히 하기 위해.
             if (feedbackSaved) setFeedbackSaved(false);
           }}
-          rows={3}
+          rows={5}
           placeholder="예: 처음엔 어색했는데 마지막엔 따뜻하게 마무리됐어요."
-          className="mt-3 block w-full resize-y rounded-md border border-[#b99b6b]/40 bg-[#fffaf0] px-3.5 py-2.5 text-[14px] leading-[1.65] text-[#3d2414] outline-none placeholder:text-[#b3a283] focus:border-[#8b7050]"
+          className="mt-4 block w-full resize-y rounded-md border border-[#b99b6b]/40 bg-[#fffaf0] px-4 py-3.5 text-[16px] leading-[1.7] text-[#3d2414] outline-none placeholder:text-[#b3a283] focus:border-[#8b7050]"
         />
-        <div className="mt-2.5 flex items-center justify-between gap-3">
-          <p className="text-[11.5px] text-[#8b7050]">
-            {feedbackSaved ? "고마워요. 잘 전달됐어요." : "안 적고 매거진을 받으셔도 괜찮아요."}
-          </p>
+        <div className="mt-3 flex items-center justify-end gap-3">
+          {feedbackSaved && (
+            <p className="text-[13px] text-[#8b7050]">고마워요. 잘 전달됐어요.</p>
+          )}
           <button
             type="button"
             onClick={handleSaveFeedback}
             disabled={!feedbackDraft.trim() || feedbackSaved}
-            className="inline-flex h-9 items-center justify-center rounded-md border border-[#3d2414]/55 bg-transparent px-4 font-serif text-[13px] italic tracking-[0.04em] text-[#3d2414] transition hover:bg-[#3d2414]/5 disabled:opacity-40"
+            className="inline-flex h-10 items-center justify-center rounded-md border border-[#3d2414]/55 bg-transparent px-5 font-serif text-[14px] italic tracking-[0.04em] text-[#3d2414] transition hover:bg-[#3d2414]/5 disabled:opacity-40"
           >
             {feedbackSaved ? "전달됨" : "남기기"}
           </button>
         </div>
       </section>
 
-      <div className="grid flex-1 gap-6 md:grid-cols-2 md:gap-10">
-        {/* 좌측 — 매거진 다시 보기 / 다운받기 */}
-        <section className="flex flex-col items-center justify-center text-center">
+      <div className="mx-auto grid w-full max-w-3xl flex-1 gap-5 md:grid-cols-2">
+        {/* 좌측 카드 — 매거진 보기 / 다운로드 */}
+        <section className="flex flex-col items-center justify-center rounded-lg border border-[#b99b6b]/30 bg-[#f6efdf]/95 px-6 py-8 text-center shadow-sm">
           <p
-            className="text-[18px] font-semibold leading-[1.55] text-[#3d2414] md:text-[20px]"
+            className="text-[18px] font-semibold leading-[1.55] text-[#3d2414]"
             style={{ fontFamily: "var(--font-ridi-batang)" }}
           >
             나의 매거진은 언제든
             <br />
             다시 볼 수 있어요.
           </p>
-          {/* 펼쳐보기(fill, primary) + 다운받기(line, secondary) 나란히 배치.
-              모바일에서는 한 줄에 둘 다 들어가도록 gap-3 + flex-row 유지. */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          {/* 보기(fill, primary) + 다운로드(line, secondary) 한 줄 나란히 배치.
+              카드 폭이 좁아 줄바꿈되지 않도록 nowrap + whitespace-nowrap. */}
+          <div className="mt-6 flex flex-nowrap items-center justify-center gap-2">
             <StoryButtonV3
-              label="내 매거진 펼쳐보기"
+              label="내 매거진 보기"
               onClick={() => setMagazineOpen(true)}
               ritual
             />
             <button
               type="button"
-              onClick={() => void handleDownload("summary")}
-              disabled={status !== "ready" || !!downloading}
-              className="inline-flex h-12 items-center justify-center rounded-md border border-[#3d2414]/55 bg-transparent px-5 font-serif italic tracking-[0.04em] text-[#3d2414] transition hover:bg-[#3d2414]/5 disabled:opacity-40"
-              title="매거진 본문만 (대화록 별첨 제외)"
-            >
-              {labelFor("summary")}
-            </button>
-            <button
-              type="button"
               onClick={() => void handleDownload("full")}
               disabled={status !== "ready" || !!downloading}
-              className="inline-flex h-12 items-center justify-center rounded-md border border-[#3d2414]/35 bg-transparent px-5 font-serif italic tracking-[0.04em] text-[#3d2414]/80 transition hover:bg-[#3d2414]/5 disabled:opacity-40"
+              className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-md border border-[#3d2414]/55 bg-transparent px-4 font-serif italic tracking-[0.04em] text-[#3d2414] transition hover:bg-[#3d2414]/5 disabled:opacity-40"
               title="대화록 별첨까지 모두 포함"
             >
               {labelFor("full")}
@@ -198,8 +189,8 @@ export function ClosingChoiceScene({
           </div>
         </section>
 
-        {/* 우측 — 다시 플레이하기 */}
-        <section className="relative flex flex-col items-center justify-center text-center md:border-l md:border-[#b99b6b]/30 md:pl-10">
+        {/* 우측 카드 — 다시 플레이하기 */}
+        <section className="flex flex-col items-center justify-center rounded-lg border border-[#b99b6b]/30 bg-[#f6efdf]/95 px-6 py-8 text-center shadow-sm">
           <p
             className="text-[17px] font-semibold leading-[1.55] text-[#3d2414] md:text-[18px]"
             style={{ fontFamily: "var(--font-ridi-batang)" }}
@@ -208,7 +199,7 @@ export function ClosingChoiceScene({
             <br />
             괜찮아요. 언제든 다시 떠날 수 있어요.
           </p>
-          <p className="mt-2 text-[13px] italic text-[#8b7050]">
+          <p className="mt-2 text-[14px] italic text-[#8b7050]">
             ※단, 다시 시작하면 지금까지의 기록은 사라져요.
           </p>
           <div className="mt-6 flex justify-center">
@@ -251,7 +242,7 @@ export function ClosingChoiceScene({
           <div className="max-w-md rounded-md border border-[#d7bd83]/30 bg-[#f6efdf] p-7 text-[#3d2414] shadow-2xl">
             <p className="font-serif text-lg italic">정말 처음부터 다시 시작하시겠어요?</p>
             <p className="mt-3 text-sm leading-relaxed">
-              지금까지의 답변과 매거진은 모두 사라져요. 다운로드해두지 않은 매거진은 다시 받을 수 없어요.
+              지금까지의 답변과 매거진은 모두 사라져요. 다운로드하지 않은 매거진은 다시 받을 수 없어요.
             </p>
             <div className="mt-6 flex gap-3">
               <button

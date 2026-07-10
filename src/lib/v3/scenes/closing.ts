@@ -49,7 +49,7 @@ export const CLOSING_SCENES: SceneSpec[] = [
     timeOfDay: "dawnFirstLight",
     bgImage: "/vision_express/common/chapter05.jpg",
     hideSpeakerLabel: true,
-    buttonLabel: "이 호를 닫을게요",
+    buttonLabel: "다음",
     next: "C-3",
   },
   {
@@ -112,7 +112,7 @@ export const CLOSING_SCENES: SceneSpec[] = [
     hideOwl: true,
     hideSpeakerLabel: true,
     timeOfDay: "dawnFirstLight",
-    bgImage: "/vision_express/common/arriving-train.webp",
+    bgImage: "/Closing_Bg.jpg",
     narration: "{name}님의 매거진은 언제든 다시 펼쳐보실 수 있어요.",
   },
 ];

@@ -231,11 +231,8 @@ export function GrowthVisionSynthesisScene({
           라인이 항목을 구분하지만 카드 인상은 주지 않는다. */}
       {recommendations.length > 0 && (
         <section className="mt-8">
-          <p className="mb-2 text-center text-[16px] leading-[1.6] text-[#3d2414]">
+          <p className="mb-6 text-center text-[16px] leading-[1.6] text-[#3d2414]">
             지금까지의 이야기를 모아 — {session.name}님이 향할 수 있는 방향들을 정리해봤어요.
-          </p>
-          <p className="mb-6 text-center text-[14px] italic leading-[1.5] text-[#8b7050]">
-            고르는 게 아니라, {session.name}님만의 한 줄을 적을 때 참고만 해주세요.
           </p>
           <p className="mb-3 text-[13px] tracking-[0.12em] text-[#9b8768] italic">
             엘아울이 {session.name}님의 이야기에서 읽은 언어

@@ -55,14 +55,6 @@ const KOR = MAG_FONT.kor;
 // 첫 entry 의 여백(20) + 카드 상단 패딩(16) + 라벨(≈15) + 라벨↔본문(12) + 첫 줄(≈24) ≈ 87.
 const CHAPTER_KEEP_AHEAD = 88;
 
-// 라벨 뒤로 확보해야 하는 최소 세로 공간(pt) — 라벨(≈15) + 첫 줄(14pt·lineHeight 1.7 ≈ 24) ≈ 40.
-// 라벨 Text 에 minPresenceAhead 로 부여 → 카드가 페이지 하단 가까이에서 시작해도 라벨이
-// 뒤에 이만큼 공간이 없으면 카드째 다음 페이지로 밀린다. 이게 요구 #3 "라벨 break-after:
-// avoid"(라벨↔첫 문장 결합)의 react-pdf 번역이자, 카드 첫 조각이 ≈0 높이로 쪼개져
-// 텍스트가 겹치던 회귀(요구 #4)의 근본 차단책 — wrap=false 래퍼(keeper)는 오히려 잘린
-// 첫 조각 안에서 오버플로우/겹침을 유발하므로 쓰지 않는다.
-const LABEL_KEEP_AHEAD = 40;
-
 export function Appendix({ name, threads }: Props) {
   return (
     // Page 자체에 paddingTop/Horizontal/Bottom 부여 — wrap 페이지에도
@@ -144,67 +136,95 @@ function Entry({ entry }: { entry: AppendixEntry }) {
   const isQuestion = entry.tone === "question";
   const isResult = entry.tone === "result";
 
-  // 본문을 문단(\n\n) 단위로 split. 각 문단 <Text> 는 라인 레벨 wrap 허용
-  // + orphans/widows 2 로 분할 시 최소 2줄 유지.
-  const paragraphs = entry.text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
-  const safeParagraphs = paragraphs.length ? paragraphs : [entry.text];
-
   const bodyFontSize = isQuestion ? 15 : 14;
   const bodyColor = isQuestion ? QUESTION_TEXT : TEXT;
-  const bodyFontStyle = isQuestion ? "italic" : "normal";
+  const bodyFontStyle: "italic" | "normal" = isQuestion ? "italic" : "normal";
   const bodyFontWeight = isQuestion ? 600 : 400;
 
-  // 카드(박스)는 wrap 허용(기본값, 고정 height 없음) — 페이지 하단에 걸치면 남은 공간을
-  // 먼저 채우고 나머지 문단만 다음 페이지로 넘어간다(요구 #3: break-inside auto, 빈 여백
-  // 최소화). 카드 통째 넘김(wrap=false)은 하단 여백 낭비를 유발하므로 쓰지 않는다.
-  //
-  // 라벨↔첫 문장 결합(요구 #3: label break-after avoid) 과 첫 조각 ≈0 겹침(요구 #4) 은
-  // 라벨 Text 의 minPresenceAhead 로 처리한다(아래 render 참고). wrap=false keeper 는
-  // 잘린 첫 조각 안에서 오버플로우/겹침을 유발하므로 쓰지 않는다.
-  const bodyStyle = (i: number) => ({
+  const labelEl = (
+    <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}>
+      {entry.label}
+    </Text>
+  );
+  const textStyle = (marginTop: number) => ({
     fontFamily: KOR,
     fontSize: bodyFontSize,
     fontWeight: bodyFontWeight,
     color: bodyColor,
-    marginTop: i === 0 ? 12 : 8,
+    marginTop,
     lineHeight: 1.7,
-    // 화살표 함수의 추론 반환 타입에서 리터럴이 string 으로 넓어지는 것 방지
-    // (react-pdf FontStyle 은 "normal" | "italic" 유니온만 허용).
+    // 화살표 함수 추론 반환 타입에서 리터럴이 string 으로 넓어지는 것 방지.
     fontStyle: bodyFontStyle as "normal" | "italic",
   });
+
+  // 질문 — 배경 없는 좌측 골드선. 짧고 분할 겹침 이슈 없어 그대로 흐름 렌더.
+  if (isQuestion) {
+    const paras = entry.text.split(/\n+/).map((p) => p.trim()).filter(Boolean);
+    const safe = paras.length ? paras : [entry.text];
+    return (
+      <View style={{ marginBottom: 10, paddingLeft: 12, borderLeftWidth: 2.5, borderLeftColor: GOLD }}>
+        {labelEl}
+        {safe.map((p, i) => (
+          <Text key={i} orphans={2} widows={2} style={textStyle(i === 0 ? 12 : 6)}>
+            {p}
+          </Text>
+        ))}
+      </View>
+    );
+  }
+
+  // 답변/결과 — 크림 배경 박스. react-pdf 는 배경+테두리 박스가 페이지 경계에서 쪼개지면
+  // 텍스트를 겹쳐 그리는 한계가 있다(요구 #4 겹침). 그래서 카드를 "줄 단위" wrap=false
+  // 세그먼트로 나눈다: 페이지는 세그먼트(줄) 사이에서만 갈리고, 각 세그먼트는 한 줄이라
+  // 통째로 이동 → 페이지 경계에서 첫 조각이 ≈0 높이로 쪼개져 겹치는 일이 원천 차단된다.
+  // 세그먼트들은 같은 배경 + 좌우 테두리로 연결돼 한 박스처럼 보이고, 첫/마지막에만
+  // 상/하단 테두리·라운드를 준다. (페이지가 갈리는 지점에선 박스 위/아래가 열려 보임 —
+  // 겹침 제거를 위한 의도된 트레이드오프.)
+  //
+  // 세그먼트 = 줄(\n) 단위. 라벨은 첫 세그먼트에 포함해 라벨↔첫 줄이 갈리지 않는다(요구 #3).
+  // 앞에 빈 줄이 있었으면 문단 간격(10), 아니면 줄 간격(4)으로 marginTop 부여.
+  const bg = isResult ? RESULT_BG : ANSWER_BG;
+  const rawLines = entry.text.split("\n");
+  const segs: { text: string; marginTop: number }[] = [];
+  let blankBefore = false;
+  for (const raw of rawLines) {
+    const line = raw.trim();
+    if (line === "") {
+      blankBefore = true;
+      continue;
+    }
+    segs.push({ text: line, marginTop: segs.length === 0 ? 12 : blankBefore ? 10 : 4 });
+    blankBefore = false;
+  }
+  if (segs.length === 0) segs.push({ text: entry.text, marginTop: 12 });
+  const last = segs.length - 1;
+
   return (
-    <View
-      style={{
-        marginBottom: 10,
-        paddingLeft: isQuestion ? 0 : 16,
-        paddingRight: isQuestion ? 0 : 16,
-        paddingTop: isQuestion ? 0 : 16,
-        paddingBottom: isQuestion ? 0 : 12,
-        borderLeftWidth: isQuestion ? 2.5 : 0,
-        borderLeftColor: isQuestion ? GOLD : undefined,
-        borderWidth: isQuestion ? 0 : 1,
-        borderColor: isQuestion ? undefined : CARD_BORDER,
-        borderRadius: isQuestion ? 0 : 8,
-        backgroundColor: isQuestion ? undefined : isResult ? RESULT_BG : ANSWER_BG,
-      }}
-    >
-      {/* 라벨 — minPresenceAhead 로 라벨 뒤 여유(≈라벨+첫 줄)를 강제. 카드가 페이지 하단
-          가까이에서 시작하면 라벨째 다음 페이지로 밀려, 라벨↔첫 문장 분리(요구 #3) 및
-          첫 조각 ≈0 겹침(요구 #4)이 함께 차단된다. wrap=false 래퍼는 쓰지 않는다(잘린
-          첫 조각 안에서 오버플로우/겹침 유발). */}
-      <Text
-        minPresenceAhead={LABEL_KEEP_AHEAD}
-        style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}
-      >
-        {entry.label}
-      </Text>
-      {/* 본문 문단 — 카드는 wrap 허용(분할)이라 페이지 하단부터 채우고 나머지만 다음
-          장으로 넘어간다(요구 #3, 빈 여백 최소화). orphans/widows 2 로 문단 분할 시
-          한 줄 고아 방지. */}
-      {safeParagraphs.map((p, i) => (
-        <Text key={i} orphans={2} widows={2} style={bodyStyle(i)}>
-          {p}
-        </Text>
+    <View style={{ marginBottom: 10 }}>
+      {segs.map((seg, i) => (
+        <View
+          key={i}
+          wrap={false}
+          style={{
+            backgroundColor: bg,
+            borderColor: CARD_BORDER,
+            borderLeftWidth: 1,
+            borderRightWidth: 1,
+            borderTopWidth: i === 0 ? 1 : 0,
+            borderBottomWidth: i === last ? 1 : 0,
+            borderTopLeftRadius: i === 0 ? 8 : 0,
+            borderTopRightRadius: i === 0 ? 8 : 0,
+            borderBottomLeftRadius: i === last ? 8 : 0,
+            borderBottomRightRadius: i === last ? 8 : 0,
+            paddingLeft: 16,
+            paddingRight: 16,
+            paddingTop: i === 0 ? 16 : 0,
+            paddingBottom: i === last ? 12 : 0,
+          }}
+        >
+          {i === 0 && labelEl}
+          <Text style={textStyle(seg.marginTop)}>{seg.text}</Text>
+        </View>
       ))}
     </View>
   );

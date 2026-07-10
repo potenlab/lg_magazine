@@ -43,7 +43,6 @@ const TEXT = MAG.text;
 const WINE = MAG.accent;
 const RULE = MAG.accent;
 const MUTED = "#7a5a3a"; // 카드 라벨(뮤트 브라운)
-const GOLD = "#b99b6b"; // 챕터 구분선·질문 좌보더
 const CARD_BORDER = "#DCBBB5"; // 답변/결과 카드 보더
 // 카드 배경 톤 (크림 계열).
 const RESULT_BG = "#F5E9E2";
@@ -54,6 +53,11 @@ const KOR = MAG_FONT.kor;
 // 챕터 헤더가 페이지 하단에 홀로 남지 않도록, 헤더 뒤에 확보해야 하는 최소 세로 공간(pt).
 // 첫 entry 의 여백(20) + 카드 상단 패딩(16) + 라벨(≈15) + 라벨↔본문(12) + 첫 줄(≈24) ≈ 87.
 const CHAPTER_KEEP_AHEAD = 88;
+
+// 답변/결과 카드를 "짧음(크림 박스 통짜 유지)" vs "긺(배경 없이 흐름 렌더)"으로 가르는
+// 본문 총 길이(글자수). 이보다 짧으면 한 페이지보다 훨씬 작아 wrap=false 박스가 안전하고,
+// 길면 페이지를 넘어야 하므로 배경 박스를 못 쓴다(react-pdf 페이지 경계 박스 겹침 한계).
+const SHORT_CARD_MAX = 260;
 
 export function Appendix({ name, threads }: Props) {
   return (
@@ -127,105 +131,86 @@ function ChapterHeader({ thread, minPresenceAhead }: { thread: AppendixThread; m
 }
 
 /**
- * Entry — 매거진 요약 (web AppendixSpread) UI 톤 그대로:
- *   question: 좌측 골드 보더 3px + 본문 italic muted color
- *   answer:   흰 박스 + 골드 보더 (round 4)
- *   result:   베이지 박스 + 골드 보더 (round 4) — 엘아울 합성 강조
+ * Entry — 매거진 요약.
+ *   question: 라벨(와인) + italic 본문. 박스/선 없음.
+ *   answer/result (짧음): 크림 박스 유지 — wrap=false(통짜)라 페이지 경계에서 쪼개지지 않아 겹침 없음.
+ *   answer/result (긺): 박스 불가(react-pdf 가 배경+테두리 박스를 페이지 경계에서 쪼개면
+ *                       내용을 겹쳐 그림). 배경 없이 흐름 렌더 + 상단 헤어라인·라벨 강조.
  */
 function Entry({ entry }: { entry: AppendixEntry }) {
   const isQuestion = entry.tone === "question";
   const isResult = entry.tone === "result";
 
+  const paras = entry.text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  const safe = paras.length ? paras : [entry.text.trim()];
+  const totalLen = safe.reduce((n, p) => n + p.length, 0);
+
   const bodyFontSize = isQuestion ? 15 : 14;
   const bodyColor = isQuestion ? QUESTION_TEXT : TEXT;
   const bodyFontStyle: "italic" | "normal" = isQuestion ? "italic" : "normal";
   const bodyFontWeight = isQuestion ? 600 : 400;
-
-  const labelEl = (
-    <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}>
-      {entry.label}
-    </Text>
-  );
-  const textStyle = (marginTop: number) => ({
+  const textStyle = (i: number) => ({
     fontFamily: KOR,
     fontSize: bodyFontSize,
     fontWeight: bodyFontWeight,
     color: bodyColor,
-    marginTop,
+    marginTop: i === 0 ? 10 : 8,
     lineHeight: 1.7,
     // 화살표 함수 추론 반환 타입에서 리터럴이 string 으로 넓어지는 것 방지.
     fontStyle: bodyFontStyle as "normal" | "italic",
   });
+  const labelEl = (
+    <Text style={{ fontFamily: KOR, fontSize: 12, color: isQuestion || isResult ? WINE : MUTED, letterSpacing: 0.6 }}>
+      {entry.label}
+    </Text>
+  );
+  const bodyEls = safe.map((p, i) => (
+    <Text key={i} orphans={2} widows={2} style={textStyle(i)}>
+      {p}
+    </Text>
+  ));
 
-  // 질문 — 배경 없는 좌측 골드선. 짧고 분할 겹침 이슈 없어 그대로 흐름 렌더.
+  // 질문 — 선/박스 없이 라벨 + 텍스트만 (요청: 좌측 세로선 제거).
   if (isQuestion) {
-    const paras = entry.text.split(/\n+/).map((p) => p.trim()).filter(Boolean);
-    const safe = paras.length ? paras : [entry.text];
     return (
-      <View style={{ marginBottom: 10, paddingLeft: 12, borderLeftWidth: 2.5, borderLeftColor: GOLD }}>
+      <View style={{ marginBottom: 12 }}>
         {labelEl}
-        {safe.map((p, i) => (
-          <Text key={i} orphans={2} widows={2} style={textStyle(i === 0 ? 12 : 6)}>
-            {p}
-          </Text>
-        ))}
+        {bodyEls}
       </View>
     );
   }
 
-  // 답변/결과 — 크림 배경 박스. react-pdf 는 배경+테두리 박스가 페이지 경계에서 쪼개지면
-  // 텍스트를 겹쳐 그리는 한계가 있다(요구 #4 겹침). 그래서 카드를 "줄 단위" wrap=false
-  // 세그먼트로 나눈다: 페이지는 세그먼트(줄) 사이에서만 갈리고, 각 세그먼트는 한 줄이라
-  // 통째로 이동 → 페이지 경계에서 첫 조각이 ≈0 높이로 쪼개져 겹치는 일이 원천 차단된다.
-  // 세그먼트들은 같은 배경 + 좌우 테두리로 연결돼 한 박스처럼 보이고, 첫/마지막에만
-  // 상/하단 테두리·라운드를 준다. (페이지가 갈리는 지점에선 박스 위/아래가 열려 보임 —
-  // 겹침 제거를 위한 의도된 트레이드오프.)
-  //
-  // 세그먼트 = 줄(\n) 단위. 라벨은 첫 세그먼트에 포함해 라벨↔첫 줄이 갈리지 않는다(요구 #3).
-  // 앞에 빈 줄이 있었으면 문단 간격(10), 아니면 줄 간격(4)으로 marginTop 부여.
-  const bg = isResult ? RESULT_BG : ANSWER_BG;
-  const rawLines = entry.text.split("\n");
-  const segs: { text: string; marginTop: number }[] = [];
-  let blankBefore = false;
-  for (const raw of rawLines) {
-    const line = raw.trim();
-    if (line === "") {
-      blankBefore = true;
-      continue;
-    }
-    segs.push({ text: line, marginTop: segs.length === 0 ? 12 : blankBefore ? 10 : 4 });
-    blankBefore = false;
+  // 짧은 답변/결과 — 크림 박스 유지. wrap=false(통짜)라 페이지 경계에서 절대 쪼개지지
+  // 않아 겹침이 없다(짧아서 하단 여백도 미미). 한 페이지보다 훨씬 작을 때만 이 경로.
+  if (totalLen <= SHORT_CARD_MAX) {
+    return (
+      <View
+        wrap={false}
+        style={{
+          marginBottom: 12,
+          paddingHorizontal: 16,
+          paddingTop: 14,
+          paddingBottom: 12,
+          borderWidth: 1,
+          borderColor: CARD_BORDER,
+          borderRadius: 8,
+          backgroundColor: isResult ? RESULT_BG : ANSWER_BG,
+        }}
+      >
+        {labelEl}
+        {bodyEls}
+      </View>
+    );
   }
-  if (segs.length === 0) segs.push({ text: entry.text, marginTop: 12 });
-  const last = segs.length - 1;
 
+  // 긴 답변/결과 — 배경 박스 불가(페이지 경계 겹침). 배경 없이 흐름 렌더 + 상단 헤어라인·
+  // 라벨 강조로 카드감을 대체한다. 텍스트는 react-pdf 가 줄 단위로 자연 분할 → 겹침 없음,
+  // 하단 여백 낭비도 없음. 헤어라인은 엔트리 최상단 단일 요소라 페이지 경계와 무관.
   return (
-    <View style={{ marginBottom: 10 }}>
-      {segs.map((seg, i) => (
-        <View
-          key={i}
-          wrap={false}
-          style={{
-            backgroundColor: bg,
-            borderColor: CARD_BORDER,
-            borderLeftWidth: 1,
-            borderRightWidth: 1,
-            borderTopWidth: i === 0 ? 1 : 0,
-            borderBottomWidth: i === last ? 1 : 0,
-            borderTopLeftRadius: i === 0 ? 8 : 0,
-            borderTopRightRadius: i === 0 ? 8 : 0,
-            borderBottomLeftRadius: i === last ? 8 : 0,
-            borderBottomRightRadius: i === last ? 8 : 0,
-            paddingLeft: 16,
-            paddingRight: 16,
-            paddingTop: i === 0 ? 16 : 0,
-            paddingBottom: i === last ? 12 : 0,
-          }}
-        >
-          {i === 0 && labelEl}
-          <Text style={textStyle(seg.marginTop)}>{seg.text}</Text>
-        </View>
-      ))}
+    <View style={{ marginBottom: 16 }}>
+      <View style={{ height: isResult ? 1.2 : 0.6, backgroundColor: isResult ? WINE : CARD_BORDER, marginBottom: 8 }} />
+      {labelEl}
+      {bodyEls}
     </View>
   );
 }

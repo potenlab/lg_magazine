@@ -58,7 +58,7 @@ function getConfig() {
   return { url: url.replace(/\/$/, ""), key };
 }
 
-async function supabaseFetch(path: string, init: RequestInit = {}) {
+export async function supabaseFetch(path: string, init: RequestInit = {}) {
   const { url, key } = getConfig();
   const res = await fetch(`${url}/rest/v1/${path}`, {
     ...init,

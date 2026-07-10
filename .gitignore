@@ -77,3 +77,4 @@ public/**/*.gz
 public/**/*.br
 .next/static/**/*.gz
 .next/static/**/*.br
+.tokensave

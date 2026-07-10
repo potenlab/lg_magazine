@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isMssqlConfigured } from "@/lib/v3/session/serverStorage";
+import { isSupabaseConfigured } from "@/lib/v3/session/serverStorage";
 import { listQriusLogins } from "@/lib/admin/qriusLogins";
 import { listCohortRules } from "@/lib/admin/cohortRules";
 import { aggregateLogins } from "@/lib/admin/loginStats";
@@ -10,8 +10,8 @@ export const runtime = "nodejs";
 // LG(Qrius) SSO 로그인 통계 — 차수 버킷은 로그인 시각 기준.
 
 export async function GET() {
-  if (!isMssqlConfigured()) {
-    return NextResponse.json({ skipped: true, reason: "mssql_not_configured" });
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({ skipped: true, reason: "supabase_not_configured" });
   }
   try {
     const [events, rules] = await Promise.all([listQriusLogins(), listCohortRules()]);

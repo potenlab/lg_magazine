@@ -10,7 +10,7 @@ import {
 import { exchangeCodeForUser } from "@/lib/qrius/client";
 import { buildSessionPayload, signSession } from "@/lib/qrius/session";
 import { redirectUrlForApp } from "@/lib/qrius/url";
-import { isMssqlConfigured } from "@/lib/v3/session/serverStorage";
+import { isSupabaseConfigured } from "@/lib/v3/session/serverStorage";
 import { recordQriusLogin } from "@/lib/admin/qriusLogins";
 
 export const runtime = "nodejs";
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
     });
     recorded = { ...user, userid: anonId };
   }
-  if (isMssqlConfigured()) {
+  if (isSupabaseConfigured()) {
     recordQriusLogin(recorded).catch((err) => {
       console.error("[qrius] login log failed:", err);
     });

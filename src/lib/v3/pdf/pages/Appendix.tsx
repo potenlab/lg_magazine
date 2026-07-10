@@ -51,6 +51,21 @@ const ANSWER_BG = "#FDFAF5";
 const QUESTION_TEXT = "#6b5337";
 const KOR = MAG_FONT.kor;
 
+// 챕터 헤더가 페이지 하단에 홀로 남지 않도록, 헤더 뒤에 확보해야 하는 최소 세로 공간(pt).
+// 첫 entry 의 여백(20) + 카드 상단 패딩(16) + 라벨(≈15) + 라벨↔본문(12) + 첫 줄(≈24) ≈ 87.
+const CHAPTER_KEEP_AHEAD = 88;
+
+// keeper(라벨+첫 문단) 를 wrap=false 로 묶을 때, 첫 문단이 한 페이지보다 커져
+// keeper 자체가 오버플로우(겹침 회귀)하는 것을 막기 위한 첫 문단 길이 상한(글자수).
+// 이보다 길면 keeper 는 라벨만 담고, 첫 문단은 wrap 허용 Text 로 분리한다.
+const KEEPER_FIRST_PARA_MAX = 220;
+
+// keeper 뒤로 확보할 최소 세로 공간(pt) — 라벨(≈15) + 첫 줄(14pt·lineHeight 1.7 ≈ 24) ≈ 40.
+// 긴 첫 문단이라 keeper 가 라벨만 담는 경우, 라벨이 페이지 끝에 홀로 남고 첫 문단이
+// 통째로 다음 장으로 떨어지는 분리를 막는다(요구 #3). keeper 는 배경/보더 없는 투명
+// 래퍼이므로 minPresenceAhead 겹침 회귀와 무관(보더+배경 박스에만 문제됨).
+const KEEPER_KEEP_AHEAD = 40;
+
 export function Appendix({ name, threads }: Props) {
   return (
     // Page 자체에 paddingTop/Horizontal/Bottom 부여 — wrap 페이지에도
@@ -85,16 +100,17 @@ export function Appendix({ name, threads }: Props) {
             // 에서 시작한다. 첫 thread 만 부제 아래 marginTop 16. (inter-thread 간격:
             // 앞 thread 의 마지막 entry marginBottom 10 + thread marginBottom 10 = 20)
             <View key={ti} style={{ marginTop: ti === 0 ? 16 : 0, marginBottom: 10 }}>
-              {/* 챕터 헤더(라벨+제목) — 2줄뿐인 작은 블록이라 wrap=false 로 자체 분리는
-                  불가능(발생하지 않음). minPresenceAhead 로 "헤더만 페이지 끝에 홀로
-                  남는" 고립만 방지(첫 entry 라벨 한 줄 분량 확보) — 첫 entry 전체를
-                  헤더와 묶지 않으므로, 첫 entry 가 길어도 안전하게 그 아래에서부터
-                  자연스럽게 다음 페이지로 흘러간다(요구 #1: 불필요한 여백 방지).
+              {/* 챕터 헤더(라벨+제목) — wrap=false 로 헤더 자체는 절대 쪼개지지 않는다.
+                  헤더는 항상 한 페이지보다 작으므로, 남은 공간이 부족하면
+                  `shouldSplit && !canWrap` 경로를 타 통째로 다음 페이지로 내려간다(요구 #1).
+                  minPresenceAhead=CHAPTER_KEEP_AHEAD: 헤더가 페이지에 들어갈 땐(shouldSplit=false)
+                  이 값만큼 뒤 여유가 있어야 남는다 — 첫 entry 의 라벨+첫 줄 분량(≈80)을 확보해
+                  "헤더만 홀로 남고 첫 카드가 통째로 다음 장으로" 가는 고립을 막는다.
                   ※ minPresenceAhead 는 배경색 없는 보더 전용 블록에만 사용 —
-                  테두리+배경 박스(Entry)에 걸면 겹침 회귀가 남(요구 #3, 아래 Entry 주석). */}
+                  테두리+배경 박스(Entry)에 걸면 겹침 회귀가 남(아래 Entry keeper 참고). */}
               <View
                 wrap={false}
-                minPresenceAhead={40}
+                minPresenceAhead={CHAPTER_KEEP_AHEAD}
                 style={{
                   paddingBottom: 20,
                   borderBottomWidth: 0.6,
@@ -149,18 +165,32 @@ function Entry({ entry }: { entry: AppendixEntry }) {
   const bodyFontStyle = isQuestion ? "italic" : "normal";
   const bodyFontWeight = isQuestion ? 600 : 400;
 
-  // 박스는 wrap 허용(기본값, 고정 height 없음) — 페이지 하단에 걸치면 남는 공간까지
-  // 채우고 나머지 문단은 자연스럽게 다음 페이지로 흘러간다(요구 #1). 카드가 페이지보다
-  // 커도 넘치지 않고 정상적으로 분할된다.
-  // ※ 테두리+배경 박스 자체에 minPresenceAhead 를 걸면 react-pdf v4 에서 페이지 넘김
-  //   시 텍스트가 겹쳐 그려지는 회귀가 있다 — 그래서 이 박스에는 절대 쓰지 않는다(요구 #3).
-  //   라벨을 첫 문단과 wrap=false 로 묶는 것도 피한다: 엘아울의 기사(article body)처럼
-  //   첫 문단 자체가 한 페이지보다 길 수 있는 entry 가 있어, 그 경우 묶음 자체가
-  //   페이지보다 커져 같은 오버플로우/겹침이 재발한다. 대신 라벨 Text 에만
-  //   minPresenceAhead 를 줘서(박스가 아니라 라벨 기준) 페이지 넘김 시 라벨이 페이지
-  //   끝에 홀로 남고 첫 문장이 다음 장으로 떨어지는 분리만 막는다(요구 #2, 라벨+첫
-  //   줄 확보). 라벨 자체는 항상 한 줄이라 안전하게 다음 페이지로 넘어갈 수 있다.
-  const LABEL_KEEP_AHEAD = 30; // 라벨 + 첫 줄(14pt·lineHeight 1.7 ≈ 24pt) 확보
+  // 카드(박스)는 wrap 허용(기본값, 고정 height 없음) — 길면 페이지 사이에서 분할된다(요구 #3).
+  //
+  // 겹침(요구 #4) 근본 원인: react-pdf v4 에서 minPresenceAhead 는 "남은 공간보다 큰"
+  // (shouldSplit=true) 노드에는 무시된다 — 긴 카드는 항상 splitView 로 쪼개지는데, 카드
+  // 상단이 페이지 경계에서 한 줄 이내로 시작하면 첫 조각 height 가 ≈0 이 되고 그 안에
+  // 라벨+첫 줄들이 뭉개져 그려지며 푸터 위로 넘친다(스샷 16p).
+  //
+  // 해결: 라벨+첫 문단을 wrap=false 인 keeper 로 묶는다. keeper 는 한 페이지보다 작으므로
+  //   `shouldSplit && !canWrap` 경로를 타 통째로 다음 페이지로 내려간다 — 첫 조각 ≈0 이
+  //   생기지 않아 뭉개짐이 원천 차단된다(요구 #2·#3·#4). 첫 문단이 keeper 상한보다 길면
+  //   (엘아울 기사처럼) keeper 는 라벨만 담아 keeper 자체가 페이지를 넘지 않게 하고, 첫
+  //   문단은 wrap 허용 Text 로 분리해 splitText 가 줄 단위로 정상 분할하게 한다.
+  const firstPara = safeParagraphs[0] ?? "";
+  const restParas = safeParagraphs.slice(1);
+  const keepFirstWithLabel = firstPara.length <= KEEPER_FIRST_PARA_MAX;
+  const bodyStyle = (i: number) => ({
+    fontFamily: KOR,
+    fontSize: bodyFontSize,
+    fontWeight: bodyFontWeight,
+    color: bodyColor,
+    marginTop: i === 0 ? 12 : 8,
+    lineHeight: 1.7,
+    // 화살표 함수의 추론 반환 타입에서 리터럴이 string 으로 넓어지는 것 방지
+    // (react-pdf FontStyle 은 "normal" | "italic" 유니온만 허용).
+    fontStyle: bodyFontStyle as "normal" | "italic",
+  });
   return (
     <View
       style={{
@@ -177,16 +207,20 @@ function Entry({ entry }: { entry: AppendixEntry }) {
         backgroundColor: isQuestion ? undefined : isResult ? RESULT_BG : ANSWER_BG,
       }}
     >
-      <Text minPresenceAhead={LABEL_KEEP_AHEAD} style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}>
-        {entry.label}
-      </Text>
-      {safeParagraphs.map((p, i) => (
-        <Text
-          key={i}
-          orphans={2}
-          widows={2}
-          style={{ fontFamily: KOR, fontSize: bodyFontSize, fontWeight: bodyFontWeight, color: bodyColor, marginTop: i === 0 ? 12 : 8, lineHeight: 1.7, fontStyle: bodyFontStyle }}
-        >
+      {/* keeper: 라벨(+짧은 첫 문단) 을 한 덩어리로. 남는 공간이 부족하면 통째로 다음
+          페이지로 — 라벨만 하단에 홀로 남거나 뭉개지는 일이 없다(요구 #2·#3·#4).
+          minPresenceAhead: keeper 가 라벨만 담는 긴-문단 경우에도 라벨↔첫 문단 분리를
+          막도록 뒤 여유(≈라벨+첫 줄)를 요구한다(요구 #3). */}
+      <View wrap={false} minPresenceAhead={KEEPER_KEEP_AHEAD}>
+        <Text style={{ fontFamily: KOR, fontSize: 12, color: WINE, letterSpacing: 0.6 }}>
+          {entry.label}
+        </Text>
+        {keepFirstWithLabel && firstPara !== "" && <Text style={bodyStyle(0)}>{firstPara}</Text>}
+      </View>
+      {/* 첫 문단이 너무 길어 keeper 에 못 담은 경우 — wrap 허용 Text 로 분리(줄 단위 분할). */}
+      {!keepFirstWithLabel && firstPara !== "" && <Text style={bodyStyle(0)}>{firstPara}</Text>}
+      {restParas.map((p, i) => (
+        <Text key={i} style={bodyStyle(i + 1)}>
           {p}
         </Text>
       ))}

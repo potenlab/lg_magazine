@@ -66,14 +66,6 @@ const KEEPER_FIRST_PARA_MAX = 220;
 // 래퍼이므로 minPresenceAhead 겹침 회귀와 무관(보더+배경 박스에만 문제됨).
 const KEEPER_KEEP_AHEAD = 40;
 
-// 카드 전체를 통짜(wrap=false)로 다룰지 판단하는 본문 길이(글자수) 상한.
-// 이보다 짧은 카드는 페이지 하단에 걸치면 쪼개져 겹치는 대신(요구 #4), 박스 통째로
-// 다음 페이지로 내려간다 — react-pdf 에서 가장 확실한 넘김 프리미티브.
-// 한 페이지 콘텐츠 높이(≈700pt)보다 훨씬 작은 카드에만 적용해야 오버플로우 회귀가
-// 없다(8960e72 롤백 원인: 긴 카드까지 통짜로 만들어 페이지 초과). 500자 ≈ 12~13줄
-// ≈ 340pt 로 안전. 이보다 길면 wrap 허용 + keeper 로 라벨↔첫 문단만 보호한다(요구 #3).
-const CARD_ATOMIC_MAX = 500;
-
 export function Appendix({ name, threads }: Props) {
   return (
     // Page 자체에 paddingTop/Horizontal/Bottom 부여 — wrap 페이지에도
@@ -102,44 +94,28 @@ export function Appendix({ name, threads }: Props) {
         </Text>
       ) : (
         <View>
-          {threads.map((thread, ti) => {
-            // 첫 entry 가 짧으면(atomic) 챕터 헤더와 한 wrap=false 그룹으로 묶어 절대
-            // 페이지 사이에서 갈리지 않게 한다(요구 #1: 제목↔첫 요소 keep-with-next).
-            // 헤더+짧은 카드는 항상 한 페이지보다 작아 그룹 오버플로우가 없다. 첫 entry 가
-            // 길면(카드가 페이지를 넘어야 함) 묶을 수 없으므로 헤더에 minPresenceAhead 만
-            // 걸어 "헤더만 홀로 남는" 고립을 완화한다.
-            const first = thread.entries[0];
-            const bindFirst = first != null && entryContentLen(first) <= CARD_ATOMIC_MAX;
-            return (
-              // thread 간 간격은 "앞 thread 의 marginBottom" 으로 부여 — 뒤 thread 가
-              // wrap 되어 새 페이지 최상단에 떨어질 때 marginTop 이 없어 정확히 top(paddingTop)
-              // 에서 시작한다. 첫 thread 만 부제 아래 marginTop 16.
-              <View key={ti} style={{ marginTop: ti === 0 ? 16 : 0, marginBottom: 10 }}>
-                {bindFirst ? (
-                  <View wrap={false}>
-                    <ChapterHeader thread={thread} />
-                    <View style={{ marginTop: 20 }}>
-                      <Entry entry={first} />
-                    </View>
-                  </View>
-                ) : (
-                  <ChapterHeader thread={thread} minPresenceAhead={CHAPTER_KEEP_AHEAD} />
-                )}
+          {threads.map((thread, ti) => (
+            // thread 간 간격은 "앞 thread 의 marginBottom" 으로 부여 — 뒤 thread 가
+            // wrap 되어 새 페이지 최상단에 떨어질 때 marginTop 이 없어 정확히 top(paddingTop)
+            // 에서 시작한다. 첫 thread 만 부제 아래 marginTop 16.
+            <View key={ti} style={{ marginTop: ti === 0 ? 16 : 0, marginBottom: 10 }}>
+              {/* 챕터 헤더 — wrap=false(자체 분할 불가) + minPresenceAhead 로 "헤더만 홀로
+                  남는" 고립(요구 #1)만 완화한다. 첫 entry 와 통짜로 묶지 않으므로, 첫 카드는
+                  하단 여백 없이 남은 공간부터 채우며 분할된다(요구 #3). */}
+              <ChapterHeader thread={thread} minPresenceAhead={CHAPTER_KEEP_AHEAD} />
 
-                {/* 나머지 entries (bind 된 첫 entry 는 위 그룹에서 이미 렌더). 카드별
-                    분할/겹침 방지는 Entry 내부에서 처리(요구 #2·#3·#4). */}
-                {thread.entries.map((e, i) => {
-                  if (bindFirst && i === 0) return null;
-                  const marginTop = i === 0 ? 20 : e.tone === "question" ? 10 : 0;
-                  return (
-                    <View key={i} style={marginTop ? { marginTop } : undefined}>
-                      <Entry entry={e} />
-                    </View>
-                  );
-                })}
-              </View>
-            );
-          })}
+              {/* entries — 카드는 wrap 허용(분할). 라벨↔첫 문단 분리·문단 orphans/widows 는
+                  Entry 내부에서 처리(요구 #2·#3). */}
+              {thread.entries.map((e, i) => {
+                const marginTop = i === 0 ? 20 : e.tone === "question" ? 10 : 0;
+                return (
+                  <View key={i} style={marginTop ? { marginTop } : undefined}>
+                    <Entry entry={e} />
+                  </View>
+                );
+              })}
+            </View>
+          ))}
         </View>
       )}
     </Page>
@@ -159,13 +135,6 @@ function ChapterHeader({ thread, minPresenceAhead }: { thread: AppendixThread; m
       <Text style={{ fontFamily: KOR, fontSize: 16, fontWeight: 700, color: TEXT, marginTop: 8 }}>{thread.title}</Text>
     </View>
   );
-}
-
-/** entry 본문 총 길이(글자수) — 카드를 통짜(atomic)로 다룰지, 헤더와 묶을지 판단용. */
-function entryContentLen(e: AppendixEntry): number {
-  const paras = e.text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
-  const safe = paras.length ? paras : [e.text];
-  return safe.reduce((n, p) => n + p.length, 0);
 }
 
 /**
@@ -188,25 +157,18 @@ function Entry({ entry }: { entry: AppendixEntry }) {
   const bodyFontStyle = isQuestion ? "italic" : "normal";
   const bodyFontWeight = isQuestion ? 600 : 400;
 
-  // 카드(박스)는 wrap 허용(기본값, 고정 height 없음) — 길면 페이지 사이에서 분할된다(요구 #3).
+  // 카드(박스)는 wrap 허용(기본값, 고정 height 없음) — 페이지 하단에 걸치면 남은 공간을
+  // 먼저 채우고 나머지 문단만 다음 페이지로 넘어간다(요구 #3: break-inside auto, 빈 여백
+  // 최소화). 카드 통째 넘김(wrap=false)은 하단 여백 낭비를 유발하므로 쓰지 않는다.
   //
-  // 겹침(요구 #4) 근본 원인: react-pdf v4 에서 minPresenceAhead 는 "남은 공간보다 큰"
-  // (shouldSplit=true) 노드에는 무시된다 — 긴 카드는 항상 splitView 로 쪼개지는데, 카드
-  // 상단이 페이지 경계에서 한 줄 이내로 시작하면 첫 조각 height 가 ≈0 이 되고 그 안에
-  // 라벨+첫 줄들이 뭉개져 그려지며 푸터 위로 넘친다(스샷 16p).
-  //
-  // 해결: 라벨+첫 문단을 wrap=false 인 keeper 로 묶는다. keeper 는 한 페이지보다 작으므로
-  //   `shouldSplit && !canWrap` 경로를 타 통째로 다음 페이지로 내려간다 — 첫 조각 ≈0 이
-  //   생기지 않아 뭉개짐이 원천 차단된다(요구 #2·#3·#4). 첫 문단이 keeper 상한보다 길면
-  //   (엘아울 기사처럼) keeper 는 라벨만 담아 keeper 자체가 페이지를 넘지 않게 하고, 첫
-  //   문단은 wrap 허용 Text 로 분리해 splitText 가 줄 단위로 정상 분할하게 한다.
+  // 단, 카드가 잘리더라도 라벨과 본문 첫 문단은 분리되지 않아야 한다(요구 #3: label 에
+  //   break-after avoid). → 라벨+첫 문단을 wrap=false keeper 로 묶는다. 첫 문단이 keeper
+  //   상한보다 길면(엘아울 기사처럼) keeper 는 라벨만 담고 첫 문단은 wrap 허용 Text 로
+  //   분리하되, keeper 에 minPresenceAhead 를 줘 라벨↔첫 줄 분리를 막는다.
+  // 문단 분할 시 한 줄만 남는 것 방지 → 각 본문 Text 에 orphans/widows 2(요구 #3).
   const firstPara = safeParagraphs[0] ?? "";
   const restParas = safeParagraphs.slice(1);
   const keepFirstWithLabel = firstPara.length <= KEEPER_FIRST_PARA_MAX;
-  // 카드 본문 총 길이가 짧으면 카드 통째로 wrap=false — 페이지 하단에서 쪼개져
-  // 겹치지 않고 박스째 다음 장으로 넘어간다(요구 #4, 스샷 "선택한 가치 카드").
-  const totalLen = safeParagraphs.reduce((n, p) => n + p.length, 0);
-  const atomicCard = totalLen <= CARD_ATOMIC_MAX;
   const bodyStyle = (i: number) => ({
     fontFamily: KOR,
     fontSize: bodyFontSize,
@@ -220,7 +182,6 @@ function Entry({ entry }: { entry: AppendixEntry }) {
   });
   return (
     <View
-      wrap={!atomicCard}
       style={{
         marginBottom: 10,
         paddingLeft: isQuestion ? 0 : 16,
@@ -246,9 +207,13 @@ function Entry({ entry }: { entry: AppendixEntry }) {
         {keepFirstWithLabel && firstPara !== "" && <Text style={bodyStyle(0)}>{firstPara}</Text>}
       </View>
       {/* 첫 문단이 너무 길어 keeper 에 못 담은 경우 — wrap 허용 Text 로 분리(줄 단위 분할). */}
-      {!keepFirstWithLabel && firstPara !== "" && <Text style={bodyStyle(0)}>{firstPara}</Text>}
+      {!keepFirstWithLabel && firstPara !== "" && (
+        <Text orphans={2} widows={2} style={bodyStyle(0)}>
+          {firstPara}
+        </Text>
+      )}
       {restParas.map((p, i) => (
-        <Text key={i} style={bodyStyle(i + 1)}>
+        <Text key={i} orphans={2} widows={2} style={bodyStyle(i + 1)}>
           {p}
         </Text>
       ))}

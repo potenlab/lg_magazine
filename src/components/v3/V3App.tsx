@@ -548,10 +548,10 @@ function V3Inner() {
                     // 콘텐츠 짧은 final-stage 씬 — 콘텐츠 hug로 빈 양피지 회귀 방지.
                     ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[420px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 px-6 pt-6 pb-6 shadow-2xl text-[16px]"
                     : spec.kind === "closingChoice"
-                    // 종결 페이지 — 좌(매거진) / 우(다시 플레이) 2-col 레이아웃.
-                    // 콘텐츠가 짧으니 min-h 를 콘텐츠에 맞춰 작게(280px) 유지하고
-                    // overflow 제한.
-                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[280px] w-full max-w-[1024px] flex-col overflow-y-auto rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/95 px-8 pt-7 pb-7 shadow-2xl text-[16px]"
+                    // 종결 페이지 — 상단 소감 카드 + 하단 좌(매거진)/우(다시 플레이)
+                    // 3 카드가 각자 자체 카드 배경을 가지므로, 감싸는 양피지 프레임은
+                    // 제거하고 wrapper 는 투명(테두리·배경·그림자·패딩 없음)으로 둔다.
+                    ? "relative mx-auto flex max-h-[calc(100vh_-_140px)] min-h-[280px] w-full max-w-[1024px] flex-col overflow-y-auto text-[16px]"
                     // default FULL_HEIGHT — recordPage / toolSelect / visionSelect / magazinePosterV1.
                     // wrapper 는 overflow-hidden, 스크롤은 씬 내부 3-영역 패턴에서.
                     : "relative mx-auto flex h-[calc(100vh_-_200px)] min-h-[300px] flex-col overflow-hidden rounded-md border border-[#d7bd83]/30 bg-[#f6efdf]/90 p-6 shadow-2xl"

@@ -35,7 +35,7 @@ export function EditorOutro({ body, name }: Props) {
       </View>
 
       {/* 본문 (중앙 정렬) */}
-      <Text style={{ fontFamily: KOR, fontSize: 13, lineHeight: 1.7, color: MAG.text, textAlign: "center", marginTop: 40, width: 510 }}>
+      <Text style={{ fontFamily: KOR, fontSize: 14, lineHeight: 1.9, color: MAG.text, textAlign: "center", marginTop: 40, width: 510 }}>
         {sanitizeBody(body)}
       </Text>
     </Page>

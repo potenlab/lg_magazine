@@ -8,7 +8,6 @@ import type { V3Session } from "@/lib/v3/scenes/types";
 import { ALL_TOOL_OPTIONS } from "@/lib/v3/toolOptions";
 import { cleanArticleField, clampBodyToCompleteSentence, clampBodyKeepingEnding } from "@/lib/v3/llm/articleSanitize";
 import { judgeBranchHeuristic } from "@/lib/v3/judging/heuristics";
-import { FALLBACK_VISION_DIRECTIONS } from "@/lib/v3/llm/stub";
 
 // ── 객관식 선택지 의미 사전 ─────────────────────────────────────
 // Ch3에서 사용자가 고르는 객관식 라벨들은 4~6자 짧은 phrase("전문성 연결",
@@ -1479,11 +1478,13 @@ ${EDITORIAL_PROSE_CONSTRAINT}`;
 매거진 STORY 편집장의 아웃트로 노트(Editor's Note) "본문"을 써주세요.
 
 [고정 도입부 — ${pron} 적용해 (거의) 그대로 시작]
-"우리는 묵묵히 자기 빛을 쌓아온 한 사람을 만났다. ${pron}의 이야기를 들으며, 우리는 ${pron}가 이미 자기만의 답을 가지고 있음을 깨달았다. 완벽한 문서가 아니라 퇴근 전 10분으로 시작하는 사람, 거창한 제안 대신 개인 노트 한 페이지를 먼저 여는 사람. ${pron}는 조용한 기록이 언젠가 팀 전체의 나침반이 되리라는 걸, 말하지 않아도 알고 있었다."
-  ※ 위 도입부는 거의 그대로 두되, 어색한 부분만 최소한으로 다듬을 것.
+"우리는 묵묵히 자기 빛을 쌓아온 한 사람을 만났다. ${pron}의 이야기를 들으며, 우리는 ${pron}가 이미 자기만의 답을 가지고 있음을 깨달았다."
+  ※ 위 두 문장은 거의 그대로 두되, 어색한 부분만 최소한으로 다듬을 것.
+  ※ 절대 금지: "퇴근 전 10분", "개인 노트 한 페이지", "조용한 기록이 팀의 나침반" 같이 참가자가 실제로 말하지 않은 구체적 상황·사물·습관을 지어내 붙이지 말 것. 이 예시 문구들은 참고용일 뿐 출력에 넣지 말 것.
 
 [전개 — 동적 데이터 자연스럽게 윤문 (하드코딩·기계적 나열 금지)]
 - 도입부에 이어, [핵심 가치]("${coreValues}")와 [정체성 문장(비전)]("${session.visionLine}")을 반드시 본문에 녹여낼 것.
+- 오직 위 [정체성 타이틀]·[핵심 가치]·[정체성 문장(비전)] 에 담긴 내용만 근거로 쓸 것. 여기에 없는 구체적 일화·시간·도구·문서·장면을 창작해서 넣지 말 것 (없는 응답을 언급하는 문제 방지).
 - 변수를 그대로 이어 붙이지 말고, 앞 문단의 담담한 관찰자 에세이 톤(~했다 / ~이었다)에 완전히 스며들도록 문맥·어조를 다듬어 한 문단으로 연결.
 
 [마무리 — 반드시 이 문장으로 완전히 끝맺기 (변형 금지)]
@@ -1698,19 +1699,12 @@ export async function v3GenerateVisionDirections(input: {
     );
   }
   const six = directions.slice(0, 6);
-  // Rule 4: sentences 1-5 cap at 40 chars, sentence 6 at 50. LLMs can't count
-  // chars reliably (especially Korean), so one over-cap sentence must not sink
-  // the set — swap in the same-axis generic fallback and keep the other five
-  // personalized. (Previously this threw, discarding all six.)
-  const salvaged = six.map((s, i) => {
-    const cap = i === 5 ? 50 : 40;
-    if (s.length <= cap) return s;
-    console.warn(
-      `[v3] v3GenerateVisionDirections: sentence ${i + 1} is ${s.length} chars (cap ${cap}) — using axis fallback`,
-    );
-    return FALLBACK_VISION_DIRECTIONS[i];
-  });
-  return { directions: salvaged };
+  // Rule 4 길이(문장1~5 ≤40자, 문장6 ≤50자)는 프롬프트 가이드로만 둔다.
+  // 예전엔 한 문장이라도 캡을 넘으면 throw → realLLM 이 stub(범용 6문장)으로
+  // 폴백했는데, "___을 ___하는 사람" 형식의 한국어 비전 문장은 40자를 쉽게
+  // 넘겨서 멀쩡한 개인화 결과가 통째로 버려지고 추상적 stub 만 노출됐다.
+  // 길이 초과만으로 전체를 버리지 않고 LLM 산출물을 그대로 사용한다.
+  return { directions: six };
 }
 
 // ──────────────────────────────────────────────────────────────────────────

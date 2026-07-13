@@ -126,9 +126,17 @@ function EntryBox({
   );
 }
 
+// LLM 산출물(엘아울의 한마디 등)이 종종 강조용 마크다운 마커(`**`, `__`)를
+// 남긴다. 라이브 장면은 EditorialInline(polishEditorialText)이 이를 걷어내지만
+// 기록 오버레이는 자체 렌더러라 마커가 언더바/별표로 그대로 노출됐다 — 동일하게 제거.
+function stripEmphasisMarkers(text: string): string {
+  return text.replace(/\*\*/g, "").replace(/__/g, "");
+}
+
 // strengthSynthesis 같은 result 텍스트는 `~소주제~` 라인이 섞여 있다.
 // 그 줄만 작은 이탤릭으로 렌더링하고 나머지는 그대로 줄바꿈을 살린다.
-function renderEntryRuns(text: string) {
+function renderEntryRuns(rawText: string) {
+  const text = stripEmphasisMarkers(rawText);
   const lines = text.split("\n");
   const out: ReactNode[] = [];
   let buffer: string[] = [];

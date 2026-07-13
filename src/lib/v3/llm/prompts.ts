@@ -1682,20 +1682,21 @@ export async function v3GenerateVisionDirections(input: {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {"directions":[{"id":1,"type":"role","text":"문장1"},{"id":2,"type":"method","text":"문장2"},{"id":3,"type":"strength","text":"문장3"},{"id":4,"type":"growth","text":"문장4"},{"id":5,"type":"impact","text":"문장5"},{"id":6,"type":"integration","text":"문장6"}]}`;
 
-  // Strict parse → loose extraction → one re-ask (fresh sample), same recovery
-  // ladder that took the synthesis tasks to 0 parse failures (parseSynthesis).
-  // A malformed reply is a per-call formatting dice roll — one re-roll converts
-  // most of the ~10% parse failures observed at 600-user load into successes.
+  // Strict parse → loose extraction → up to 3 re-asks (fresh samples), same
+  // recovery ladder that took the synthesis tasks to 0 parse failures
+  // (parseSynthesis). A malformed reply is a per-call formatting dice roll —
+  // each re-roll independently retries the ~10% slip, so 3 re-asks leave a
+  // ~p⁴ residual. Extra calls only fire on failed parses, so the cost is tiny.
   let directions = parseVisionDirectionTexts((await ask(user, 1200)).text);
-  if (directions.length < 6) {
+  for (let reask = 1; directions.length < 6 && reask <= 3; reask++) {
     console.warn(
-      `[v3 LLM][generateVisionDirections] ${directions.length}/6 after parse — re-asking once.`,
+      `[v3 LLM][generateVisionDirections] ${directions.length}/6 after parse — re-ask ${reask}/3.`,
     );
     directions = parseVisionDirectionTexts((await ask(user, 1200)).text);
   }
   if (directions.length < 6) {
     throw new Error(
-      `v3GenerateVisionDirections: expected 6 directions, got ${directions.length} (after one re-ask)`,
+      `v3GenerateVisionDirections: expected 6 directions, got ${directions.length} (after 3 re-asks)`,
     );
   }
   const six = directions.slice(0, 6);
@@ -1799,17 +1800,17 @@ export async function v3GenerateTimeHorizon(input: {
 {"horizon":["1년 안에, ...","3년 후에, ...","언젠가, ..."]}`;
 
   // Same recovery ladder as generateVisionDirections: strict parse → loose
-  // extraction → one re-ask. See parseHorizonLines.
+  // extraction → up to 3 re-asks. See parseHorizonLines.
   let horizon = parseHorizonLines((await ask(user, 500)).text);
-  if (horizon.length < 3) {
+  for (let reask = 1; horizon.length < 3 && reask <= 3; reask++) {
     console.warn(
-      `[v3 LLM][generateTimeHorizon] ${horizon.length}/3 after parse — re-asking once.`,
+      `[v3 LLM][generateTimeHorizon] ${horizon.length}/3 after parse — re-ask ${reask}/3.`,
     );
     horizon = parseHorizonLines((await ask(user, 500)).text);
   }
   if (horizon.length < 3) {
     throw new Error(
-      `v3GenerateTimeHorizon: expected 3 horizon lines, got ${horizon.length} (after one re-ask)`,
+      `v3GenerateTimeHorizon: expected 3 horizon lines, got ${horizon.length} (after 3 re-asks)`,
     );
   }
   // Ensure the time prefixes are present (the LLM occasionally drops them).

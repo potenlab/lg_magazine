@@ -82,7 +82,7 @@ const MAX_CONCURRENCY = Math.max(1, Number(process.env.AISTUDIO_MAX_CONCURRENCY 
 // under the nginx proxy_read_timeout so a queued request never becomes a 504).
 const QUEUE_TIMEOUT_MS = Number(process.env.AISTUDIO_QUEUE_TIMEOUT_MS ?? 20_000);
 // Transient upstream 5xx/429 are retried in-place (same gate slot) before failing.
-const OVERLOAD_MAX_RETRIES = Number(process.env.AISTUDIO_OVERLOAD_RETRIES ?? 2);
+const OVERLOAD_MAX_RETRIES = Number(process.env.AISTUDIO_OVERLOAD_RETRIES ?? 3);
 const OVERLOAD_BASE_MS = 400;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));

@@ -8,3 +8,12 @@ npm-debug.log*
 Dockerfile
 docker-compose*.yml
 README.md
+
+# release artifacts + local analysis dirs — huge, never part of the app image
+*.tar.gz
+docs
+loadtest
+.claude
+.entire
+.serena
+.tokensave

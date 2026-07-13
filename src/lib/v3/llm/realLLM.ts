@@ -84,17 +84,33 @@ export function readUrlConfig(): { mode: "gem" | "claude" | "mix" | null; deep: 
 }
 
 // Client poll cadence + a generous safety deadline for a genuinely stuck job.
-const JOB_POLL_MS = 1500;
 const JOB_CLIENT_DEADLINE_MS = 6 * 60_000;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Adaptive poll cadence: fast while the job is young (light tasks finish in
+// a few seconds), slower the longer it waits — a long wait means a slow
+// provider / deep queue, and hammering /jobs every 1.5s is exactly what
+// amplified HTTP load at peak in the Jul 13 600-user run (see
+// docs/loadtest-600-per-step-before-after-jul13.md §3b). Worst case this adds
+// ~6s of poll lag to a wait that is already minutes long.
+function pollDelay(elapsedMs: number): number {
+  if (elapsedMs < 10_000) return 1_500;
+  if (elapsedMs < 30_000) return 3_000;
+  if (elapsedMs < 60_000) return 5_000;
+  return 8_000;
+}
+
 // Recoverable failures the server explicitly signals as such: HTTP 429
 // ("busy — Retry-After" from a saturated gate or a near-lift quota cooldown),
-// a job lost to a deploy/replica rebalance (poll 404), or a job that errored
-// on the busy signal. These recover in seconds, so retry a bounded number of
-// times before letting the caller fall back to the stub.
-const RESUBMIT_MAX = 2;
+// a job lost to a deploy/replica rebalance (poll 404), a job that errored
+// on the busy signal, or a transient reject in front of the app (5xx /
+// dropped connection under a load spike). These recover in seconds, so retry
+// a bounded number of times before letting the caller fall back to the stub.
+const RESUBMIT_MAX = 3;
 const BUSY_RETRY_MS = 3_000;
+// Jitter so 600 clients rejected by the same load spike don't resubmit in
+// the same instant and re-create the spike.
+const retryPause = () => wait(BUSY_RETRY_MS + Math.random() * 2_000);
 
 function isRecoverableJobError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
@@ -126,7 +142,18 @@ async function callTask<T>(task: string, payload: unknown): Promise<T> {
   const body = JSON.stringify({ task, payload });
 
   for (let resubmits = 0; ; resubmits++) {
-    const res = await fetch("/api/v3/llm", { method: "POST", headers, body });
+    let res: Response;
+    try {
+      res = await fetch("/api/v3/llm", { method: "POST", headers, body });
+    } catch (err) {
+      // Network blip (connection reset/refused mid-spike) — same transient
+      // class as a 5xx below; retry instead of dropping straight to stub.
+      if (resubmits < RESUBMIT_MAX) {
+        await retryPause();
+        continue;
+      }
+      throw err;
+    }
 
     // Server said "busy, retry in N seconds" — honor it instead of treating
     // a 3-second congestion blip as a hard failure (which put stub content
@@ -159,6 +186,14 @@ async function callTask<T>(task: string, payload: unknown): Promise<T> {
       }
     }
 
+    // Transient rejection in front of the app (nginx/replica 5xx during a
+    // load spike — the Jul 13 600-user run's dominant failure). The blip
+    // clears in seconds; a jittered resubmit lands after it.
+    if (res.status >= 500 && resubmits < RESUBMIT_MAX) {
+      await retryPause();
+      continue;
+    }
+
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       throw new Error(`v3 LLM /api error ${res.status}: ${detail.slice(0, 160)}`);
@@ -171,7 +206,7 @@ async function callTask<T>(task: string, payload: unknown): Promise<T> {
 async function pollJob<T>(jobId: string): Promise<T> {
   const started = Date.now();
   for (;;) {
-    await wait(JOB_POLL_MS);
+    await wait(pollDelay(Date.now() - started));
     const res = await fetch(`/api/v3/llm/jobs?id=${encodeURIComponent(jobId)}`);
     if (res.status === 404) throw new Error("v3 LLM job expired or not found");
     if (res.ok) {

@@ -1,0 +1,24 @@
+{
+  "tasks_per_session": 21,
+  "heavy_calls_per_session": 7,
+  "session_token_estimate": "12,000–23,000",
+  "scenarios": [
+    {
+      "label": "1 (unloaded baseline)",
+      "concurrent_sessions": 1,
+      "task_success_rate": 0.9048,
+      "heavy_med_ms": 9486, "heavy_p95_ms": 28329,
+      "light_med_ms": 3784, "light_p95_ms": 9040,
+      "session_med_ms": 221876, "total_requests": 21
+    },
+    {
+      "label": "10 concurrent",
+      "concurrent_sessions": 10,
+      "task_success_rate": 0.7667,
+      "heavy_med_ms": 12302, "heavy_p95_ms": 50862,
+      "light_med_ms": 4153, "light_p95_ms": 17431,
+      "session_med_ms": 287180, "total_requests": 210
+    }
+  ],
+  "server_timeout_s": 60
+}

@@ -1,0 +1,20 @@
+{
+  "endpoint": "POST /api/v3/llm",
+  "provider": "LG AI Studio (aistudio.singlex.com) — single account, 10 prompt codes LG_BOOK_01..10",
+  "concurrency_ceiling": 20,
+  "sweep": [
+    { "conc": 10, "ok_pct": 100, "overload": 0 },
+    { "conc": 20, "ok_pct": 100, "overload": 0 },
+    { "conc": 25, "ok_pct": 64, "overload": 9 },
+    { "conc": 30, "ok_pct": 60, "overload": 12 },
+    { "conc": 40, "ok_pct": 40, "overload": 24 },
+    { "conc": 50, "ok_pct": 36, "overload": 32 },
+    { "conc": 60, "ok_pct": 40, "overload": 36 }
+  ],
+  "facts": [
+    "single-account",
+    "rotation-quota-only",
+    "no-retry-no-queue",
+    "success-plateau-20"
+  ]
+}

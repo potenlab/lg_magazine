@@ -1,0 +1,15 @@
+{
+  "base_url": "https://mybook.lgacademy.com",
+  "vus": 600,
+  "arrival_window_s": 60,
+  "requests_made": 600,
+  "enqueue_accepted_rate": 1,
+  "result_success_rate": 1,
+  "enqueue_ms_p95": 324.09999999999997,
+  "time_to_result_med_ms": 8694,
+  "time_to_result_p95_ms": 53141.599999999955,
+  "time_to_result_max_ms": 259120,
+  "poll_404": 0,
+  "upstream_error": 0,
+  "client_timeout": 0
+}

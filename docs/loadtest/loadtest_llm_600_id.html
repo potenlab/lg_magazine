@@ -1,0 +1,152 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><style>
+  @page { size: A4; margin: 15mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo","Malgun Gothic",-apple-system,"Segoe UI",sans-serif; color:#1a1a1a; font-size:12px; line-height:1.6; margin:0; }
+  h1 { font-size:21px; margin:0 0 4px; }
+  h2 { font-size:14px; margin:20px 0 8px; padding-bottom:4px; border-bottom:2px solid #e2e8f0; }
+  code { background:#f1f5f9; padding:1px 4px; border-radius:3px; font-size:10.5px; }
+  .meta { font-size:10.5px; color:#555; margin-bottom:12px; }
+  .meta b { color:#222; }
+  .hero { background:#0f172a; color:#fff; border-radius:10px; padding:16px 18px; margin:12px 0; }
+  .hero .big { font-size:18px; font-weight:800; line-height:1.35; }
+  .hero .big .bad-i { color:#fca5a5; }
+  .hero p { margin:8px 0 0; font-size:11.5px; color:#cbd5e1; }
+  .cards { display:flex; gap:10px; margin:12px 0; }
+  .card { flex:1; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc; }
+  .card .v { font-size:18px; font-weight:800; color:#0f172a; }
+  .card .v.bad { color:#b91c1c; }
+  .card .l { font-size:10px; color:#64748b; margin-top:2px; }
+  table { width:100%; border-collapse:collapse; margin:6px 0; font-size:11px; }
+  th, td { border:1px solid #e2e8f0; padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#f1f5f9; font-weight:700; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .good { color:#15803d; font-weight:700; }
+  .warn { color:#b45309; font-weight:700; }
+  .bad  { color:#b91c1c; font-weight:700; }
+  .note { background:#fef2f2; border-left:3px solid #ef4444; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  .note.amber { background:#fffbeb; border-left-color:#f59e0b; }
+  ul { margin:6px 0 6px 18px; padding:0; }
+  li { margin:4px 0; }
+  .tlrow { display:flex; align-items:center; gap:8px; margin:3px 0; font-size:10px; }
+  .tlt { width:46px; color:#64748b; text-align:right; }
+  .tlbarwrap { flex:1; background:#f1f5f9; border-radius:4px; height:14px; overflow:hidden; }
+  .tlbar { display:block; height:100%; }
+  .tlbar.good { background:#16a34a; } .tlbar.warn { background:#f59e0b; } .tlbar.bad { background:#ef4444; }
+  .tlv { width:170px; color:#475569; }
+  .foot { margin-top:18px; font-size:9.5px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
+</style></head><body>
+
+<h1>Laporan Hasil Uji Beban Endpoint LLM</h1>
+<div class="meta">
+  Target: <b>LG Magazine</b> &nbsp;·&nbsp;
+  Lingkungan: <b>mybook.lgacademy.com · Next.js · Docker 3 replica · nginx · AI Studio 10-key rotation pool</b> &nbsp;·&nbsp;
+  Alat: <b>k6</b> &nbsp;·&nbsp;
+  Waktu jalan: <b>≈14:00 KST (운영 시간대 / jam aktif)</b> &nbsp;·&nbsp;
+  Tanggal: <b>2026-06-19</b>
+</div>
+
+<div class="hero">
+  <div class="big">Endpoint LLM (pembuatan AI) <span class="bad-i">tidak mampu</span> menangani 600 pengguna bersamaan.</div>
+  <p>Pada 50 pengguna bersamaan, tingkat keberhasilan sudah turun ke ±42%, dan pada 400 pengguna anjlok di bawah 5%. Penyebabnya bukan batas token harian, melainkan <b>error 500 umum dari API AI Studio hulu saat panggilan bersamaan</b>.</p>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="v bad">9.4%</div><div class="l">Keberhasilan total (ramp 50→600)</div></div>
+  <div class="card"><div class="v">18.2s</div><div class="l">Latensi p95 (saat beban)</div></div>
+  <div class="card"><div class="v">2.8s</div><div class="l">Panggilan tunggal (tanpa beban)</div></div>
+  <div class="card"><div class="v">2,110</div><div class="l">Total permintaan</div></div>
+</div>
+
+<h2>1. Ringkasan Kesimpulan</h2>
+<div class="note"><b>Dengan konfigurasi saat ini, pembuatan majalah AI tidak akan berjalan normal untuk kelas berisi 600 orang.</b> Walaupun diukur dengan tugas paling ringan (extractKeyword, 80 token), tingkat keberhasilan turun tajam seiring bertambahnya pengguna bersamaan. Panggilan tunggal tanpa beban = 2,8 detik/sukses, tetapi saat konkurensi naik, penyedia hulu (AI Studio) mengembalikan 500 per permintaan.</div>
+<ul><li><b>Kurva kapasitas:</b> 50 pengguna 41,8% → 200 pengguna 15,3% → 400 pengguna 4,7% → 600 pengguna 6,5% sukses. Konkurensi adalah hambatan utama.</li>
+<li><b>Sifat kegagalan:</b> Pesan batas token harian ("토큰 호출량") <b>sama sekali tidak muncul</b> (pool_exhausted=0). Yang muncul: error umum <code>aistudio call (LG_BOOK_x): 500 "terjadi kesalahan, coba lagi."</code></li>
+<li><b>Batas rotasi 10 kunci:</b> Memutar kunci tidak menambah ruang konkurensi karena API hulu sendiri mengembalikan 500 saat beban bersamaan.</li>
+<li><b>Latensi:</b> Saat beban, median 10 detik, p95 13–19 detik (4–7× lipat dari 2,8 detik tanpa beban).</li></ul>
+
+<h2>2. Konfigurasi Uji</h2>
+<table><tr><td><b>Endpoint</b></td><td>POST /api/v3/llm</td></tr>
+<tr><td><b>Tugas (task)</b></td><td>extractKeyword (paling ringan, 80 token)</td></tr>
+<tr><td><b>Penyedia</b></td><td>Pool rotasi 10 kunci AI Studio (default produksi)</td></tr>
+<tr><td><b>Autentikasi</b></td><td>Cookie sesi valid-produksi dibuat offline (loadtest-00001…600)</td></tr>
+<tr><td><b>Pola beban</b></td><td>50 → 200 → 400 → 600 VU, tahan 20 detik per tahap (run terbatas)</td></tr>
+<tr><td><b>Model eksekusi</b></td><td>closed-loop (tiap VU meminta ulang 1–3 detik setelah respons)</td></tr></table>
+
+<h2>3. Kurva Kapasitas (per pengguna bersamaan)</h2>
+<p>Tingkat keberhasilan (makin tinggi makin baik)</p>
+<div class="tlrow"><span class="tlt">50 VU</span><span class="tlbarwrap"><span class="tlbar warn" style="width:42%"></span></span><span class="tlv">41.8% Tingkat keberhasilan (makin tinggi makin baik)</span></div>
+<div class="tlrow"><span class="tlt">200 VU</span><span class="tlbarwrap"><span class="tlbar bad" style="width:15%"></span></span><span class="tlv">15.3% Tingkat keberhasilan (makin tinggi makin baik)</span></div>
+<div class="tlrow"><span class="tlt">400 VU</span><span class="tlbarwrap"><span class="tlbar bad" style="width:5%"></span></span><span class="tlv">4.7% Tingkat keberhasilan (makin tinggi makin baik)</span></div>
+<div class="tlrow"><span class="tlt">600 VU</span><span class="tlbarwrap"><span class="tlbar bad" style="width:6%"></span></span><span class="tlv">6.5% Tingkat keberhasilan (makin tinggi makin baik)</span></div>
+<table style="margin-top:10px">
+  <tr><th class="n">Pengguna bersamaan</th><th class="n">Keberhasilan</th><th class="n">Median respons</th><th class="n">p95</th><th class="n">Maks</th><th class="n">Error 500 hulu</th></tr>
+  <tr>
+      <td class="n">50</td>
+      <td class="n warn">41.8%</td>
+      <td class="n">9.6s</td>
+      <td class="n">12.9s</td>
+      <td class="n">15.6s</td>
+      <td class="n">64</td>
+    </tr>
+<tr>
+      <td class="n">200</td>
+      <td class="n bad">15.3%</td>
+      <td class="n">10.5s</td>
+      <td class="n">13.5s</td>
+      <td class="n">18.0s</td>
+      <td class="n">350</td>
+    </tr>
+<tr>
+      <td class="n">400</td>
+      <td class="n bad">4.7%</td>
+      <td class="n">13.0s</td>
+      <td class="n">18.7s</td>
+      <td class="n">25.4s</td>
+      <td class="n">670</td>
+    </tr>
+<tr>
+      <td class="n">600</td>
+      <td class="n bad">6.5%</td>
+      <td class="n">10.7s</td>
+      <td class="n">18.2s</td>
+      <td class="n">21.6s</td>
+      <td class="n">608</td>
+    </tr>
+</table>
+
+<h2>4. Pengukuran — Skenario Penggunaan Nyata (sesi penuh)</h2>
+<p>Bab 3 di atas hanya mengulang tugas paling ringan (extractKeyword). Pengguna nyata memanggil <b>±21 tugas LLM per sesi</b> (termasuk <b>7 tugas sintesis berat</b>, masing-masing 2.200 token · 15–25 detik) secara berurutan. Berikut hasil mereproduksi <b>seluruh alur sesi</b> tersebut.</p>
+<table style="margin-top:6px">
+  <tr><th class="n">Sesi bersamaan</th><th class="n">Keberhasilan panggilan</th><th class="n">Median tugas berat</th><th class="n">p95 tugas berat</th><th class="n">Durasi sesi (median)</th></tr>
+  <tr>
+      <td>1 (unloaded baseline)</td>
+      <td class="n good">90.5%</td>
+      <td class="n">9.5s</td>
+      <td class="n">28.3s</td>
+      <td class="n">3.7 min</td>
+    </tr>
+<tr>
+      <td>10 concurrent</td>
+      <td class="n warn">76.7%</td>
+      <td class="n">12.3s</td>
+      <td class="n">50.9s</td>
+      <td class="n">4.8 min</td>
+    </tr>
+</table>
+<div class="note"><b>Bahkan satu pengguna tanpa beban pun hanya 90% panggilan berhasil</b>, sehingga sesi yang menuntaskan 21 panggilan tanpa satu kegagalan praktis tidak ada (tingkat tuntas 0%). Pada <b>10 sesi bersamaan</b> saja, p95 tugas berat mencapai <b>51 detik</b> — mendekati batas server (60 detik) sehingga timeout terjadi, dan satu sesi butuh ±<b>4.8 menit</b>. Maka pada 600 pengguna bersamaan, pembuatan majalah praktis hampir tidak pernah selesai.</div>
+
+<h2>5. Analisis Penyebab Kegagalan</h2>
+<div class="note">Kegagalan bukan dari web server (nginx/Next.js) atau autentikasi, melainkan dari <b>API AI Studio hulu</b>. Saat panggilan bersamaan menumpuk, tiap kunci (LG_BOOK_1…10) mengembalikan <code>500 "terjadi kesalahan"</code>. Ini berbeda dari habisnya kuota harian — ini <b>batas konkurensi/throughput sesaat</b>. Karena itu, menambah kunci pun kemungkinan tetap gagal bila banyak panggilan terjadi di saat yang sama.</div>
+
+<h2>6. Rekomendasi</h2>
+<ul><li><b>Batasi konkurensi (antrian):</b> Beri batas jumlah panggilan LLM aktif di level aplikasi dan antrekan sisanya — cegah stampede sesaat.</li>
+<li><b>Coba ulang (backoff):</b> Error 500 bersifat sementara — coba ulang 1–2× dengan exponential backoff + jitter.</li>
+<li><b>Sebar di UX:</b> Beri jeda antar-pengguna pada langkah pemicu generasi agar panggilan tidak menumpuk bersamaan.</li>
+<li><b>Fallback overflow:</b> Saat melewati batas, alihkan sebagian trafik ke mode Anthropic (x-llm-mode=claude).</li>
+<li><b>Ukur ulang di jam sepi:</b> Run ini dilakukan di jam aktif — disarankan ukur ulang dini hari untuk memisahkan batas konkurensi dari batas harian.</li></ul>
+
+<div class="note amber"><b>Batasan Pengukuran.</b> Run terbatas (20 detik/tahap), tugas paling ringan, dan dilakukan di jam aktif. Model closed-loop lebih keras daripada kedatangan nyata, tetapi di kelas nyata pun panggilan LLM mengelompok di tahap yang sama, sehingga arah temuan tetap valid.</div>
+
+<div class="foot">Dibuat 2026-06-19 · Uji Beban LLM LG Magazine · Data: docs/loadtest-llm-600-results.json (k6, terukur)</div>
+
+</body></html>

@@ -1,0 +1,102 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
+  @page { size: A4; margin: 15mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo","Malgun Gothic",-apple-system,"Segoe UI",sans-serif; color:#1a1a1a; font-size:12px; line-height:1.6; margin:0; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  h2 { font-size:14px; margin:20px 0 8px; padding-bottom:4px; border-bottom:2px solid #e2e8f0; }
+  code { background:#f1f5f9; padding:1px 4px; border-radius:3px; font-size:10.5px; }
+  .meta { font-size:10.5px; color:#555; margin-bottom:12px; }
+  .meta b { color:#222; }
+  .hero { background:#052e16; color:#fff; border-radius:10px; padding:16px 18px; margin:12px 0; }
+  .hero .big { font-size:18px; font-weight:800; line-height:1.35; }
+  .hero .big .good-i { color:#86efac; }
+  .hero p { margin:8px 0 0; font-size:11.5px; color:#d1fae5; }
+  .cards { display:flex; gap:10px; margin:12px 0; }
+  .card { flex:1; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc; }
+  .card .v { font-size:18px; font-weight:800; color:#0f172a; }
+  .card .v.good { color:#15803d; }
+  .card .l { font-size:10px; color:#64748b; margin-top:2px; }
+  table { width:100%; border-collapse:collapse; margin:6px 0; font-size:11px; }
+  th, td { border:1px solid #e2e8f0; padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#f1f5f9; font-weight:700; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .good { color:#15803d; font-weight:700; }
+  .warn { color:#b45309; font-weight:700; }
+  .bad  { color:#b91c1c; font-weight:700; }
+  .note { background:#f0fdf4; border-left:3px solid #22c55e; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  .note.amber { background:#fffbeb; border-left-color:#f59e0b; }
+  ul { margin:6px 0 6px 18px; padding:0; }
+  li { margin:4px 0; }
+  .foot { margin-top:18px; font-size:9.5px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
+</style></head><body>
+
+<h1>LLM 엔드포인트 부하 테스트 보고서 — 100명 동시 사용</h1>
+<div class="meta">
+  대상: <b>LG Magazine</b> &nbsp;·&nbsp;
+  환경: <b>mybook.lgacademy.com · Next.js · Docker 3 replica · nginx · AI Studio 10-key pool</b> &nbsp;·&nbsp;
+  모델: <b>Claude Sonnet 4.6</b> &nbsp;·&nbsp;
+  도구: <b>k6</b> &nbsp;·&nbsp;
+  실행 시각: <b>≈12:00 KST (운영 시간대 / jam aktif)</b> &nbsp;·&nbsp;
+  작성일: <b>2026-06-25</b>
+</div>
+
+<div class="hero">
+  <div class="big">LLM(AI 생성) 엔드포인트가 100명 동시 사용을 <span class="good-i">정상적으로 처리합니다</span>.</div>
+  <p>비동기 작업 큐 + 동시성 게이트 적용 후, 100명이 동시에 매거진 생성을 요청해도 <b>최종 성공률 100.0%</b>, 결과까지 중앙값 <b>3.6초</b>로 완료됩니다. 모델은 현재 <b>Claude Sonnet 4.6</b> 입니다.</p>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="v good">100.0%</div><div class="l">접수 성공률 (202)</div></div>
+  <div class="card"><div class="v good">100.0%</div><div class="l">최종 결과 성공률</div></div>
+  <div class="card"><div class="v">3.6s</div><div class="l">결과까지 소요 (중앙값)</div></div>
+  <div class="card"><div class="v">4.7s</div><div class="l">결과까지 소요 (p95)</div></div>
+</div>
+
+<h2>1. 결론 요약</h2>
+<div class="note"><b>현재 구성은 100명 동시 사용을 안정적으로 감당합니다.</b> 이전(동기 방식)에는 동시 50명에서 성공률 41.8%, 600명에서 6.5%로 붕괴했지만, <b>비동기 큐 + 동시성 게이트</b> 도입 후 100명 동시 요청에서 접수·최종 성공 모두 100.0%를 기록했습니다. 실패가 오류 대신 짧은 대기로 흡수됩니다.</div>
+<ul><li><b>최종 성공률 100.0%:</b> 100건 요청이 모두 결과까지 도달 — 폴백/타임아웃/상위 오류 0건.</li>
+<li><b>빠른 접수:</b> POST는 즉시 202 + jobId 반환 (p95 479ms). 사용자는 기다리지 않고 화면이 진행됨.</li>
+<li><b>결과 지연:</b> 결과까지 중앙값 3.6초, p95 4.7초, 최대 10.8초 — 게이트 대기 포함.</li>
+<li><b>동시성 게이트:</b> 프로세스당 동시 5건 × 3 레플리카 ≈ 15건으로 상위 AI Studio 한계(~20)를 넘지 않게 직렬화.</li>
+<li><b>모델:</b> Claude Sonnet 4.6 기준 측정.</li></ul>
+
+<h2>2. 테스트 설정</h2>
+<table><tr><td><b>엔드포인트</b></td><td>POST /api/v3/llm (접수) · GET /api/v3/llm/jobs (폴링)</td></tr>
+<tr><td><b>작업(task)</b></td><td>extractKeyword (실제 매거진 생성의 LLM 호출)</td></tr>
+<tr><td><b>모델</b></td><td>Claude Sonnet 4.6</td></tr>
+<tr><td><b>제공자</b></td><td>AI Studio 10키 풀 (운영 기본값)</td></tr>
+<tr><td><b>인증</b></td><td>오프라인 발급한 운영 유효 세션 쿠키 (loadtest-00001…100)</td></tr>
+<tr><td><b>부하 패턴</b></td><td>100 VU, 60초에 걸쳐 도착, 각 VU 1회 요청 (실제 사용자 모사)</td></tr>
+<tr><td><b>측정 방식</b></td><td>접수(202) → 2초 간격 폴링 → 결과까지 시간(time-to-result) 측정</td></tr>
+<tr><td><b>동시성 제어</b></td><td>큐 동시 5건/프로세스 · AI Studio 게이트 5건/프로세스</td></tr></table>
+
+<h2>3. 측정 결과</h2>
+<table>
+  <tr><th>지표</th><th class="n">값</th><th>비고</th></tr>
+  <tr><td>요청 수</td><td class="n"><b>100건</b></td><td>100 VU × 1회</td></tr>
+<tr><td>접수 성공률 (202)</td><td class="n"><b>100.0%</b></td><td>POST가 즉시 jobId 반환</td></tr>
+<tr><td>최종 결과 성공률</td><td class="n"><b>100.0%</b></td><td>결과(done)까지 도달</td></tr>
+<tr><td>접수 응답 p95</td><td class="n"><b>479 ms</b></td><td>사용자 대기 없음</td></tr>
+<tr><td>결과까지 중앙값</td><td class="n"><b>3.6 s</b></td><td>접수→결과(큐 대기 포함)</td></tr>
+<tr><td>결과까지 p95</td><td class="n"><b>4.7 s</b></td><td></td></tr>
+<tr><td>결과까지 최대</td><td class="n"><b>10.8 s</b></td><td></td></tr>
+<tr><td>폴링 404 (스티키 미스)</td><td class="n"><b>0건</b></td><td>0 = 세션 라우팅 정상</td></tr>
+<tr><td>상위 오류(job error)</td><td class="n"><b>0건</b></td><td>0 = AI Studio 오류 없음</td></tr>
+<tr><td>클라이언트 타임아웃</td><td class="n"><b>0건</b></td><td>0 = 마감 내 모두 완료</td></tr>
+</table>
+
+<h2>4. 이전 대비 (개선 효과)</h2>
+<div class="note">이전 동기 방식에서는 LLM 호출을 요청 시점에 그대로 처리해 동시 부하가 몰리면 상위 AI Studio가 건별 500 오류를 반환했습니다(50명 41.8%, 600명 6.5% 성공). <b>비동기 큐 + 동시성 게이트</b>는 동시 호출 수를 상위 한계 이하로 직렬화하고, 초과분을 짧게 대기시켜 <b>오류를 대기로 전환</b>합니다. 그 결과 100명 동시에서 최종 성공률 100.0%를 달성했습니다.</div>
+
+<h2>5. 권장 사항</h2>
+<ul><li><b>현 구성 유지:</b> 100명 규모 수업은 현재 설정으로 안정적. 추가 조치 불필요.</li>
+<li><b>더 큰 규모 대비:</b> 600명 이상은 결과 지연이 길어질 수 있음 — 레플리카 수 또는 게이트 값(× 레플리카 ≤ ~20)을 상위 한계에 맞춰 조정.</li>
+<li><b>진행 표시 UX:</b> 접수가 즉시(202)이므로 "생성 중…" 진행 표시로 체감 대기를 자연스럽게.</li>
+<li><b>모니터링:</b> 결과까지 p95와 큐 대기 길이를 운영 지표로 추적해 한계 도달 전 선제 확장.</li>
+<li><b>대규모 재측정:</b> 300·600명 동시 시나리오를 심야에 추가 측정해 결과 지연 곡선 확보 권장.</li></ul>
+
+<div class="note amber"><b>측정 한계.</b> 단일 작업(extractKeyword) 기준, 운영 시간대 1회 실행. 큐는 프로세스(레플리카) 내 메모리 기반이므로 접수와 폴링이 같은 레플리카로 라우팅되어야 함(nginx 세션 해시). 이번 실행에서 폴링 404=0으로 라우팅 정상 확인됨.</div>
+
+<div class="foot">생성일 2026-06-25 · LG 매거진 LLM 100명 부하 테스트 · 모델 Claude Sonnet 4.6 · 데이터: docs/loadtest-llm-100-async-results.json (k6, 실측)</div>
+
+</body></html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>LG Magazine — LLM API Description for AI Studio Platform</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: -apple-system, "Helvetica Neue", "Segoe UI", Arial, sans-serif; color: #1d2733; line-height: 1.45; font-size: 10px; margin: 0; }
+  h1 { font-size: 20px; margin: 0 0 2px; color: #0d1b2a; }
+  .sub { color: #5a6b7b; font-size: 10.5px; margin: 0 0 3px; }
+  .meta { color: #8794a1; font-size: 9px; margin: 0 0 14px; }
+  h2 { font-size: 12.5px; margin: 18px 0 7px; color: #0d1b2a; border-bottom: 2px solid #b91c2b; padding-bottom: 3px; }
+  h3 { font-size: 11px; margin: 12px 0 4px; color: #0d1b2a; }
+  p { margin: 5px 0; }
+  ul, ol { margin: 5px 0 5px 0; padding-left: 17px; }
+  li { margin: 2px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 7px 0; font-size: 8.6px; }
+  th, td { border: 1px solid #d4dbe2; padding: 4px 5px; text-align: left; vertical-align: top; }
+  th { background: #0d1b2a; color: #fff; font-weight: 600; }
+  tr:nth-child(even) td { background: #f4f7fa; }
+  code { font-family: "SF Mono", Menlo, Consolas, monospace; background: #eef2f6; padding: 1px 3px; border-radius: 3px; font-size: 8.4px; color: #b91c2b; }
+  pre { background: #0d1b2a; color: #e6edf3; padding: 9px 11px; border-radius: 5px; font-size: 8.4px; overflow-x: auto; font-family: "SF Mono", Menlo, Consolas, monospace; line-height: 1.4; }
+  pre .k { color: #79c0ff; } pre .s { color: #a5d6ff; } pre .c { color: #8b949e; }
+  .callout { border-left: 4px solid #b91c2b; background: #fdf2f3; padding: 7px 11px; margin: 9px 0; border-radius: 0 4px 4px 0; }
+  .ok { border-left-color: #1a7f4b; background: #f0f9f4; }
+  .tag { display: inline-block; font-size: 7.6px; font-weight: 700; padding: 1px 6px; border-radius: 9px; color: #fff; }
+  .sonnet { background: #6b3fa0; } .gemini { background: #1769aa; }
+  .footer { margin-top: 18px; padding-top: 7px; border-top: 1px solid #d4dbe2; color: #8794a1; font-size: 8px; }
+  .small { font-size: 8.6px; color: #5a6b7b; }
+</style>
+</head>
+<body>
+
+  <h1>LLM API Description — AI Studio Platform</h1>
+  <p class="sub">LG Magazine (mybook.lgacademy.com) · request contract &amp; per-task catalog for prompt registration</p>
+  <p class="meta">Prepared 2026-06-26 · Workspace ID <code>41539B272A…</code> · Auth key No.1 (<code>VGm…</code>)</p>
+
+  <h2>1. How the service calls AI Studio</h2>
+  <p>The app authenticates with the workspace ID + API key to obtain a JWT, then issues one HTTPS POST per LLM task:</p>
+<pre><span class="c"># Auth (cached JWT, auto-refresh)</span>
+POST {AISTUDIO_BASE_URL}/auth        <span class="c"># {ID: workspaceId, Password: apiKey} -> JWT</span>
+
+<span class="c"># Each task call</span>
+POST {AISTUDIO_BASE_URL}/genai/<span class="k">{API_CODE}</span>/prompt/<span class="k">{PROMPT_INDEX}</span>
+Authorization: Bearer {JWT}
+Body: {
+  <span class="k">"empNo"</span>: "...",
+  <span class="k">"historyId"</span>: null,
+  <span class="k">"parameters"</span>: [
+    { <span class="k">"key"</span>: <span class="s">"SYSTEM"</span>, <span class="k">"value"</span>: "&lt;persona / instructions&gt;" },
+    { <span class="k">"key"</span>: <span class="s">"USER"</span>,   <span class="k">"value"</span>: "&lt;task content&gt;" }
+  ]
+}
+<span class="c"># Response: generated text (+ token usage: inputTokens / outputTokens)</span></pre>
+  <p class="small">
+    The <strong>persona and all task content are supplied by the app at call time</strong> in the <code>SYSTEM</code> and
+    <code>USER</code> parameters. The registered prompt only needs to pass those two parameters through to the model — so a
+    single registered prompt can serve many tasks.
+  </p>
+
+  <h2>2. What we need from the platform: two pass-through prompts</h2>
+  <p>To run the dual-model design (heavy generation on a strong model, frequent one-liners on a light model), please register <strong>two prompts</strong>, each just forwarding <code>{SYSTEM}</code> + <code>{USER}</code>:</p>
+  <table>
+    <tr><th>Prompt</th><th>Bind to model</th><th>Used for</th><th>Output size</th><th>Call share</th></tr>
+    <tr><td><span class="tag sonnet">PROMPT&nbsp;A</span></td><td><strong>Claude Sonnet 4.6</strong></td><td>Chapter 2/3 summaries &amp; result-page (결과지) generation — quality-critical</td><td>large (~600–2,200 out tokens)</td><td>~20–25% of calls</td></tr>
+    <tr><td><span class="tag gemini">PROMPT&nbsp;B</span></td><td><strong>Gemini 2.5 Flash</strong></td><td>L-OWL line-by-line reflections during the flow — light &amp; frequent</td><td>small (~100–1,000 out tokens)</td><td>~75–80% of calls</td></tr>
+  </table>
+  <div class="callout ok">
+    <strong>Why split:</strong> the light one-liners are the bulk of the volume. Routing them to Gemini frees the strong
+    model for the few heavy summaries, <strong>lowering latency &amp; cost and easing concurrency pressure</strong>.
+  </div>
+
+  <h2>3. API task catalog</h2>
+  <p class="small">Each row is one task the app dispatches. <span class="tag sonnet">A</span> = Sonnet&nbsp;4.6 prompt, <span class="tag gemini">B</span> = Gemini&nbsp;2.5&nbsp;Flash prompt.</p>
+  <table>
+    <tr><th>Task</th><th>Model</th><th>Purpose</th><th>Output</th><th>~Out tok</th><th>Freq / session</th></tr>
+    <tr><td><code>writeChapterArticle</code></td><td><span class="tag sonnet">A</span></td><td>Chapter 2/3 article / summary body</td><td>prose</td><td>~1,500</td><td>2–3</td></tr>
+    <tr><td><code>synthesizeStrength</code></td><td><span class="tag sonnet">A</span></td><td>Strength synthesis (result page)</td><td>structured prose</td><td>~2,200</td><td>1</td></tr>
+    <tr><td><code>synthesizeGrowthVision</code></td><td><span class="tag sonnet">A</span></td><td>Growth-vision synthesis (result page)</td><td>structured prose</td><td>~2,200</td><td>1</td></tr>
+    <tr><td><code>generateVisionDirections</code></td><td><span class="tag sonnet">A</span></td><td>Vision direction cards (result page)</td><td>JSON / cards</td><td>~800</td><td>1</td></tr>
+    <tr><td><code>generateJobTrendCards</code></td><td><span class="tag sonnet">A</span></td><td>Job-trend cards (result page)</td><td>JSON / cards</td><td>~600</td><td>1</td></tr>
+    <tr><td><code>generateTimeHorizon</code></td><td><span class="tag sonnet">A</span></td><td>Time-horizon section (result page)</td><td>structured</td><td>~500</td><td>1</td></tr>
+    <tr><td><code>writeEditorNote</code></td><td><span class="tag sonnet">A</span></td><td>Editor's note (intro/outro)</td><td>prose</td><td>~400</td><td>1–2</td></tr>
+    <tr><td><code>writeCoverHeadline</code></td><td><span class="tag sonnet">A</span></td><td>Cover headline</td><td>short line</td><td>~100</td><td>1</td></tr>
+    <tr><td><code>judgeBranch</code></td><td><span class="tag gemini">B</span></td><td>Classify the answer to route the conversation</td><td>1 char (A/B/C/D)</td><td>~100</td><td>~10–15</td></tr>
+    <tr><td><code>reflectShort</code></td><td><span class="tag gemini">B</span></td><td>L-OWL short reflection on an answer</td><td>1–2 lines</td><td>~1,000</td><td>~6–10</td></tr>
+    <tr><td><code>rephraseLight</code></td><td><span class="tag gemini">B</span></td><td>Light rephrase of a line</td><td>1 line</td><td>~300</td><td>2–4</td></tr>
+    <tr><td><code>comfortReassure</code></td><td><span class="tag gemini">B</span></td><td>Reassurance line</td><td>1–2 lines</td><td>~220</td><td>2–4</td></tr>
+    <tr><td><code>reflectPoetic</code></td><td><span class="tag gemini">B</span></td><td>Poetic reflection across two stories</td><td>1–2 lines</td><td>~300</td><td>1–2</td></tr>
+    <tr><td><code>reflectValues</code></td><td><span class="tag gemini">B</span></td><td>Reflection on chosen values</td><td>1–2 lines</td><td>~300</td><td>1</td></tr>
+    <tr><td><code>reflectStrength</code></td><td><span class="tag gemini">B</span></td><td>Reflection on a strength</td><td>1–2 lines</td><td>~300</td><td>1</td></tr>
+    <tr><td><code>extractKeyword</code></td><td><span class="tag gemini">B</span></td><td>Extract a keyword from an answer</td><td>1 word</td><td>~80</td><td>3–6</td></tr>
+    <tr><td><code>observePattern</code></td><td><span class="tag gemini">B</span></td><td>Note a pattern across answers</td><td>1 line</td><td>~300</td><td>1–2</td></tr>
+  </table>
+
+  <h2>4. Capacity &amp; sizing (per completed session)</h2>
+  <table>
+    <tr><th></th><th><span class="tag sonnet">Sonnet 4.6 (Prompt A)</span></th><th><span class="tag gemini">Gemini 2.5 Flash (Prompt B)</span></th></tr>
+    <tr><td>Calls per session</td><td>~8–10</td><td>~30–45</td></tr>
+    <tr><td>Call latency</td><td>15–25 s (long)</td><td>2–5 s (short)</td></tr>
+    <tr><td>Per-minute limit (LG-stated)</td><td>6,000,000 tokens/min</td><td>4,024 requests/min</td></tr>
+    <tr><td>Concurrency limit</td><td>~20 (observed) — <em>please confirm</em></td><td><strong>please provide</strong></td></tr>
+  </table>
+  <div class="callout">
+    <strong>Requests to the platform team:</strong>
+    <ol style="margin:4px 0 0 0;">
+      <li>Register <strong>Prompt B bound to Gemini 2.5 Flash</strong> (pass-through <code>{SYSTEM}</code>+<code>{USER}</code>) and share its <strong>API code + prompt index</strong>.</li>
+      <li>Confirm the <strong>concurrent-call (동시 호출) limit</strong> for <strong>both</strong> Sonnet 4.6 and Gemini 2.5 Flash on this workspace.</li>
+      <li>Keep <strong>Prompt A on Sonnet 4.6</strong> for the heavy tasks (current behaviour).</li>
+    </ol>
+  </div>
+  <p class="small">
+    At ~3.5 light calls/min per active user, Gemini's 4,024 req/min covers ~1,000+ concurrent users — per-minute quota is
+    not the constraint; <strong>concurrency is the number we need</strong>. The app enforces its own per-replica gate so it
+    never exceeds whatever ceiling you confirm (<code>gate × replicas &lt; limit</code>).
+  </p>
+
+  <div class="footer">
+    LG Magazine · LLM API description for AI Studio prompt registration · 2026-06-26 ·
+    Source: <code>src/lib/v3/llm/prompts.ts</code>, <code>src/app/api/v3/llm/route.ts</code>, <code>src/lib/llm/providers/aistudio.ts</code>.
+  </div>
+
+</body>
+</html>

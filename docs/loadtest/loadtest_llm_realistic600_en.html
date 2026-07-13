@@ -1,0 +1,102 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><style>
+  @page { size: A4; margin: 15mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo","Malgun Gothic",-apple-system,"Segoe UI",sans-serif; color:#1a1a1a; font-size:12px; line-height:1.6; margin:0; }
+  h1 { font-size:19px; margin:0 0 4px; }
+  h2 { font-size:14px; margin:20px 0 8px; padding-bottom:4px; border-bottom:2px solid #e2e8f0; }
+  code { background:#f1f5f9; padding:1px 4px; border-radius:3px; font-size:10.5px; }
+  .meta { font-size:10.5px; color:#555; margin-bottom:12px; }
+  .meta b { color:#222; }
+  .hero { background:#422006; color:#fff; border-radius:10px; padding:16px 18px; margin:12px 0; }
+  .hero .big { font-size:17px; font-weight:800; line-height:1.35; }
+  .hero .big .good-i { color:#86efac; }
+  .hero .big .warn-i { color:#fcd34d; }
+  .hero p { margin:8px 0 0; font-size:11.5px; color:#fef3c7; }
+  .cards { display:flex; gap:10px; margin:12px 0; }
+  .card { flex:1; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc; }
+  .card .v { font-size:18px; font-weight:800; color:#0f172a; }
+  .card .v.good { color:#15803d; }
+  .card .v.warn { color:#b45309; }
+  .card .v.bad { color:#b91c1c; }
+  .card .l { font-size:10px; color:#64748b; margin-top:2px; }
+  table { width:100%; border-collapse:collapse; margin:6px 0; font-size:11px; }
+  th, td { border:1px solid #e2e8f0; padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#f1f5f9; font-weight:700; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .good { color:#15803d; font-weight:700; }
+  .warn { color:#b45309; font-weight:700; }
+  .bad  { color:#b91c1c; font-weight:700; }
+  .note { background:#fffbeb; border-left:3px solid #f59e0b; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  .note.green { background:#f0fdf4; border-left-color:#22c55e; }
+  ul { margin:6px 0 6px 18px; padding:0; }
+  li { margin:4px 0; }
+  .foot { margin-top:18px; font-size:9.5px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
+</style></head><body>
+
+<h1>LLM Load Test Report — 600-User Full Flow (Gemini Flash, before/after code-pool fix)</h1>
+<div class="meta">
+  Target: <b>LG Magazine</b> &nbsp;·&nbsp;
+  Environment: <b>mybook.lgacademy.com · Next.js · Docker 3 replica · nginx · LG AI Studio</b> &nbsp;·&nbsp;
+  Models: <b>Claude Sonnet 4.x + Gemini 2.0 Flash (LG AI Studio)</b> &nbsp;·&nbsp;
+  Tool: <b>k6</b> &nbsp;·&nbsp;
+  Run time: <b>≈14:46–15:14 KST (28분 run, 조기 종료 / 28-min run, cut early)</b> &nbsp;·&nbsp;
+  Date: <b>2026-06-26</b>
+</div>
+
+<div class="hero">
+  <div class="big">The light-pool fix (1→10 codes) <span class="good-i">cut exhaustion errors sharply</span>, but 600 concurrent full sessions still hit the <span class="warn-i">concurrency ceiling</span>.</div>
+  <p>Expanding the light (Gemini Flash) lane from 1 code to 10 raised task success 28.7%→<b>45.8%</b> (+60% relative) and cut upstream errors 4,156→<b>963</b> (−77%). But the failure mode shifted from "errors" to "queue wait / timeout", and session completion is still 0/600.</p>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="v warn">45.8%</div><div class="l">Task success (after)</div></div>
+  <div class="card"><div class="v good">−77%</div><div class="l">Upstream errors</div></div>
+  <div class="card"><div class="v good">1 → 10</div><div class="l">Light codes</div></div>
+  <div class="card"><div class="v bad">0 / 600</div><div class="l">Sessions completed</div></div>
+</div>
+
+<h2>1. Executive Summary</h2>
+<div class="note green"><b>The fix was correct and it worked.</b> Growing the light lane from 1 code (<code>GEMINI_FLASH</code>) to 10 (<code>LG_BOOK_GEMINI</code> + 9 more) cut "code exhausted" errors by 77% and lifted task success 28.7%→45.8%. Pre-deploy, all 10 codes verified <b>10/10 healthy</b> and a 20-concurrent burst hit <b>20/20</b>. <b>However</b>, when 600 users run the full 21-task session at once (≈12,600 tasks), the bottleneck is no longer code count but <b>concurrency throughput</b> (gate ~15 + LG AI Studio ~20-concurrent account cap). Tasks now wait in the queue instead of erroring, exceeding the 300s deadline (live probe: queue positions 188–337).</div>
+<div class="note"><b>Bottleneck shifted — code exhaustion → concurrency throughput.</b> Before: the single light code exhausted instantly → <b>errors</b>. After: codes are plentiful, but the concurrent execution slots (gate ~15, account ~20) can't keep up with 600 concurrent load → <b>queue backlog → timeouts</b>. Adding codes solves <b>quota/exhaustion</b>, not <b>throughput</b> — throughput is set by the gate and the account ceiling.</div>
+<ul><li><b>Task success 28.7% → 45.8%</b> (+60% relative): clear improvement.</li>
+<li><b>Upstream errors 4,156 → 963</b> (−77%): exhaustion errors largely eliminated.</li>
+<li><b>Failure mode shifted:</b> timeouts 170→1,055 — tasks queue instead of dying, then exceed the deadline.</li>
+<li><b>Light TTR 93.5→236.0s (median):</b> fail-fast errors gone; tasks now wait in a deep queue → number rises.</li>
+<li><b>Heavy (Sonnet) TTR:</b> median 296.6s, p95 302.0s — heavy lane also saturated by the concurrency limit.</li>
+<li><b>0/600 sessions completed:</b> 600 concurrent full sessions exceed the current throughput ceiling.</li></ul>
+
+<h2>2. Fix Applied + Verification</h2>
+<table><tr><td><b>Change</b></td><td>AISTUDIO_LIGHT_API_CODES: GEMINI_FLASH (1) → LG_BOOK_GEMINI + LG_BOOK_GEMINI_2..10 (10)</td></tr>
+<tr><td><b>Deploy</b></td><td>Updated production .env, then docker compose up -d (no rebuild — env-only change)</td></tr>
+<tr><td><b>Code verification</b></td><td>Direct AI Studio probe — 10/10 codes healthy (~3s each, valid Korean output)</td></tr>
+<tr><td><b>Pre-flight burst</b></td><td>20 concurrent light calls to production → 20/20 success (median 9.6s), 0 exhaustion errors</td></tr>
+<tr><td><b>Load scenario</b></td><td>Realistic full session — 21 tasks/session (11 light + 7 heavy)</td></tr>
+<tr><td><b>Load pattern</b></td><td>600 VUs, ~1 session/sec over 600s, 300s per-task deadline</td></tr>
+<tr><td><b>Run / cut</b></td><td>stopped at 28 min (mode conclusive, to limit production load)</td></tr></table>
+
+<h2>3. Before / After (600 concurrent full sessions)</h2>
+<table>
+  <tr><th>Metric</th><th class="n">Before (1 code)</th><th class="n">After (10 codes)</th><th class="n">Change</th></tr>
+  <tr><td>Task success rate</td><td class="n">28.7%</td><td class="n"><b>45.8%</b></td><td class="n">+60% rel</td></tr>
+<tr><td>Upstream errors</td><td class="n">4,156</td><td class="n"><b>963</b></td><td class="n">−77%</td></tr>
+<tr><td>Client timeouts</td><td class="n">170</td><td class="n"><b>1,055</b></td><td class="n">error→wait shift</td></tr>
+<tr><td>Light TTR median</td><td class="n">93.5s</td><td class="n"><b>236.0s</b></td><td class="n">more queue wait</td></tr>
+<tr><td>Sessions completed</td><td class="n">0/600</td><td class="n"><b>0/600</b></td><td class="n">concurrency ceiling</td></tr>
+<tr><td>Enqueue p95</td><td class="n">~378ms</td><td class="n"><b>377ms</b></td><td class="n">fine (not the bottleneck)</td></tr>
+</table>
+
+<h2>4. Interpretation</h2>
+<div class="note green">Adding codes was the <b>correct first fix</b> (it removed exhaustion errors). But 600 <b>simultaneous</b> full sessions push ≈12,600 tasks at once — an extreme load where LG AI Studio's <b>~20-concurrent account cap</b> and the local gate (~15) are the throughput ceiling. Real usage doesn't start 600 sessions at the exact same instant; arrivals spread out, so real-world load is far gentler than this test. The async queue still absorbs bursts as <b>waiting rather than hard failure</b>.</div>
+
+<h2>5. Recommendations</h2>
+<ul><li><b>Done (verified):</b> light codes 1→10 — exhaustion errors −77%. Live in production.</li>
+<li><b>Confirm the concurrency cap (next):</b> check whether LG AI Studio's ~20-concurrent limit is shared across both lanes or per-lane. Negotiate a higher cap if possible.</li>
+<li><b>Tune the gate:</b> raise AISTUDIO_(LIGHT_)MAX_CONCURRENCY × replicas up to the account ceiling.</li>
+<li><b>Size realistic concurrency:</b> 600 simultaneous full sessions exceed the ceiling. Set the SLA target against a spread arrival model.</li>
+<li><b>Separate bug:</b> <code>judgeBranch</code> fails with <code>reading 'letters'</code> (load-independent). Inspect payload/handler.</li></ul>
+
+<div class="note"><b>Measurement Caveats.</b> 600 concurrent full sessions is a max-load scenario, cut at 28 min (mode conclusive, to limit production load). Some figures sample the saturated window. The before (1-code) data is the prior measured run with the same script and parameters, so the comparison is like-for-like.</div>
+
+<div class="foot">Generated 2026-06-26 · LG Magazine 600-user full-flow LLM test (Gemini Flash, before/after code-pool fix) · Data: docs/loadtest-llm-realistic-600-results.json (+ .BEFORE-fix) · k6 measured</div>
+
+</body></html>

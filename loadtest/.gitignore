@@ -1,9 +1,11 @@
-# Track only the final report. Everything else in this directory is either a
-# regenerable test artifact OR sensitive (cookies.json holds live production
-# session tokens when the load-test scripts are run).
+# Track only the k6 scripts + the final report. Everything else is either a
+# regenerable test artifact (results/, reports/) OR sensitive (cookies.json
+# holds live production session tokens when the load-test scripts are run).
 *
 !.gitignore
-!final-report.pdf
-!realistic-stress-test.js
 !stress-test.js
+!realistic-stress-test.js
 !proof-api-only.js
+!reports/
+reports/*
+!reports/final-report.pdf

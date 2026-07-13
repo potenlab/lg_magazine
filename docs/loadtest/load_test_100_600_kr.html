@@ -1,0 +1,93 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
+  @page { size: A4; margin: 15mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo","Malgun Gothic",-apple-system,"Segoe UI",Roboto,sans-serif; color:#1a1a1a; font-size:12px; line-height:1.6; margin:0; }
+  h1 { font-size:21px; margin:0 0 4px; }
+  h2 { font-size:14px; margin:20px 0 8px; padding-bottom:4px; border-bottom:2px solid #e2e8f0; }
+  .meta { font-size:10.5px; color:#555; margin-bottom:12px; } .meta b { color:#222; }
+  .hero { background:#0f172a; color:#fff; border-radius:10px; padding:16px 18px; margin:12px 0; }
+  .hero .big { font-size:18px; font-weight:800; line-height:1.3; } .hero .big .grn { color:#86efac; }
+  .hero p { margin:8px 0 0; font-size:11.5px; color:#cbd5e1; }
+  .cards { display:flex; gap:10px; margin:12px 0; }
+  .card { flex:1; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc; }
+  .card .v { font-size:17px; font-weight:800; color:#0f172a; } .card .v.grn { color:#15803d; }
+  .card .l { font-size:10px; color:#64748b; margin-top:2px; }
+  table { width:100%; border-collapse:collapse; margin:6px 0; font-size:11px; }
+  th, td { border:1px solid #e2e8f0; padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#f1f5f9; font-weight:700; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .good { color:#15803d; font-weight:700; } .warn { color:#b45309; font-weight:700; } .bad { color:#b91c1c; font-weight:700; }
+  .note { background:#eff6ff; border-left:3px solid #3b82f6; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  .ok { background:#f0fdf4; border-left-color:#16a34a; }
+  .amber { background:#fffbeb; border-left-color:#f59e0b; }
+  ul { margin:6px 0 6px 18px; padding:0; } li { margin:4px 0; }
+  dl { margin:6px 0; } dt { font-weight:700; margin-top:6px; } dd { margin:0 0 0 0; color:#334155; }
+  .foot { margin-top:18px; font-size:9.5px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
+</style></head><body>
+<h1>부하 테스트 결과 보고서 — 동시 100명 ~ 600명</h1>
+<div class="meta">앱: <b>LG 매거진</b> · 환경: <b>운영 서버</b> · 도구: <b>k6</b> · 작성일: <b>2026-06-08</b> · 대상: <b>개발팀</b></div>
+
+<div class="hero">
+  <div class="big">부하가 <span class="grn">6배 늘어도 응답 시간은 거의 그대로</span>입니다. 동시 600명을 여유 있게 처리합니다.</div>
+  <p>실제 사용자 세션을 동시 100명에서 600명까지 늘리며 측정했습니다. 전 구간에서 성공률은 약 100%를 유지했고, 응답 시간은 거의 변하지 않았습니다 — 홈 약 130ms, 앱 내 이동 약 265ms.</p>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="v grn">99.83%</div><div class="l">성공률 @ 600명</div></div>
+  <div class="card"><div class="v">135ms</div><div class="l">이동 p95 @ 600 (100부터 평탄)</div></div>
+  <div class="card"><div class="v">135ms</div><div class="l">홈 p95 @ 600</div></div>
+  <div class="card"><div class="v">13,188</div><div class="l">완료 세션 (600 실행)</div></div>
+</div>
+
+<h2>1. 이 스트레스 테스트에 대하여</h2>
+<p><b>스트레스(부하) 테스트</b>는 많은 사람이 한꺼번에 사용할 때 앱이 <b>빠른 속도</b>를 유지하는지, 그리고 <b>안정적</b>인지를 측정합니다. 실제 600명을 동시에 접속시키는 대신, 널리 쓰이는 오픈소스 부하 테스트 도구 <b>k6</b>로 수백 명의 동시 사용자가 실제 HTTP 요청을 운영 사이트에 보내는 상황을 시뮬레이션하고, 각 가상 사용자의 체감 값을 기록했습니다.</p>
+<p><b>각 가상 사용자는 실제 독자처럼</b> 매거진을 엽니다. 페이지·이미지·폰트·인트로 오디오를 받는 첫 "콜드 방문" 후, 캐시된 상태의 빠른 "웜" 경로로 챕터를 이동하며, 실제 사람이 읽듯 동작 사이에 2~5초씩 멈춥니다.</p>
+<p><b>점진적 입장 모델</b>을 사용했습니다 — 모두가 같은 순간이 아니라 짧은 시간에 걸쳐 입장하여 실제 수업이 차오르는 방식을 모사합니다. 이를 <b>운영 서버(라이브)</b>에 대해 6단계(동시 100·200·300·400·500·600명)로 수행하고, 각 단계의 성공률·응답시간(p95)·처리량을 측정했습니다.</p>
+<table>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr><td>도구</td><td>k6 — 오픈소스 부하 테스트 도구 (실제 HTTP, 스크립트 가상 사용자)</td></tr>
+  <tr><td>대상</td><td>운영 서버 (라이브)</td></tr>
+  <tr><td>부하 모델</td><td>점진적 입장 → 피크 유지 (수업 입장 모사)</td></tr>
+  <tr><td>가상 사용자별</td><td>콜드 첫 방문 → 웜 챕터 이동, 2~5초 생각시간</td></tr>
+  <tr><td>테스트 단계</td><td>동시 100 / 200 / 300 / 400 / 500 / 600명</td></tr>
+  <tr><td>측정 항목</td><td>성공률, 응답시간(p95), 처리량</td></tr>
+</table>
+<div class="note">범위: 본 테스트는 <b>웹 앱과 페이지 제공 계층</b>을 대상으로 합니다. <b>AI 매거진 생성은 실행하지 않으므로</b> AI 토큰을 소모하지 않습니다 — AI 처리량은 운영에 이미 적용된 10개 키 로테이션이 별도로 담당합니다.</div>
+
+<h2>2. 결과 — 100명 → 600명</h2>
+<table>
+  <tr><th class="n">동시접속</th><th class="n">요청수</th><th class="n">성공률</th><th class="n">홈 페이지<br>(p95)</th><th class="n">앱 내 이동<br>(p95)</th><th class="n">웜 사이클<br>(p95)</th><th class="n">첫 방문<br>(p95)</th><th class="n">처리량</th></tr>
+  <tr><td class="n">100명</td><td class="n">4,432</td><td class="n good">100%</td><td class="n">132 ms</td><td class="n">131 ms</td><td class="n good">260 ms</td><td class="n">16.5초</td><td class="n">58.4 Mbps</td></tr>
+<tr><td class="n">200명</td><td class="n">10,294</td><td class="n good">100%</td><td class="n">133 ms</td><td class="n">132 ms</td><td class="n good">262 ms</td><td class="n">19.2초</td><td class="n">89.8 Mbps</td></tr>
+<tr><td class="n">300명</td><td class="n">17,347</td><td class="n good">99.98%</td><td class="n">134 ms</td><td class="n">134 ms</td><td class="n good">265 ms</td><td class="n">21.8초</td><td class="n">111.5 Mbps</td></tr>
+<tr><td class="n">400명</td><td class="n">25,438</td><td class="n good">99.96%</td><td class="n">159 ms</td><td class="n">135 ms</td><td class="n good">267 ms</td><td class="n">25.6초</td><td class="n">122.4 Mbps</td></tr>
+<tr><td class="n">500명</td><td class="n">36,850</td><td class="n good">99.9%</td><td class="n">134 ms</td><td class="n">134 ms</td><td class="n good">265 ms</td><td class="n">21.3초</td><td class="n">137.7 Mbps</td></tr>
+<tr><td class="n">600명</td><td class="n">48,565</td><td class="n good">99.83%</td><td class="n">135 ms</td><td class="n">135 ms</td><td class="n good">267 ms</td><td class="n">20.9초</td><td class="n">147.3 Mbps</td></tr>
+</table>
+<p style="font-size:10.5px;color:#64748b">p95 = 95번째 백분위수: 요청의 95%가 이 시간 이내였음을 의미 (평균보다 엄격하고 정직한 지표).</p>
+
+<h2>3. 표 읽는 법</h2>
+<dl>
+  <dt>성공률 — 약 100% 유지</dt>
+  <dd>600명에서도 첫 시도 실패는 0.17%에 불과. 사실상 오류 없음.</dd>
+  <dt>홈 · 앱 내 이동(p95) — 평탄</dt>
+  <dd>가장 중요한 값, 즉 서버 자체 응답 시간입니다. 100명에서 600명까지 거의 변하지 않습니다(약 130ms, 265ms). 부하가 늘어도 <b>느려지지 않는다</b>는 뜻이며, 여유가 충분합니다.</dd>
+  <dt>첫 방문(p95) — 유일하게 증가하는 항목</dt>
+  <dd>처음 매거진을 열 때 브라우저가 이미지·폰트·인트로 오디오를 받습니다. 이 다운로드가 가장 무거운 순간이며 대역폭에 좌우됩니다. <b>사용자당 1회성 비용</b>이고, 이후 모든 페이지는 빠른 "웜" 경로입니다. (이 값은 단일 테스트 PC의 인터넷 회선에도 일부 영향을 받으므로, 실제 서버에서의 첫 방문 경험은 표시값보다 나쁘지 않습니다.)</dd>
+  <dt>처리량 — 매끄럽게 증가</dt>
+  <dd>접속자 수에 비례해 증가(58 → 147.3 Mbps), 가용 네트워크 용량 내에서 여유.</dd>
+</dl>
+
+<h2>4. 의미</h2>
+<div class="note ok"><b>동시 600명은 여유 있게 처리되며, 추가 여유도 충분합니다.</b> 전 구간에서 응답 시간이 평탄하고 오류는 사실상 0%입니다. 목요일 수업을 위해 서빙 계층에서 바꿀 것은 없습니다.</div>
+<div class="note amber"><b>관리할 것은 첫 방문 다운로드 집중뿐입니다.</b> 600명이 정확히 같은 몇 초에 매거진을 열면 무거운 첫 로딩이 한꺼번에 발생합니다. 입장을 1~2분에 걸쳐 분산하면 매끄럽게 유지됩니다. 이미 적용한 자산 경량화도 이 비용을 줄여줍니다.</div>
+
+<h2>5. 목요일(600명) 권장 사항</h2>
+<ul>
+  <li><b>입장 분산:</b> 가능하면 1~2분에 걸쳐 입장 — 동시 첫 로딩 완화.</li>
+  <li><b>모니터링:</b> 수업 시작 시각에 정상 여부 확인.</li>
+  <li><b>용량 변경 불필요:</b> 위 수치는 운영 서버 실측이며 이미 통과.</li>
+</ul>
+
+<div class="foot">생성일 2026-06-08 · 점진적 입장 부하 테스트 (100~600명) · 데이터: loadtest/summary-grad-*.json · 단일 클라이언트에서 실행했으므로 첫 방문 시간·처리량은 서버 실제 한계 대비 보수적으로 측정됨.</div>
+</body></html>

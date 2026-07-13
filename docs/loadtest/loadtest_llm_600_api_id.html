@@ -1,0 +1,101 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><style>
+  @page { size: A4; margin: 15mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo","Malgun Gothic",-apple-system,"Segoe UI",sans-serif; color:#1a1a1a; font-size:12px; line-height:1.6; margin:0; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  h2 { font-size:14px; margin:20px 0 8px; padding-bottom:4px; border-bottom:2px solid #e2e8f0; }
+  code { background:#f1f5f9; padding:1px 4px; border-radius:3px; font-size:10.5px; }
+  .meta { font-size:10.5px; color:#555; margin-bottom:12px; }
+  .meta b { color:#222; }
+  .hero { background:#052e16; color:#fff; border-radius:10px; padding:16px 18px; margin:12px 0; }
+  .hero .big { font-size:18px; font-weight:800; line-height:1.35; }
+  .hero .big .hi { color:#86efac; }
+  .hero p { margin:8px 0 0; font-size:11.5px; color:#d1fae5; }
+  .cards { display:flex; gap:10px; margin:12px 0; }
+  .card { flex:1; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc; }
+  .card .v { font-size:18px; font-weight:800; color:#0f172a; }
+  .card .v.good { color:#15803d; }
+  .card .v.warn { color:#b45309; }
+  .card .v.bad { color:#b91c1c; }
+  .card .l { font-size:10px; color:#64748b; margin-top:2px; }
+  table { width:100%; border-collapse:collapse; margin:6px 0; font-size:11px; }
+  th, td { border:1px solid #e2e8f0; padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#f1f5f9; font-weight:700; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .note { background:#f0fdf4; border-left:3px solid #22c55e; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  .note.amber { background:#fffbeb; border-left-color:#f59e0b; }
+  ul { margin:6px 0 6px 18px; padding:0; }
+  li { margin:4px 0; }
+  .foot { margin-top:18px; font-size:9.5px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
+</style></head><body>
+
+<h1>Laporan Uji Beban API LLM — 600 Pengguna Bersamaan</h1>
+<div class="meta">
+  Target: <b>LG Magazine</b> &nbsp;·&nbsp;
+  Lingkungan: <b>mybook.lgacademy.com · Next.js · Docker 3 replica · nginx · AI Studio (dual-lane: Flash + Sonnet)</b> &nbsp;·&nbsp;
+  Model: <b>Gemini 2.0 Flash (light lane)</b> &nbsp;·&nbsp;
+  Alat: <b>k6</b> &nbsp;·&nbsp;
+  Waktu eksekusi: <b>≈18:40 KST (16:40 WIB)</b> &nbsp;·&nbsp;
+  Tanggal: <b>2026-07-08</b>
+</div>
+
+<div class="hero">
+  <div class="big">Endpoint LLM (pembuatan AI) <span class="hi">menangani 600 permintaan bersamaan dengan baik</span>.</div>
+  <p>Skenario burst: 600 pengguna tiba dalam 60 detik, masing-masing mengirim 1 permintaan pembuatan LLM (terima → polling → hasil). <b>Keberhasilan akhir 100.0%</b>, waktu ke hasil median <b>6.9 dtk</b> · p95 <b>32.4 dtk</b>. Tugas ini (extractKeyword) dirutekan ke jalur <b>Gemini 2.0 Flash (light lane)</b> pada arsitektur dual-lane.</p>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="v good">100.0%</div><div class="l">Keberhasilan terima (202)</div></div>
+  <div class="card"><div class="v good">100.0%</div><div class="l">Keberhasilan hasil akhir</div></div>
+  <div class="card"><div class="v">6.9s</div><div class="l">Waktu ke hasil (median)</div></div>
+  <div class="card"><div class="v">32.4s</div><div class="l">Waktu ke hasil (p95)</div></div>
+</div>
+
+<h2>1. Ringkasan Kesimpulan</h2>
+<div class="note"><b>Pada burst 600 pengguna bersamaan: terima 100.0%, keberhasilan akhir 100.0%.</b> Antrean asinkron menyerap lonjakan sebagai antrean, bukan error, dan sejak dual-model tugas ringan diproses di jalur khusus Gemini 2.0 Flash (light lane). Dibanding pengukuran Juni (jalur tunggal Sonnet, median 14.9 dtk), median kali ini 6.9 dtk.</div>
+<ul><li><b>Keberhasilan akhir 100.0%:</b> dari 600 permintaan — polling 404 0 · error upstream 0 · timeout 0.</li>
+<li><b>Penerimaan cepat:</b> POST langsung mengembalikan 202 + jobId (p95 463ms). Pengguna tidak menunggu, layar tetap berjalan.</li>
+<li><b>Latensi hasil:</b> median 6.9 dtk · p95 32.4 dtk · maks 259.6 dtk — termasuk antre.</li>
+<li><b>Gerbang konkurensi:</b> 5/proses × 3 replika ≈ 15, dijaga di bawah batas upstream.</li>
+<li><b>Model:</b> diukur pada Gemini 2.0 Flash (light lane) (default produksi dual-lane).</li></ul>
+
+<h2>2. Konfigurasi Pengujian</h2>
+<table><tr><td><b>Endpoint</b></td><td>POST /api/v3/llm (terima) · GET /api/v3/llm/jobs (polling)</td></tr>
+<tr><td><b>Tugas (task)</b></td><td>extractKeyword — 1 tugas LLM ringan nyata per pengguna</td></tr>
+<tr><td><b>Jalur model</b></td><td>Gemini 2.0 Flash (light lane) — routing otomatis dual-lane</td></tr>
+<tr><td><b>Provider</b></td><td>AI Studio dual-lane (default produksi)</td></tr>
+<tr><td><b>Autentikasi</b></td><td>Cookie sesi valid-produksi diterbitkan offline (loadtest-00001…00600)</td></tr>
+<tr><td><b>Pola beban</b></td><td>600 VU, tiba dalam 60 detik, tiap VU 1 permintaan (simulasi burst)</td></tr>
+<tr><td><b>Pengukuran</b></td><td>terima (202) → polling tiap 2 dtk → time-to-result</td></tr>
+<tr><td><b>Tenggat per tugas</b></td><td>Gagal jika tidak selesai dalam 300 dtk (5 menit)</td></tr>
+<tr><td><b>Prasyarat</b></td><td>Backlog antrean produksi dipastikan kosong sebelum eksekusi</td></tr></table>
+
+<h2>3. Hasil Pengukuran</h2>
+<table>
+  <tr><th>Metrik</th><th class="n">Nilai</th><th>Catatan</th></tr>
+  <tr><td>Jumlah permintaan</td><td class="n"><b>600</b></td><td>600 VU × 1</td></tr>
+<tr><td>Keberhasilan terima (202)</td><td class="n"><b>100.0%</b></td><td>POST langsung beri jobId</td></tr>
+<tr><td>Keberhasilan hasil akhir</td><td class="n"><b>100.0%</b></td><td>mencapai hasil (done)</td></tr>
+<tr><td>Respons terima p95</td><td class="n"><b>463 ms</b></td><td>pengguna tak menunggu</td></tr>
+<tr><td>Waktu ke hasil median</td><td class="n"><b>6.9 dtk</b></td><td>terima→hasil (termasuk antre)</td></tr>
+<tr><td>Waktu ke hasil p95</td><td class="n"><b>32.4 dtk</b></td><td></td></tr>
+<tr><td>Waktu ke hasil maks</td><td class="n"><b>259.6 dtk</b></td><td></td></tr>
+<tr><td>Polling 404 (sticky miss)</td><td class="n"><b>0</b></td><td>0 = routing sesi normal</td></tr>
+<tr><td>Error upstream (job error)</td><td class="n"><b>0</b></td><td>error pemrosesan AI Studio</td></tr>
+<tr><td>Timeout klien</td><td class="n"><b>0</b></td><td>melampaui tenggat 5 menit</td></tr>
+</table>
+
+<h2>4. Perbandingan dengan Pengukuran Sebelumnya</h2>
+<div class="note">Mode sinkron awal runtuh pada 600 pengguna bersamaan (keberhasilan 6.5%). Setelah antrean asinkron (25 Juni, jalur tunggal Sonnet): 100% berhasil, median 14.9 dtk, p95 42.2 dtk. Pada pengukuran kali ini (dual-lane), tugas ringan dipisah ke jalur Gemini 2.0 Flash (light lane): <b>keberhasilan 100.0% · median 6.9 dtk · p95 32.4 dtk</b>.</div>
+
+<h2>5. Rekomendasi</h2>
+<ul><li><b>Pertahankan konfigurasi:</b> burst 600 pengguna bersamaan tertangani dengan setelan saat ini.</li>
+<li><b>UX indikator progres:</b> karena terima instan (202), gunakan indikator "sedang membuat…" agar tunggu terasa wajar.</li>
+<li><b>Pemantauan:</b> lacak p95 waktu ke hasil dan panjang antrean sebagai metrik operasional.</li>
+<li><b>Catatan alur penuh:</b> beban sesi lengkap (23 tugas) diukur lewat uji full-flow terpisah — pengukuran parsial (11 menit) menunjukkan keberhasilan tugas 99,4%.</li></ul>
+
+<div class="note amber"><b>Batasan Pengukuran.</b> Berdasarkan satu tugas ringan (extractKeyword), satu kali eksekusi — latensi tugas sintesis berat (jalur Sonnet) di luar cakupan uji ini. Antrean berbasis memori per-proses (replika), sehingga terima dan polling harus dirutekan ke replika yang sama (hash sesi nginx); polling 404=0 mengonfirmasi routing.</div>
+
+<div class="foot">Dibuat 2026-07-08 · Uji beban API LLM 600 pengguna LG Magazine · Gemini 2.0 Flash (light lane) · data: docs/loadtest-llm-600-async-results.json (k6, terukur)</div>
+
+</body></html>

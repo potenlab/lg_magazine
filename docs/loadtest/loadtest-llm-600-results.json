@@ -1,0 +1,47 @@
+{
+  "base_url": "https://mybook.lgacademy.com",
+  "llm_mode": "default(aistudio-pool)",
+  "task": "extractKeyword",
+  "hold_seconds": 20,
+  "total_requests": 2110,
+  "global_p95_ms": 18193.410050000002,
+  "global_success_rate": 0.09431279620853081,
+  "per_stage": {
+    "200": {
+      "vus": 200,
+      "p95_ms": 13548.8278,
+      "p99_ms": 15145.635479999999,
+      "med_ms": 10461.704,
+      "max_ms": 17981.626,
+      "success_rate": 0.15254237288135594,
+      "upstream_500": 350
+    },
+    "400": {
+      "vus": 400,
+      "p95_ms": 18742.914449999993,
+      "p99_ms": 20290.92421,
+      "med_ms": 13038.134,
+      "max_ms": 25416.589,
+      "success_rate": 0.04722222222222222,
+      "upstream_500": 670
+    },
+    "600": {
+      "vus": 600,
+      "p95_ms": 18173.032399999996,
+      "p99_ms": 19846.483399999997,
+      "med_ms": 10676.367,
+      "max_ms": 21644.789,
+      "success_rate": 0.06459054209919261,
+      "upstream_500": 608
+    },
+    "050": {
+      "vus": 50,
+      "p95_ms": 12892.4744,
+      "p99_ms": 15365.5458,
+      "med_ms": 9627.8985,
+      "max_ms": 15610.136,
+      "success_rate": 0.41818181818181815,
+      "upstream_500": 64
+    }
+  }
+}

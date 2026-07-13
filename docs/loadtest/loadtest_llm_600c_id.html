@@ -1,0 +1,110 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><style>
+  @page { size: A4; margin: 15mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo","Malgun Gothic",-apple-system,"Segoe UI",sans-serif; color:#1a1a1a; font-size:12px; line-height:1.6; margin:0; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  h2 { font-size:14px; margin:20px 0 8px; padding-bottom:4px; border-bottom:2px solid #e2e8f0; }
+  code { background:#f1f5f9; padding:1px 4px; border-radius:3px; font-size:10.5px; }
+  .meta { font-size:10.5px; color:#555; margin-bottom:12px; }
+  .meta b { color:#222; }
+  .hero { background:#052e16; color:#fff; border-radius:10px; padding:16px 18px; margin:12px 0; }
+  .hero .big { font-size:18px; font-weight:800; line-height:1.35; }
+  .hero .big .good-i { color:#86efac; }
+  .hero p { margin:8px 0 0; font-size:11.5px; color:#d1fae5; }
+  .cards { display:flex; gap:10px; margin:12px 0; }
+  .card { flex:1; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc; }
+  .card .v { font-size:18px; font-weight:800; color:#0f172a; }
+  .card .v.good { color:#15803d; }
+  .card .l { font-size:10px; color:#64748b; margin-top:2px; }
+  table { width:100%; border-collapse:collapse; margin:6px 0; font-size:11px; }
+  th, td { border:1px solid #e2e8f0; padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#f1f5f9; font-weight:700; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .good { color:#15803d; font-weight:700; }
+  .warn { color:#b45309; font-weight:700; }
+  .bad  { color:#b91c1c; font-weight:700; }
+  .note { background:#f0fdf4; border-left:3px solid #22c55e; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  .note.amber { background:#fffbeb; border-left-color:#f59e0b; }
+  ul { margin:6px 0 6px 18px; padding:0; }
+  li { margin:4px 0; }
+  .foot { margin-top:18px; font-size:9.5px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
+</style></head><body>
+
+<h1>Laporan Uji Beban Endpoint LLM — 600 Pengguna Bersamaan</h1>
+<div class="meta">
+  Target: <b>LG Magazine</b> &nbsp;·&nbsp;
+  Lingkungan: <b>mybook.lgacademy.com · Next.js · Docker 3 replica · nginx · AI Studio 10-key pool</b> &nbsp;·&nbsp;
+  Model: <b>Claude Sonnet 4.6</b> &nbsp;·&nbsp;
+  Alat: <b>k6</b> &nbsp;·&nbsp;
+  Waktu jalan: <b>≈15:00 KST (운영 시간대 / jam aktif)</b> &nbsp;·&nbsp;
+  Tanggal: <b>2026-06-25</b>
+</div>
+
+<div class="hero">
+  <div class="big">Logika saat ini (antrian asinkron) <span class="good-i">menangani seluruh</span> 600 pengguna bersamaan.</div>
+  <p>Meski 600 pengguna mengirim panggilan LLM bersamaan, <b>keberhasilan terima & hasil akhir sama-sama 100.0%</b>, dengan 0 error & 0 timeout. Konsekuensinya, waktu ke hasil memanjang — median <b>14.9 detik</b>, p95 <b>42.2 detik</b>. Model: <b>Claude Sonnet 4.6</b>.</p>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="v good">100.0%</div><div class="l">Keberhasilan terima (202)</div></div>
+  <div class="card"><div class="v good">100.0%</div><div class="l">Keberhasilan hasil akhir</div></div>
+  <div class="card"><div class="v">14.9s</div><div class="l">Waktu ke hasil (median)</div></div>
+  <div class="card"><div class="v">42.2s</div><div class="l">Waktu ke hasil (p95)</div></div>
+</div>
+
+<h2>1. Ringkasan Kesimpulan</h2>
+<div class="note"><b>Konfigurasi saat ini tidak menggagalkan satu pun permintaan, bahkan pada 600 panggilan bersamaan.</b> Antrian asinkron + gerbang konkurensi menyerap lonjakan sesaat menjadi <b>penundaan, bukan error</b>. Penerimaan instan (202, p95 318ms); hasil tiba lewat antrean pada median 14.9 detik · p95 42.2 detik · maks 48.5 detik. Server produksi normal sepanjang uji.</div>
+<ul><li><b>Keberhasilan akhir 100.0%:</b> seluruh 600 permintaan mencapai hasil — 0 error hulu, 0 polling 404, 0 timeout klien.</li>
+<li><b>Penerimaan cepat:</b> POST langsung mengembalikan 202 + jobId (p95 318ms). Pengguna tak menunggu, layar berjalan.</li>
+<li><b>Penundaan hasil (harga yang dibayar):</b> makin tinggi konkurensi, makin lama antre — waktu ke hasil median 14.9 detik, p95 42.2 detik.</li>
+<li><b>Gerbang konkurensi:</b> 5/proses × 3 replika ≈ 15, dijaga di bawah batas AI Studio (~20) → error 500 hulu dicegah dari akar.</li>
+<li><b>Model:</b> diukur pada Claude Sonnet 4.6.</li></ul>
+
+<h2>2. Konfigurasi Uji</h2>
+<table><tr><td><b>Endpoint</b></td><td>POST /api/v3/llm (terima) · GET /api/v3/llm/jobs (polling)</td></tr>
+<tr><td><b>Tugas (task)</b></td><td>extractKeyword (1 panggilan LLM/pengguna)</td></tr>
+<tr><td><b>Model</b></td><td>Claude Sonnet 4.6</td></tr>
+<tr><td><b>Penyedia</b></td><td>Pool 10 kunci AI Studio (default produksi)</td></tr>
+<tr><td><b>Autentikasi</b></td><td>Cookie sesi valid-produksi dibuat offline (loadtest-00001…600)</td></tr>
+<tr><td><b>Pola beban</b></td><td>600 VU, tiba dalam 60 detik, tiap VU 1 panggilan</td></tr>
+<tr><td><b>Cara ukur</b></td><td>terima (202) → polling tiap 2 detik → waktu hingga hasil</td></tr>
+<tr><td><b>Kontrol konkurensi</b></td><td>antrian 5/proses · gerbang AI Studio 5/proses</td></tr>
+<tr><td><b>Prasyarat</b></td><td>Backlog uji sebelumnya dipastikan habis (antrean 0) sebelum run bersih</td></tr></table>
+
+<h2>3. Hasil Pengukuran</h2>
+<table>
+  <tr><th>Metrik</th><th class="n">Nilai</th><th>Catatan</th></tr>
+  <tr><td>Jumlah permintaan</td><td class="n"><b>600</b></td><td>600 VU × 1</td></tr>
+<tr><td>Keberhasilan terima (202)</td><td class="n"><b>100.0%</b></td><td>POST langsung beri jobId</td></tr>
+<tr><td>Keberhasilan hasil akhir</td><td class="n"><b>100.0%</b></td><td>mencapai hasil (done)</td></tr>
+<tr><td>Respons terima p95</td><td class="n"><b>318 ms</b></td><td>pengguna tak menunggu</td></tr>
+<tr><td>Waktu ke hasil median</td><td class="n"><b>14.9 s</b></td><td>terima→hasil (termasuk antre)</td></tr>
+<tr><td>Waktu ke hasil p95</td><td class="n"><b>42.2 s</b></td><td></td></tr>
+<tr><td>Waktu ke hasil maks</td><td class="n"><b>48.5 s</b></td><td></td></tr>
+<tr><td>Polling 404 (sticky miss)</td><td class="n"><b>0</b></td><td>0 = routing sesi normal</td></tr>
+<tr><td>Error hulu (job error)</td><td class="n"><b>0</b></td><td>0 = tak ada error AI Studio</td></tr>
+<tr><td>Timeout klien</td><td class="n"><b>0</b></td><td>0 = semua selesai dalam batas (5 mnt)</td></tr>
+</table>
+
+<h2>4. Dibanding 100 Pengguna (Skalabilitas)</h2>
+<p>Dibanding uji 100 pengguna dengan metode sama, walau konkurensi naik 6×, <b>keberhasilan tetap 100%</b> — hanya penundaan hasil yang bertambah. Artinya logika saat ini tidak gagal, melainkan <b>menyerap beban menjadi antrean</b>.</p>
+<table style="margin-top:6px">
+  <tr><th class="n">Pengguna bersamaan</th><th class="n">Keberhasilan akhir</th><th class="n">Median hasil</th><th class="n">p95 hasil</th></tr>
+  <tr><td class="n">100</td><td class="n good">100.0%</td><td class="n">3.6s</td><td class="n">4.7s</td></tr>
+<tr><td class="n">600</td><td class="n good">100.0%</td><td class="n">14.9s</td><td class="n">42.2s</td></tr>
+</table>
+
+<h2>5. Interpretasi — Arti Hasil Ini</h2>
+<div class="note">Intinya: <b>"600 pengguna bersamaan pun tidak membuatnya rusak."</b> Pada mode sinkron lama, panggilan bersamaan langsung memicu error 500 AI Studio hulu; antrian asinkron kini membatasi jumlah panggilan serentak di bawah batas dan mengantre kelebihannya hingga <b>semua berhasil</b>. Harganya adalah penundaan hasil (pada 600: median 14.9 detik, p95 42.2 detik) — masih wajar diserap dengan indikator "sedang membuat…".</div>
+
+<h2>6. Rekomendasi</h2>
+<ul><li><b>Pertahankan konfigurasi:</b> hingga 600 panggilan bersamaan tanpa gagal. Bisa dioperasikan tanpa tindakan tambahan.</li>
+<li><b>Bila perlu mempercepat:</b> naikkan jumlah replika atau nilai gerbang (× replika ≤ ~20) terhadap batas hulu → penundaan hasil berkurang.</li>
+<li><b>UX indikator progres:</b> karena terima instan (202), gunakan "sedang membuat…" untuk meringankan tunggu p95 42.2 detik.</li>
+<li><b>Pemantauan:</b> lacak p95 waktu ke hasil dan panjang antrean sebagai metrik operasi untuk scale-up dini.</li></ul>
+
+<div class="note amber"><b>Batasan Pengukuran.</b> Ini pengukuran konkurensi murni berbasis satu tugas (extractKeyword, 1/pengguna). Pengguna nyata memanggil ~21 tugas berurutan per sesi (termasuk sintesis berat), sehingga pengukuran skala besar dari sudut "menuntaskan seluruh majalah" (mis. 600 sesi) akan jauh lebih lama penundaannya. Laporan ini menjawab "apakah logika saat ini menangani 600 panggilan bersamaan tanpa gagal" (= ya).</div>
+
+<div class="foot">Dibuat 2026-06-25 · Uji 600 Panggilan Bersamaan LLM LG Magazine · Model Claude Sonnet 4.6 · Data: docs/loadtest-llm-600-concurrent-results.json (k6, terukur)</div>
+
+</body></html>

@@ -1,0 +1,116 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
+  @page { size: A4; margin: 15mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo","Malgun Gothic",-apple-system,"Segoe UI",sans-serif; color:#1a1a1a; font-size:12px; line-height:1.6; margin:0; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  h2 { font-size:14px; margin:20px 0 8px; padding-bottom:4px; border-bottom:2px solid #e2e8f0; }
+  code { background:#f1f5f9; padding:1px 4px; border-radius:3px; font-size:10.5px; }
+  .meta { font-size:10.5px; color:#555; margin-bottom:12px; }
+  .meta b { color:#222; }
+  .hero { background:#451a03; color:#fff; border-radius:10px; padding:16px 18px; margin:12px 0; }
+  .hero .big { font-size:18px; font-weight:800; line-height:1.35; }
+  .hero .big .hi { color:#fcd34d; }
+  .hero p { margin:8px 0 0; font-size:11.5px; color:#fde68a; }
+  .cards { display:flex; gap:10px; margin:12px 0; }
+  .card { flex:1; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc; }
+  .card .v { font-size:18px; font-weight:800; color:#0f172a; }
+  .card .v.good { color:#15803d; }
+  .card .v.warn { color:#b45309; }
+  .card .v.bad { color:#b91c1c; }
+  .card .l { font-size:10px; color:#64748b; margin-top:2px; }
+  table { width:100%; border-collapse:collapse; margin:6px 0; font-size:11px; }
+  th, td { border:1px solid #e2e8f0; padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#f1f5f9; font-weight:700; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .good { color:#15803d; font-weight:700; }
+  .warn { color:#b45309; font-weight:700; }
+  .bad  { color:#b91c1c; font-weight:700; }
+  .note { background:#fffbeb; border-left:3px solid #f59e0b; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  .note.amber { background:#fffbeb; border-left-color:#f59e0b; }
+  ul { margin:6px 0 6px 18px; padding:0; }
+  li { margin:4px 0; }
+  .foot { margin-top:18px; font-size:9.5px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
+</style></head><body>
+
+<h1>LLM 풀세션 부하 테스트 보고서 — 600명 동시 (전체 플로우)</h1>
+<div class="meta">
+  대상: <b>LG Magazine</b> &nbsp;·&nbsp;
+  환경: <b>mybook.lgacademy.com · Next.js · Docker 3 replica · nginx · AI Studio (dual-lane: Flash + Sonnet)</b> &nbsp;·&nbsp;
+  모델: <b>Gemini 2.0 Flash + Claude Sonnet 4.5</b> &nbsp;·&nbsp;
+  도구: <b>k6</b> &nbsp;·&nbsp;
+  실행 시각: <b>≈11:00 KST</b> &nbsp;·&nbsp;
+  작성일: <b>2026-06-26</b>
+</div>
+
+<div class="hero">
+  <div class="big">현재 구성은 600명 동시 풀세션을 <span class="hi">대부분 처리하나, 일부 작업이 지연·실패</span>합니다.</div>
+  <p>각 사용자가 한 세션에서 <b>21개 LLM 작업</b>(가벼운 한 줄 14개 → <b>Gemini 2.0 Flash</b>, 무거운 합성·챕터·표지 7개 → <b>Claude Sonnet 4.5</b>)을 순차 호출합니다. 600명 동시 기준 <b>작업 성공률 90.5%</b>, <b>세션 완주율 0.0%</b>. 가벼운 작업 결과 중앙값 <b>6.5초</b>, 무거운 작업 <b>8.7초</b>.</p>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="v warn">0.0%</div><div class="l">세션 완주율</div></div>
+  <div class="card"><div class="v warn">90.5%</div><div class="l">작업 성공률</div></div>
+  <div class="card"><div class="v">6.5s</div><div class="l">가벼운 작업 (Gemini 2.0 Flash) 중앙값</div></div>
+  <div class="card"><div class="v">8.7s</div><div class="l">무거운 작업 (Claude Sonnet 4.5) 중앙값</div></div>
+</div>
+
+<h2>1. 결론 요약</h2>
+<div class="note"><b>600명 동시 풀세션에서 작업 성공률 90.5%, 세션 완주율 0.0%입니다.</b> 가벼운 작업을 <b>Gemini 2.0 Flash</b> 라인으로 분리해 무거운 <b>Claude Sonnet 4.5</b> 라인 부담을 줄였지만, 세션당 7개의 무거운 작업이 누적되며 일부는 마감(5분) 내 결과를 받지 못했습니다. 작업 단위 성공은 높고, 세션 완주(21개 전부 성공) 기준이 더 가혹합니다.</div>
+<ul><li><b>듀얼 모델 라우팅:</b> 가벼운 14개 작업 → Gemini 2.0 Flash(전용 라인), 무거운 7개 → Claude Sonnet 4.5. 병목 라인의 호출 수를 세션당 21→7개로 축소.</li>
+<li><b>작업 성공률 90.5%:</b> 600 세션 × 21개 = 약 21개 작업 기준.</li>
+<li><b>세션 완주율 0.0%:</b> 한 세션의 21개 작업이 전부 성공해야 완주 — 가장 엄격한 기준.</li>
+<li><b>결과 지연:</b> 가벼운 작업 중앙값 6.5초·p95 15.8초, 무거운 작업 중앙값 8.7초·p95 26.8초.</li>
+<li><b>안정성:</b> 폴링 404 0건 · 상위 오류 2건 · 클라이언트 타임아웃 0건.</li></ul>
+
+<h2>2. 테스트 설정</h2>
+<table><tr><td><b>엔드포인트</b></td><td>POST /api/v3/llm (접수) · GET /api/v3/llm/jobs (폴링)</td></tr>
+<tr><td><b>시나리오</b></td><td>전체 매거진 플로우 — 세션당 21개 작업 순차 호출</td></tr>
+<tr><td><b>듀얼 모델</b></td><td>가벼운 14개 → Gemini 2.0 Flash · 무거운 7개 → Claude Sonnet 4.5</td></tr>
+<tr><td><b>제공자</b></td><td>AI Studio 듀얼 레인 (운영 기본값)</td></tr>
+<tr><td><b>인증</b></td><td>오프라인 발급한 운영 유효 세션 쿠키 (loadtest-00001…00001)</td></tr>
+<tr><td><b>부하 패턴</b></td><td>1 VU(=동시 세션), 0분에 걸쳐 도착, 각 VU 1세션</td></tr>
+<tr><td><b>측정 방식</b></td><td>각 작업: 접수(202) → 2초 간격 폴링 → 결과까지 시간(time-to-result)</td></tr>
+<tr><td><b>작업당 마감</b></td><td>300초(5분) 내 미완료 시 실패 처리</td></tr>
+<tr><td><b>사전 조건</b></td><td>운영 큐 백로그 소진 확인 후 깨끗하게 실행</td></tr></table>
+
+<h2>3. 측정 결과</h2>
+<table>
+  <tr><th>지표</th><th class="n">값</th><th>비고</th></tr>
+  <tr><td>시작된 세션</td><td class="n"><b>1개</b></td><td>1 VU × 1세션</td></tr>
+<tr><td>세션당 작업 수</td><td class="n"><b>21개</b></td><td>가벼운 14 + 무거운 7</td></tr>
+<tr><td>작업 성공률</td><td class="n"><b>90.5%</b></td><td>개별 작업이 결과(done) 도달</td></tr>
+<tr><td>세션 완주율</td><td class="n"><b>0.0%</b></td><td>21개 작업 전부 성공</td></tr>
+<tr><td>총 요청 수</td><td class="n"><b>117건</b></td><td>접수 + 폴링 합계</td></tr>
+<tr><td>접수 응답 p95</td><td class="n"><b>142 ms</b></td><td>POST 즉시 jobId 반환</td></tr>
+<tr><td>가벼운 작업 중앙값 (Gemini 2.0 Flash)</td><td class="n"><b>6.5 s</b></td><td>한 줄 L-OWL 작업</td></tr>
+<tr><td>가벼운 작업 p95</td><td class="n"><b>15.8 s</b></td><td></td></tr>
+<tr><td>무거운 작업 중앙값 (Claude Sonnet 4.5)</td><td class="n"><b>8.7 s</b></td><td>합성·챕터·표지</td></tr>
+<tr><td>무거운 작업 p95</td><td class="n"><b>26.8 s</b></td><td></td></tr>
+<tr><td>세션 전체 소요 중앙값</td><td class="n"><b>3.5 분</b></td><td>21개 작업 + 생각 시간 포함</td></tr>
+<tr><td>세션 전체 소요 p95</td><td class="n"><b>3.5 분</b></td><td></td></tr>
+<tr><td>폴링 404 (스티키 미스)</td><td class="n"><b>0건</b></td><td>0 = 세션 라우팅 정상</td></tr>
+<tr><td>상위 오류 (job error)</td><td class="n"><b>2건</b></td><td>AI Studio 처리 오류</td></tr>
+<tr><td>클라이언트 타임아웃</td><td class="n"><b>0건</b></td><td>마감(5분) 초과</td></tr>
+</table>
+
+<h2>4. 모델 라인별 비교</h2>
+<p>듀얼 모델 라우팅의 효과를 라인별로 비교합니다. 가벼운 작업은 Gemini 2.0 Flash 전용 라인에서 빠르게 처리되고, 무거운 합성 작업만 Claude Sonnet 4.5 라인을 거칩니다.</p>
+<table style="margin-top:6px">
+  <tr><th>모델 라인</th><th class="n">세션당 작업</th><th class="n">결과 중앙값</th><th class="n">결과 p95</th></tr>
+  <tr><td>Gemini 2.0 Flash (가벼움)</td><td class="n">14개</td><td class="n">6.5s</td><td class="n">15.8s</td></tr>
+<tr><td>Claude Sonnet 4.5 (무거움)</td><td class="n">7개</td><td class="n">8.7s</td><td class="n">26.8s</td></tr>
+</table>
+
+<h2>5. 해석 — 이 결과의 의미</h2>
+<div class="note">가벼운 작업을 Gemini 2.0 Flash로 분리한 효과로 직전(듀얼 모델 도입 전)의 전면 포화는 해소됐습니다. 다만 600명 풀세션에서는 세션당 7개의 Claude Sonnet 4.5 작업이 누적돼 일부가 마감 내 완료되지 못합니다. 무거운 라인의 처리량(레플리카·게이트)이 다음 병목입니다.</div>
+
+<h2>6. 권장 사항</h2>
+<ul><li><b>무거운 라인 확장:</b> 레플리카 또는 게이트 값(× 레플리카 ≤ 상위 한계)을 상향해 Claude Sonnet 4.5 처리량 증대.</li>
+<li><b>마감 상향 검토:</b> 무거운 작업 p95(26.8초) 대비 작업당 마감(300초)이 충분한지 점검.</li>
+<li><b>진행 표시 UX:</b> "생성 중…" 표시로 대기 흡수.</li></ul>
+
+<div class="note amber"><b>측정 한계.</b> 전체 매거진 플로우(세션당 21개 작업)를 1명이 동시에 진행하는, 가장 무거운 시나리오입니다. 실제 사용자는 작업 사이에 더 긴 읽기·입력 시간이 있어 동시 부하가 분산되므로, 본 테스트는 보수적(최악 근접) 상한입니다. 듀얼 모델 라우팅(가벼움→Gemini 2.0 Flash, 무거움→Claude Sonnet 4.5)은 운영 기본값 그대로 적용됐습니다.</div>
+
+<div class="foot">생성일 2026-06-26 · LG 매거진 LLM 600명 동시 풀세션 테스트 · 듀얼 모델(Gemini 2.0 Flash+Claude Sonnet 4.5) · 데이터: docs/loadtest-llm-realistic-600-results.json (k6, 실측)</div>
+
+</body></html>

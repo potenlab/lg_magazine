@@ -1,0 +1,152 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
+  @page { size: A4; margin: 15mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo","Malgun Gothic",-apple-system,"Segoe UI",sans-serif; color:#1a1a1a; font-size:12px; line-height:1.6; margin:0; }
+  h1 { font-size:21px; margin:0 0 4px; }
+  h2 { font-size:14px; margin:20px 0 8px; padding-bottom:4px; border-bottom:2px solid #e2e8f0; }
+  code { background:#f1f5f9; padding:1px 4px; border-radius:3px; font-size:10.5px; }
+  .meta { font-size:10.5px; color:#555; margin-bottom:12px; }
+  .meta b { color:#222; }
+  .hero { background:#0f172a; color:#fff; border-radius:10px; padding:16px 18px; margin:12px 0; }
+  .hero .big { font-size:18px; font-weight:800; line-height:1.35; }
+  .hero .big .bad-i { color:#fca5a5; }
+  .hero p { margin:8px 0 0; font-size:11.5px; color:#cbd5e1; }
+  .cards { display:flex; gap:10px; margin:12px 0; }
+  .card { flex:1; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc; }
+  .card .v { font-size:18px; font-weight:800; color:#0f172a; }
+  .card .v.bad { color:#b91c1c; }
+  .card .l { font-size:10px; color:#64748b; margin-top:2px; }
+  table { width:100%; border-collapse:collapse; margin:6px 0; font-size:11px; }
+  th, td { border:1px solid #e2e8f0; padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#f1f5f9; font-weight:700; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .good { color:#15803d; font-weight:700; }
+  .warn { color:#b45309; font-weight:700; }
+  .bad  { color:#b91c1c; font-weight:700; }
+  .note { background:#fef2f2; border-left:3px solid #ef4444; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  .note.amber { background:#fffbeb; border-left-color:#f59e0b; }
+  ul { margin:6px 0 6px 18px; padding:0; }
+  li { margin:4px 0; }
+  .tlrow { display:flex; align-items:center; gap:8px; margin:3px 0; font-size:10px; }
+  .tlt { width:46px; color:#64748b; text-align:right; }
+  .tlbarwrap { flex:1; background:#f1f5f9; border-radius:4px; height:14px; overflow:hidden; }
+  .tlbar { display:block; height:100%; }
+  .tlbar.good { background:#16a34a; } .tlbar.warn { background:#f59e0b; } .tlbar.bad { background:#ef4444; }
+  .tlv { width:170px; color:#475569; }
+  .foot { margin-top:18px; font-size:9.5px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
+</style></head><body>
+
+<h1>LLM 엔드포인트 부하 테스트 결과 보고서</h1>
+<div class="meta">
+  대상: <b>LG Magazine</b> &nbsp;·&nbsp;
+  환경: <b>mybook.lgacademy.com · Next.js · Docker 3 replica · nginx · AI Studio 10-key rotation pool</b> &nbsp;·&nbsp;
+  도구: <b>k6</b> &nbsp;·&nbsp;
+  실행 시각: <b>≈14:00 KST (운영 시간대 / jam aktif)</b> &nbsp;·&nbsp;
+  작성일: <b>2026-06-19</b>
+</div>
+
+<div class="hero">
+  <div class="big">LLM(AI 생성) 엔드포인트는 600명 동시 사용을 <span class="bad-i">감당하지 못합니다</span>.</div>
+  <p>동시 50명에서 이미 성공률이 약 42%로 떨어지고, 400명에서는 5% 미만으로 붕괴합니다. 원인은 일일 토큰 한도가 아니라 <b>동시 호출 시 상위 AI Studio API가 반환하는 일반 500 오류</b>입니다.</p>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="v bad">9.4%</div><div class="l">전체 성공률 (50→600 램프)</div></div>
+  <div class="card"><div class="v">18.2s</div><div class="l">응답시간 p95 (부하 시)</div></div>
+  <div class="card"><div class="v">2.8s</div><div class="l">단일 호출 기준 (무부하)</div></div>
+  <div class="card"><div class="v">2,110</div><div class="l">총 요청 수</div></div>
+</div>
+
+<h2>1. 결론 요약</h2>
+<div class="note"><b>현재 구성으로는 600명 규모 수업에서 AI 매거진 생성이 정상 동작하지 않습니다.</b> 가장 가벼운 작업(extractKeyword, 80토큰)으로 측정했음에도, 동시 사용자가 늘수록 성공률이 가파르게 하락했습니다. 무부하 단일 호출은 2.8초/정상이지만, 동시성이 올라가면 상위 제공자(AI Studio)가 건별로 500을 반환합니다.</div>
+<ul><li><b>용량 곡선:</b> 50명 41.8% → 200명 15.3% → 400명 4.7% → 600명 6.5% 성공. 동시성이 핵심 병목.</li>
+<li><b>실패 성격:</b> 일일 토큰 한도("토큰 호출량") 메시지는 <b>전혀 없었음</b>(pool_exhausted=0). 대신 <code>aistudio call (LG_BOOK_x): 500 "오류가 발생했습니다. 다시 시도해 주세요."</code> 형태의 일반 오류.</li>
+<li><b>10키 로테이션의 한계:</b> 키를 돌려도 상위 API 자체가 동시 부하에서 500을 내므로 동시성 여유가 생기지 않음.</li>
+<li><b>지연:</b> 부하 시 중앙값 10초, p95 13~19초 (무부하 2.8초 대비 4~7배).</li></ul>
+
+<h2>2. 테스트 설정</h2>
+<table><tr><td><b>엔드포인트</b></td><td>POST /api/v3/llm</td></tr>
+<tr><td><b>작업(task)</b></td><td>extractKeyword (최경량, 80 토큰)</td></tr>
+<tr><td><b>제공자</b></td><td>AI Studio 10키 로테이션 풀 (운영 기본값)</td></tr>
+<tr><td><b>인증</b></td><td>오프라인 발급한 운영 유효 세션 쿠키 (loadtest-00001…600)</td></tr>
+<tr><td><b>부하 패턴</b></td><td>50 → 200 → 400 → 600 VU, 각 단계 20초 유지 (제한 실행)</td></tr>
+<tr><td><b>실행 모델</b></td><td>closed-loop (각 VU가 응답 후 1~3초 후 재요청)</td></tr></table>
+
+<h2>3. 용량 곡선 (동시 사용자별)</h2>
+<p>성공률 (높을수록 좋음)</p>
+<div class="tlrow"><span class="tlt">50 VU</span><span class="tlbarwrap"><span class="tlbar warn" style="width:42%"></span></span><span class="tlv">41.8% 성공률 (높을수록 좋음)</span></div>
+<div class="tlrow"><span class="tlt">200 VU</span><span class="tlbarwrap"><span class="tlbar bad" style="width:15%"></span></span><span class="tlv">15.3% 성공률 (높을수록 좋음)</span></div>
+<div class="tlrow"><span class="tlt">400 VU</span><span class="tlbarwrap"><span class="tlbar bad" style="width:5%"></span></span><span class="tlv">4.7% 성공률 (높을수록 좋음)</span></div>
+<div class="tlrow"><span class="tlt">600 VU</span><span class="tlbarwrap"><span class="tlbar bad" style="width:6%"></span></span><span class="tlv">6.5% 성공률 (높을수록 좋음)</span></div>
+<table style="margin-top:10px">
+  <tr><th class="n">동시 사용자</th><th class="n">성공률</th><th class="n">응답 중앙값</th><th class="n">p95</th><th class="n">최대</th><th class="n">상위 500 오류</th></tr>
+  <tr>
+      <td class="n">50</td>
+      <td class="n warn">41.8%</td>
+      <td class="n">9.6s</td>
+      <td class="n">12.9s</td>
+      <td class="n">15.6s</td>
+      <td class="n">64</td>
+    </tr>
+<tr>
+      <td class="n">200</td>
+      <td class="n bad">15.3%</td>
+      <td class="n">10.5s</td>
+      <td class="n">13.5s</td>
+      <td class="n">18.0s</td>
+      <td class="n">350</td>
+    </tr>
+<tr>
+      <td class="n">400</td>
+      <td class="n bad">4.7%</td>
+      <td class="n">13.0s</td>
+      <td class="n">18.7s</td>
+      <td class="n">25.4s</td>
+      <td class="n">670</td>
+    </tr>
+<tr>
+      <td class="n">600</td>
+      <td class="n bad">6.5%</td>
+      <td class="n">10.7s</td>
+      <td class="n">18.2s</td>
+      <td class="n">21.6s</td>
+      <td class="n">608</td>
+    </tr>
+</table>
+
+<h2>4. 실측 — 실제 사용 시나리오 (전체 세션)</h2>
+<p>위 3장은 가장 가벼운 작업(extractKeyword)만 반복한 측정입니다. 실제 사용자는 한 세션에서 <b>약 21개의 LLM 작업</b>(그중 무거운 합성 작업 <b>7개</b>, 각 2,200토큰·15~25초)을 순서대로 호출합니다. 아래는 이 <b>전체 세션 흐름</b>을 그대로 재현해 측정한 값입니다.</p>
+<table style="margin-top:6px">
+  <tr><th class="n">동시 세션</th><th class="n">호출 성공률</th><th class="n">무거운 작업 중앙값</th><th class="n">무거운 작업 p95</th><th class="n">세션 소요(중앙값)</th></tr>
+  <tr>
+      <td>1 (unloaded baseline)</td>
+      <td class="n good">90.5%</td>
+      <td class="n">9.5s</td>
+      <td class="n">28.3s</td>
+      <td class="n">3.7 min</td>
+    </tr>
+<tr>
+      <td>10 concurrent</td>
+      <td class="n warn">76.7%</td>
+      <td class="n">12.3s</td>
+      <td class="n">50.9s</td>
+      <td class="n">4.8 min</td>
+    </tr>
+</table>
+<div class="note"><b>무부하 단일 사용자조차 호출 성공률이 90%</b>에 그쳐, 21개 호출을 한 번도 실패 없이 끝내는 세션은 사실상 없습니다(완주율 0%). <b>동시 10세션</b>만 되어도 무거운 작업 p95가 <b>51초</b>로 서버 제한(60초)에 근접해 타임아웃이 발생하고, 한 세션 완주에 약 <b>4.8분</b>이 걸립니다. 따라서 600명 동시 사용에서는 실질적으로 매거진 생성이 거의 완료되지 않습니다.</div>
+
+<h2>5. 실패 원인 분석</h2>
+<div class="note">실패는 웹 서버(nginx/Next.js)나 인증이 아니라 <b>상위 AI Studio API</b>에서 발생했습니다. 동시 호출이 몰리면 개별 키(LG_BOOK_1…10)가 <code>500 "오류가 발생했습니다"</code>를 반환합니다. 이는 일일 한도 소진과 다른, <b>동시성/순간 처리량 한계</b>입니다. 따라서 키를 더 추가해도 같은 순간 동시 호출이 많으면 동일하게 실패할 가능성이 높습니다.</div>
+
+<h2>6. 권장 사항</h2>
+<ul><li><b>동시 호출 제한(큐잉):</b> 앱 레벨에서 동시 진행 LLM 호출 수에 상한을 두고 초과분을 큐로 직렬화 — 순간 스탬피드 방지.</li>
+<li><b>재시도(백오프):</b> 일반 500은 일시적 — 지수 백오프 + 지터로 1~2회 재시도.</li>
+<li><b>UX 분산:</b> 생성 트리거 단계를 사용자별로 시차를 두어 동시 호출 집중 완화.</li>
+<li><b>오버플로 폴백:</b> 한도 초과 시 Anthropic(claude) 모드로 일부 트래픽 우회 (x-llm-mode=claude).</li>
+<li><b>운영 시간대 재측정:</b> 이번 실행은 운영 시간대였음 — 심야(off-hours) 재측정으로 동시성 한계와 일일 한도를 분리 확인 권장.</li></ul>
+
+<div class="note amber"><b>측정 한계.</b> 제한 실행(각 단계 20초)·최경량 작업·운영 시간대 조건. closed-loop는 실제 입장보다 가혹하지만, 실제 수업에서도 동일 단계에서 LLM 호출이 군집하므로 방향성은 유효합니다.</div>
+
+<div class="foot">생성일 2026-06-19 · LG 매거진 LLM 부하 테스트 · 데이터: docs/loadtest-llm-600-results.json (k6, 실측)</div>
+
+</body></html>

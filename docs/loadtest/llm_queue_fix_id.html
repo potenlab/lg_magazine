@@ -1,0 +1,76 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><style>
+  @page { size: A4; margin: 15mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo","Malgun Gothic",-apple-system,"Segoe UI",sans-serif; color:#1a1a1a; font-size:12px; line-height:1.62; margin:0; }
+  h1 { font-size:20px; margin:0 0 2px; }
+  .sub { font-size:12px; color:#475569; margin:0 0 8px; font-weight:700; }
+  h2 { font-size:13.5px; margin:18px 0 7px; padding-bottom:4px; border-bottom:2px solid #e2e8f0; }
+  code { background:#f1f5f9; padding:1px 4px; border-radius:3px; font-size:10.5px; }
+  .meta { font-size:10.5px; color:#555; margin-bottom:10px; } .meta b { color:#222; }
+  .hero { background:#06281b; color:#fff; border-radius:10px; padding:15px 17px; margin:10px 0; }
+  .hero .big { font-size:18px; font-weight:800; line-height:1.35; }
+  .hero .big .grn { color:#86efac; }
+  .hero p { margin:8px 0 0; font-size:11.5px; color:#cbe6d6; }
+  .cards { display:flex; gap:10px; margin:12px 0; }
+  .card { flex:1; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc; }
+  .card .v { font-size:17px; font-weight:800; color:#0f172a; }
+  .card .v.grn { color:#15803d; } .card .v.red { color:#b91c1c; }
+  .card .l { font-size:9.5px; color:#64748b; margin-top:2px; }
+  table { width:100%; border-collapse:collapse; margin:6px 0; font-size:11px; }
+  th, td { border:1px solid #e2e8f0; padding:6px 8px; text-align:left; }
+  th { background:#f1f5f9; font-weight:700; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .grn { color:#15803d; font-weight:700; } .red { color:#b91c1c; font-weight:700; }
+  .note { background:#f0fdf4; border-left:3px solid #16a34a; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  .amber { background:#fffbeb; border-left:3px solid #f59e0b; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  ul { margin:6px 0 6px 18px; padding:0; } li { margin:5px 0; }
+  .bar { display:flex; align-items:center; gap:8px; margin:4px 0; font-size:10.5px; }
+  .bar .t { width:130px; color:#475569; }
+  .bar .wrap { flex:1; background:#f1f5f9; border-radius:4px; height:16px; overflow:hidden; }
+  .bar .fill { display:block; height:100%; }
+  .foot { margin-top:16px; font-size:9.5px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
+</style></head><body>
+<h1>Laporan Hasil Perbaikan Konkurensi LLM</h1>
+<div class="sub">600 pengguna bersamaan — sebelum / sesudah</div>
+<div class="meta">Lingkungan: <b>mybook.lgacademy.com · Docker 3 replika · nginx · pool AI Studio</b> &nbsp;·&nbsp; Alat: <b>k6</b> &nbsp;·&nbsp; Tanggal: <b>2026-06-22</b></div>
+
+<div class="hero"><div class="big">Pada 600 pengguna bersamaan, <span class="grn">kegagalan hilang</span>.</div><p>Sebelumnya <b>±94% dari 600 gagal dengan HTTP 500</b>. Setelah antrian asinkron: <b>0 penolakan</b>, <b>90.2% menerima hasil</b>. Hanya saja karena batas throughput, rata-rata tunggu 2.5 menit.</p></div>
+
+<div class="cards">
+  <div class="card"><div class="v red">~94%</div><div class="l">Gagal sebelum (600)</div></div>
+  <div class="card"><div class="v grn">0%</div><div class="l">Penolakan sesudah</div></div>
+  <div class="card"><div class="v grn">90.2%</div><div class="l">Hasil diterima sesudah</div></div>
+  <div class="card"><div class="v grn">0</div><div class="l">Error routing sticky</div></div>
+</div>
+
+<h2>1. Ringkasan Kesimpulan</h2>
+<div class="note">Antrian asinkron + gate konkurensi + nginx sticky session di-deploy ke produksi, lalu beban 600 pengguna diukur ulang. <b>Kegagalan akibat overload (89% → 0%) hilang sepenuhnya</b>; semua pengguna diterima (202) lalu diproses bergiliran. Routing sticky tetap <b>0 error</b> pada beban 600. Sisanya bukan soal 'gagal' melainkan 'kecepatan' — waktu tunggu akibat batas throughput.</div>
+
+<h2>2. Apa yang Diperbaiki</h2>
+<ul><li><b>Antrian asinkron:</b> POST langsung mengembalikan jobId (202), klien polling hasil. Koneksi tidak ditahan, jadi <b>tidak ada timeout</b> — pengguna mengantre.</li>
+<li><b>Gate konkurensi:</b> panggilan hulu dibatasi 5 per replika (×3=15), sisanya menunggu. Mencegah 500 overload dari sumbernya.</li>
+<li><b>nginx sticky session:</b> <code>hash $cookie_qrius_session consistent</code> — tiap pengguna dipaku ke satu replika agar polling selalu menemukan job-nya.</li></ul>
+
+<h2>3. Sebelum / Sesudah (600 pengguna)</h2>
+<table>
+  <tr><th>Metrik</th><th class="n">Sebelum (sinkron)</th><th class="n">Sesudah (antrian async)</th></tr>
+  <tr><td>Ditolak / gagal</td><td class="n">~94% (HTTP 500)</td><td class="n"><b class="grn">0% ditolak</b></td></tr>
+<tr><td>Hasil diterima</td><td class="n">6.5%</td><td class="n"><b class="grn">90.2% (dalam 5 mnt)</b></td></tr>
+<tr><td>500 overload</td><td class="n">ribuan</td><td class="n">4</td></tr>
+<tr><td>Latensi terima (202)</td><td class="n">—</td><td class="n">p95 358ms (instan)</td></tr>
+<tr><td>Error routing sticky</td><td class="n">—</td><td class="n"><b class="grn">0</b></td></tr>
+</table>
+
+<h2>4. Waktu Respons (harga sebuah antrian)</h2>
+<div class="bar"><span class="t">Sebelum: hasil diterima</span><span class="wrap"><span class="fill" style="width:7%;background:#ef4444"></span></span><span>6.5%</span></div>
+<div class="bar"><span class="t">Sesudah: hasil diterima</span><span class="wrap"><span class="fill" style="width:90%;background:#16a34a"></span></span><span>90.2%</span></div>
+<div class="amber">Antrian mengubah 'gagal' menjadi 'menunggu'. 600 pengguna melewati pipa berkapasitas 15 konkuren, sehingga waktu ke hasil: <b>median 2.5 mnt, p95 4.7 mnt, maks 5.0 mnt</b>. Saat batas pengukuran (5 mnt), <b>55 pengguna</b> masih mengantre (bukan gagal — menunggu giliran; aplikasi nyata menunggu hingga 6 mnt).</div>
+
+<h2>5. Pekerjaan Tersisa (kecepatan)</h2>
+<ul><li><b>Naikkan batas hulu (utama):</b> naikkan batas konkurensi AI Studio di atas ~20 atau gunakan <b>akun terpisah</b> — satu-satunya solusi akar untuk mengurangi waktu tunggu.</li>
+<li><b>Sebar kedatangan:</b> masukkan 600 pengguna bertahap dalam beberapa menit agar antrian sesaat jauh berkurang.</li>
+<li><b>Naikkan konkurensi antrian:</b> LLM_QUEUE_CONCURRENCY bisa dinaikkan tapi hanya efektif dalam batas hulu ~20 (6/replika → 18).</li>
+<li><b>Catatan:</b> ini tugas paling ringan — majalah nyata (21 sintesis berat) menunggu lebih lama. Langkah di atas tetap diperlukan.</li></ul>
+
+<div class="foot">Dibuat 2026-06-22 · Hasil Perbaikan LLM LG Magazine · Data: docs/loadtest-llm-600-async-results.json (k6, ukur produksi)</div>
+</body></html>

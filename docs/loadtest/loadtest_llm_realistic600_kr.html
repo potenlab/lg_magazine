@@ -1,0 +1,102 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
+  @page { size: A4; margin: 15mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo","Malgun Gothic",-apple-system,"Segoe UI",sans-serif; color:#1a1a1a; font-size:12px; line-height:1.6; margin:0; }
+  h1 { font-size:19px; margin:0 0 4px; }
+  h2 { font-size:14px; margin:20px 0 8px; padding-bottom:4px; border-bottom:2px solid #e2e8f0; }
+  code { background:#f1f5f9; padding:1px 4px; border-radius:3px; font-size:10.5px; }
+  .meta { font-size:10.5px; color:#555; margin-bottom:12px; }
+  .meta b { color:#222; }
+  .hero { background:#422006; color:#fff; border-radius:10px; padding:16px 18px; margin:12px 0; }
+  .hero .big { font-size:17px; font-weight:800; line-height:1.35; }
+  .hero .big .good-i { color:#86efac; }
+  .hero .big .warn-i { color:#fcd34d; }
+  .hero p { margin:8px 0 0; font-size:11.5px; color:#fef3c7; }
+  .cards { display:flex; gap:10px; margin:12px 0; }
+  .card { flex:1; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc; }
+  .card .v { font-size:18px; font-weight:800; color:#0f172a; }
+  .card .v.good { color:#15803d; }
+  .card .v.warn { color:#b45309; }
+  .card .v.bad { color:#b91c1c; }
+  .card .l { font-size:10px; color:#64748b; margin-top:2px; }
+  table { width:100%; border-collapse:collapse; margin:6px 0; font-size:11px; }
+  th, td { border:1px solid #e2e8f0; padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#f1f5f9; font-weight:700; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .good { color:#15803d; font-weight:700; }
+  .warn { color:#b45309; font-weight:700; }
+  .bad  { color:#b91c1c; font-weight:700; }
+  .note { background:#fffbeb; border-left:3px solid #f59e0b; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  .note.green { background:#f0fdf4; border-left-color:#22c55e; }
+  ul { margin:6px 0 6px 18px; padding:0; }
+  li { margin:4px 0; }
+  .foot { margin-top:18px; font-size:9.5px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
+</style></head><body>
+
+<h1>LLM 부하 테스트 보고서 — 600명 풀플로우 (Gemini Flash, 코드 풀 수정 전/후)</h1>
+<div class="meta">
+  대상: <b>LG Magazine</b> &nbsp;·&nbsp;
+  환경: <b>mybook.lgacademy.com · Next.js · Docker 3 replica · nginx · LG AI Studio</b> &nbsp;·&nbsp;
+  모델: <b>Claude Sonnet 4.x + Gemini 2.0 Flash (LG AI Studio)</b> &nbsp;·&nbsp;
+  도구: <b>k6</b> &nbsp;·&nbsp;
+  실행 시각: <b>≈14:46–15:14 KST (28분 run, 조기 종료 / 28-min run, cut early)</b> &nbsp;·&nbsp;
+  작성일: <b>2026-06-26</b>
+</div>
+
+<div class="hero">
+  <div class="big">경량 코드 풀 수정(1→10개)으로 <span class="good-i">소진 오류는 대폭 감소</span>했으나, 600명 동시 풀세션은 여전히 <span class="warn-i">동시성 한계</span>에 막혀 있습니다.</div>
+  <p>경량(Gemini Flash) 레인을 코드 1개→10개로 늘린 결과, 작업 성공률 28.7%→<b>45.8%</b>(상대 +60%), 상위 오류 4,156→<b>963</b>건(−77%). 다만 실패 양상이 "오류"에서 "대기·타임아웃"으로 바뀌었고, 완주 세션은 여전히 0/600입니다.</p>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="v warn">45.8%</div><div class="l">작업 성공률 (수정 후)</div></div>
+  <div class="card"><div class="v good">−77%</div><div class="l">상위 오류 감소</div></div>
+  <div class="card"><div class="v good">1 → 10</div><div class="l">경량 코드</div></div>
+  <div class="card"><div class="v bad">0 / 600</div><div class="l">완주 세션</div></div>
+</div>
+
+<h2>1. 결론 요약</h2>
+<div class="note green"><b>수정은 옳았고 효과가 있었습니다.</b> 경량 레인 코드를 1개(<code>GEMINI_FLASH</code>)에서 10개(<code>LG_BOOK_GEMINI</code> 외 9개)로 늘리자 "코드 소진" 오류가 77% 줄고 작업 성공률이 28.7%→45.8%로 올랐습니다. 배포 전 10개 코드 모두 <b>10/10 정상</b> 확인, 20개 동시 버스트도 <b>20/20 성공</b>했습니다. <b>그러나</b> 600명이 동시에 풀세션(21작업, 총 ≈12,600작업)을 돌리면, 이제 병목은 코드 수가 아니라 <b>동시 처리량(게이트 ~15 + AI Studio 계정 ~20 동시 한계)</b>입니다. 작업이 오류 대신 큐에서 대기하다 300초 마감을 넘겨 타임아웃됩니다(라이브 프로브: 큐 위치 188~337).</div>
+<div class="note"><b>병목 이동 — 코드 소진 → 동시성 처리량.</b> 수정 전: 경량 코드 1개가 즉시 소진되어 <b>오류</b> 발생. 수정 후: 코드는 충분하지만 동시 실행 슬롯(게이트 ~15, 계정 ~20)이 600 동시 부하를 못 따라가 <b>큐 적체→타임아웃</b>. 즉 코드 증설은 <b>쿼터/소진</b> 문제를 풀지만 <b>동시 처리량</b>은 늘리지 못합니다 — 처리량은 게이트와 계정 한계가 결정합니다.</div>
+<ul><li><b>작업 성공률 28.7% → 45.8%</b> (상대 +60%): 명확한 개선.</li>
+<li><b>상위 오류 4,156 → 963건</b> (−77%): 소진 오류 대부분 제거.</li>
+<li><b>실패 양상 전환:</b> 타임아웃 170→1,055건 — 오류로 죽는 대신 큐에서 대기하다 마감 초과.</li>
+<li><b>경량 TTR 93.5→236.0초(중앙값):</b> 빨리 실패하던 게 사라지고 깊은 큐에서 대기 → 수치상 증가.</li>
+<li><b>무거운(Sonnet) TTR:</b> 중앙 296.6초, p95 302.0초 — 무거운 레인도 동시성 한계로 포화.</li>
+<li><b>완주 세션 0/600:</b> 600 동시 풀세션은 현재 동시 처리량 천장을 초과.</li></ul>
+
+<h2>2. 적용한 수정 + 검증</h2>
+<table><tr><td><b>변경</b></td><td>AISTUDIO_LIGHT_API_CODES: GEMINI_FLASH (1개) → LG_BOOK_GEMINI + LG_BOOK_GEMINI_2..10 (10개)</td></tr>
+<tr><td><b>배포</b></td><td>운영 .env 갱신 후 docker compose up -d (재빌드 불필요 — env만 변경)</td></tr>
+<tr><td><b>코드 검증</b></td><td>AI Studio 직접 프로브 — 10/10 코드 정상(각 ~3초, 한국어 정상 응답)</td></tr>
+<tr><td><b>사전 버스트</b></td><td>운영에 경량 20개 동시 호출 → 20/20 성공(중앙 9.6초), 소진 오류 0</td></tr>
+<tr><td><b>부하 시나리오</b></td><td>실사용 풀세션 — 세션당 21작업(경량 11+무거움 7)</td></tr>
+<tr><td><b>부하 패턴</b></td><td>600 VU, 600초에 걸쳐 ~1세션/초 도착, 작업당 마감 300초</td></tr>
+<tr><td><b>실행/종료</b></td><td>28분 후 조기 종료(양상 확정, 운영 부하 최소화)</td></tr></table>
+
+<h2>3. 수정 전 / 후 비교 (600 동시 풀세션)</h2>
+<table>
+  <tr><th>지표</th><th class="n">수정 전 (코드 1)</th><th class="n">수정 후 (코드 10)</th><th class="n">변화</th></tr>
+  <tr><td>작업 성공률</td><td class="n">28.7%</td><td class="n"><b>45.8%</b></td><td class="n">+60% 상대</td></tr>
+<tr><td>상위 오류</td><td class="n">4,156</td><td class="n"><b>963</b></td><td class="n">−77%</td></tr>
+<tr><td>클라이언트 타임아웃</td><td class="n">170</td><td class="n"><b>1,055</b></td><td class="n">오류→대기 전환</td></tr>
+<tr><td>경량 TTR 중앙값</td><td class="n">93.5s</td><td class="n"><b>236.0s</b></td><td class="n">큐 대기 증가</td></tr>
+<tr><td>완주 세션</td><td class="n">0/600</td><td class="n"><b>0/600</b></td><td class="n">동시성 한계</td></tr>
+<tr><td>접수 응답 p95</td><td class="n">~378ms</td><td class="n"><b>377ms</b></td><td class="n">정상 (병목 아님)</td></tr>
+</table>
+
+<h2>4. 해석 — 이 결과의 의미</h2>
+<div class="note green">코드 증설은 <b>정확한 1차 수정</b>이었습니다(소진 오류 제거). 그러나 600명 <b>동시</b> 풀세션은 ≈12,600개 작업을 동시에 밀어 넣는 극단적 부하로, LG AI Studio 계정의 <b>~20 동시 한계</b>와 로컬 게이트(~15)가 처리량 천장입니다. 실사용은 600명이 정확히 같은 순간 시작하지 않고 자연스럽게 분산되므로, 실제 체감 부하는 이 테스트보다 훨씬 완만합니다. 비동기 큐 덕분에 <b>하드 실패 대신 대기</b>로 흡수되는 점은 그대로 유효합니다.</div>
+
+<h2>5. 권장 사항</h2>
+<ul><li><b>완료 (검증됨):</b> 경량 코드 1→10개 — 소진 오류 77% 감소. 운영 반영 완료.</li>
+<li><b>동시성 한계 확인(다음 단계):</b> LG AI Studio 계정 ~20 동시 제한이 두 레인 합산인지 레인별인지 확인. 상향 가능하면 협의.</li>
+<li><b>게이트 튜닝:</b> 한계가 허용하는 선에서 AISTUDIO_(LIGHT_)MAX_CONCURRENCY × 레플리카를 계정 한계에 맞춰 상향.</li>
+<li><b>현실적 동시 사용자 산정:</b> 600 동시 풀세션은 천장 초과. 도착 분산을 반영한 목표치로 SLA 설정 권장.</li>
+<li><b>별개 버그:</b> <code>judgeBranch</code>가 <code>reading 'letters'</code>로 실패(부하 무관). 페이로드/핸들러 점검.</li></ul>
+
+<div class="note"><b>측정 한계.</b> 600명 동시 풀세션은 최대 부하 시나리오이며 28분 시점에 조기 종료했습니다(양상 확정·운영 부하 절감). 일부 지표는 포화 구간 표본입니다. 수정 전(코드 1) 데이터는 동일 스크립트·동일 파라미터의 직전 실측이며, 비교는 동일 조건 기준입니다.</div>
+
+<div class="foot">생성일 2026-06-26 · LG 매거진 600명 풀플로우 LLM 테스트 (Gemini Flash, 코드풀 수정 전/후) · 데이터: docs/loadtest-llm-realistic-600-results.json (+ .BEFORE-fix) · k6 실측</div>
+
+</body></html>

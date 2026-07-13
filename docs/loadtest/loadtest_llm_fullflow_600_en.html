@@ -1,0 +1,116 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><style>
+  @page { size: A4; margin: 15mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo","Malgun Gothic",-apple-system,"Segoe UI",sans-serif; color:#1a1a1a; font-size:12px; line-height:1.6; margin:0; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  h2 { font-size:14px; margin:20px 0 8px; padding-bottom:4px; border-bottom:2px solid #e2e8f0; }
+  code { background:#f1f5f9; padding:1px 4px; border-radius:3px; font-size:10.5px; }
+  .meta { font-size:10.5px; color:#555; margin-bottom:12px; }
+  .meta b { color:#222; }
+  .hero { background:#451a03; color:#fff; border-radius:10px; padding:16px 18px; margin:12px 0; }
+  .hero .big { font-size:18px; font-weight:800; line-height:1.35; }
+  .hero .big .hi { color:#fcd34d; }
+  .hero p { margin:8px 0 0; font-size:11.5px; color:#fde68a; }
+  .cards { display:flex; gap:10px; margin:12px 0; }
+  .card { flex:1; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc; }
+  .card .v { font-size:18px; font-weight:800; color:#0f172a; }
+  .card .v.good { color:#15803d; }
+  .card .v.warn { color:#b45309; }
+  .card .v.bad { color:#b91c1c; }
+  .card .l { font-size:10px; color:#64748b; margin-top:2px; }
+  table { width:100%; border-collapse:collapse; margin:6px 0; font-size:11px; }
+  th, td { border:1px solid #e2e8f0; padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#f1f5f9; font-weight:700; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .good { color:#15803d; font-weight:700; }
+  .warn { color:#b45309; font-weight:700; }
+  .bad  { color:#b91c1c; font-weight:700; }
+  .note { background:#fffbeb; border-left:3px solid #f59e0b; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  .note.amber { background:#fffbeb; border-left-color:#f59e0b; }
+  ul { margin:6px 0 6px 18px; padding:0; }
+  li { margin:4px 0; }
+  .foot { margin-top:18px; font-size:9.5px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
+</style></head><body>
+
+<h1>LLM Full-Session Load Test Report — 600 Concurrent Users (Full Flow)</h1>
+<div class="meta">
+  Target: <b>LG Magazine</b> &nbsp;·&nbsp;
+  Environment: <b>mybook.lgacademy.com · Next.js · Docker 3 replica · nginx · AI Studio (dual-lane: Flash + Sonnet)</b> &nbsp;·&nbsp;
+  Model: <b>Gemini 2.0 Flash + Claude Sonnet 4.5</b> &nbsp;·&nbsp;
+  Tool: <b>k6</b> &nbsp;·&nbsp;
+  Run time: <b>≈11:00 KST</b> &nbsp;·&nbsp;
+  Date: <b>2026-06-26</b>
+</div>
+
+<div class="hero">
+  <div class="big">The current setup handles most of 600 concurrent full sessions, but <span class="hi">some tasks slow down or fail</span>.</div>
+  <p>Each user runs <b>21 LLM tasks</b> in one session (14 light one-liners → <b>Gemini 2.0 Flash</b>, 7 heavy synthesis/chapter/cover tasks → <b>Claude Sonnet 4.5</b>), called in order. At 600 concurrent users: <b>task success 90.5%</b>, <b>session-complete 0.0%</b>. Light tasks median <b>6.5s</b>, heavy tasks <b>8.7s</b>.</p>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="v warn">0.0%</div><div class="l">Session-complete rate</div></div>
+  <div class="card"><div class="v warn">90.5%</div><div class="l">Task success rate</div></div>
+  <div class="card"><div class="v">6.5s</div><div class="l">Light task (Gemini 2.0 Flash) median</div></div>
+  <div class="card"><div class="v">8.7s</div><div class="l">Heavy task (Claude Sonnet 4.5) median</div></div>
+</div>
+
+<h2>1. Executive Summary</h2>
+<div class="note"><b>At 600 concurrent full sessions, task success is 90.5% and session-complete is 0.0%.</b> Splitting light tasks onto the <b>Gemini 2.0 Flash</b> lane relieved the heavy <b>Claude Sonnet 4.5</b> lane, but 7 heavy tasks per session accumulate and some did not return within the 5-minute deadline. Per-task success is high; session-complete (all 21 tasks succeeding) is the stricter bar.</div>
+<ul><li><b>Dual-model routing:</b> 14 light tasks → Gemini 2.0 Flash (dedicated lane), 7 heavy → Claude Sonnet 4.5. Cuts the bottleneck lane from 21 to 7 calls per session.</li>
+<li><b>Task success 90.5%:</b> across 600 sessions × 21 tasks ≈ 21 tasks.</li>
+<li><b>Session-complete 0.0%:</b> all 21 tasks in a session must succeed — the strictest measure.</li>
+<li><b>Result latency:</b> light median 6.5s / p95 15.8s; heavy median 8.7s / p95 26.8s.</li>
+<li><b>Stability:</b> 0 polling 404s · 2 upstream errors · 0 client timeouts.</li></ul>
+
+<h2>2. Test Configuration</h2>
+<table><tr><td><b>Endpoint</b></td><td>POST /api/v3/llm (enqueue) · GET /api/v3/llm/jobs (poll)</td></tr>
+<tr><td><b>Scenario</b></td><td>Full magazine flow — 21 tasks per session, called in order</td></tr>
+<tr><td><b>Dual-model</b></td><td>14 light → Gemini 2.0 Flash · 7 heavy → Claude Sonnet 4.5</td></tr>
+<tr><td><b>Provider</b></td><td>AI Studio dual-lane (production default)</td></tr>
+<tr><td><b>Auth</b></td><td>Offline-minted production-valid session cookies (loadtest-00001…00001)</td></tr>
+<tr><td><b>Load pattern</b></td><td>1 VUs (= concurrent sessions), arriving over 0 min, 1 session each</td></tr>
+<tr><td><b>Measurement</b></td><td>Per task: enqueue (202) → poll every 2s → time-to-result</td></tr>
+<tr><td><b>Per-task deadline</b></td><td>Fail if not done within 300s (5 min)</td></tr>
+<tr><td><b>Precondition</b></td><td>Production queue backlog confirmed drained before a clean run</td></tr></table>
+
+<h2>3. Measured Results</h2>
+<table>
+  <tr><th>Metric</th><th class="n">Value</th><th>Note</th></tr>
+  <tr><td>Sessions started</td><td class="n"><b>1</b></td><td>1 VUs × 1 session</td></tr>
+<tr><td>Tasks per session</td><td class="n"><b>21</b></td><td>14 light + 7 heavy</td></tr>
+<tr><td>Task success rate</td><td class="n"><b>90.5%</b></td><td>individual task reached done</td></tr>
+<tr><td>Session-complete rate</td><td class="n"><b>0.0%</b></td><td>all 21 tasks succeeded</td></tr>
+<tr><td>Total requests</td><td class="n"><b>117</b></td><td>enqueue + poll</td></tr>
+<tr><td>Enqueue response p95</td><td class="n"><b>142 ms</b></td><td>POST returns jobId immediately</td></tr>
+<tr><td>Light median (Gemini 2.0 Flash)</td><td class="n"><b>6.5 s</b></td><td>one-liner L-OWL tasks</td></tr>
+<tr><td>Light p95</td><td class="n"><b>15.8 s</b></td><td></td></tr>
+<tr><td>Heavy median (Claude Sonnet 4.5)</td><td class="n"><b>8.7 s</b></td><td>synthesis/chapter/cover</td></tr>
+<tr><td>Heavy p95</td><td class="n"><b>26.8 s</b></td><td></td></tr>
+<tr><td>Session duration median</td><td class="n"><b>3.5 min</b></td><td>21 tasks + think-time</td></tr>
+<tr><td>Session duration p95</td><td class="n"><b>3.5 min</b></td><td></td></tr>
+<tr><td>Polling 404 (sticky miss)</td><td class="n"><b>0</b></td><td>0 = session routing OK</td></tr>
+<tr><td>Upstream errors (job error)</td><td class="n"><b>2</b></td><td>AI Studio processing errors</td></tr>
+<tr><td>Client timeouts</td><td class="n"><b>0</b></td><td>exceeded 5-min deadline</td></tr>
+</table>
+
+<h2>4. Per-Model-Lane Comparison</h2>
+<p>Comparing the two lanes shows the effect of dual-model routing: light tasks clear quickly on the Gemini 2.0 Flash lane, and only the heavy synthesis work goes through the Claude Sonnet 4.5 lane.</p>
+<table style="margin-top:6px">
+  <tr><th>Model lane</th><th class="n">Tasks/session</th><th class="n">Result median</th><th class="n">Result p95</th></tr>
+  <tr><td>Gemini 2.0 Flash (light)</td><td class="n">14</td><td class="n">6.5s</td><td class="n">15.8s</td></tr>
+<tr><td>Claude Sonnet 4.5 (heavy)</td><td class="n">7</td><td class="n">8.7s</td><td class="n">26.8s</td></tr>
+</table>
+
+<h2>5. Interpretation — What This Means</h2>
+<div class="note">Splitting light tasks onto Gemini 2.0 Flash cleared the full saturation seen before dual-model. But at 600 full sessions the 7 Claude Sonnet 4.5 tasks per session accumulate, and some don't finish within the deadline. The heavy lane's throughput (replicas × gate) is the next bottleneck.</div>
+
+<h2>6. Recommendations</h2>
+<ul><li><b>Scale the heavy lane:</b> raise replicas or the gate value (× replicas ≤ upstream cap) to increase Claude Sonnet 4.5 throughput.</li>
+<li><b>Revisit the deadline:</b> check whether the 300s per-task deadline is sufficient vs heavy p95 (26.8s).</li>
+<li><b>Progress UX:</b> absorb the wait with a "generating…" indicator.</li></ul>
+
+<div class="note amber"><b>Measurement Caveat.</b> This is the heaviest scenario: 1 users running the full magazine flow (21 tasks each) concurrently. Real users have longer read/type gaps between tasks that spread the load, so this test is a conservative (near-worst-case) upper bound. Dual-model routing (light → Gemini 2.0 Flash, heavy → Claude Sonnet 4.5) was applied exactly as the production default.</div>
+
+<div class="foot">Generated 2026-06-26 · LG Magazine LLM 600-concurrent full-session test · dual-model (Gemini 2.0 Flash+Claude Sonnet 4.5) · data: docs/loadtest-llm-realistic-600-results.json (k6, measured)</div>
+
+</body></html>

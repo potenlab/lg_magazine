@@ -1,0 +1,62 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><style>
+  @page { size: A4; margin: 15mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo","Malgun Gothic",-apple-system,"Segoe UI",sans-serif; color:#1a1a1a; font-size:12px; line-height:1.62; margin:0; }
+  h1 { font-size:20px; margin:0 0 2px; }
+  .sub { font-size:12px; color:#475569; margin:0 0 8px; font-weight:700; }
+  h2 { font-size:13.5px; margin:18px 0 7px; padding-bottom:4px; border-bottom:2px solid #e2e8f0; }
+  code { background:#f1f5f9; padding:1px 4px; border-radius:3px; font-size:10.5px; }
+  .meta { font-size:10.5px; color:#555; margin-bottom:10px; }
+  .meta b { color:#222; }
+  .verdict { background:#0f172a; color:#fff; border-radius:10px; padding:15px 17px; margin:10px 0; }
+  .verdict .h { font-size:12px; font-weight:800; color:#fca5a5; letter-spacing:.3px; margin-bottom:5px; }
+  .verdict p { margin:0; font-size:12.5px; color:#e2e8f0; line-height:1.6; }
+  .verdict code { background:#1e293b; color:#fecaca; }
+  table { width:100%; border-collapse:collapse; margin:6px 0; font-size:11px; }
+  th, td { border:1px solid #e2e8f0; padding:6px 8px; text-align:left; }
+  th { background:#f1f5f9; font-weight:700; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .good { color:#15803d; font-weight:700; } .warn { color:#b45309; font-weight:700; } .bad { color:#b91c1c; font-weight:700; }
+  .note { background:#eff6ff; border-left:3px solid #3b82f6; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  .amber { background:#fffbeb; border-left:3px solid #f59e0b; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  ul { margin:6px 0 6px 18px; padding:0; }
+  li { margin:5px 0; }
+  .foot { margin-top:16px; font-size:9.5px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
+</style></head><body>
+
+<h1>Konfirmasi Akar Masalah — Kegagalan LLM untuk 600 Pengguna</h1>
+<div class="sub">Mengapa hal ini terjadi (terkonfirmasi)</div>
+<div class="meta">Dasar: <b>Sweep konkurensi produksi (k6 + curl) + analisis kode</b> &nbsp;·&nbsp; Tanggal: <b>2026-06-19</b></div>
+
+<div class="verdict">
+  <div class="h">Kesimpulan Terkonfirmasi</div>
+  <p>Setiap langkah AI di majalah memanggil <b>satu akun LG AI Studio</b>. Akun ini hanya mampu memproses <b>±20 permintaan secara bersamaan</b>. Bila lebih dari itu datang serentak, kelebihannya tidak diantrekan melainkan langsung ditolak dengan <code>500 "terjadi kesalahan"</code>. Aplikasi <b>tidak punya antrian maupun retry</b> untuk konkurensi ini. Maka pada 600 pengguna serentak, hanya ±20 yang berhasil, sisanya gagal.</p>
+</div>
+
+<h2>Bukti — Sweep Konkurensi (pengukuran produksi)</h2>
+<p>Dengan menaikkan jumlah permintaan bersamaan: <b>hingga 20 = 100% sukses</b>, di atas itu penolakan (500) mulai muncul, dan <b>jumlah sukses berhenti di ±20.</b> Beban ditambah pun sukses tetap sama, kelebihan semuanya gagal.</p>
+<table>
+  <tr><th class="n">Permintaan bersamaan</th><th class="n">Keberhasilan</th><th class="n">Ditolak (500)</th></tr>
+  <tr><td class="n">10</td><td class="n good">100%</td><td class="n">0</td></tr>
+<tr><td class="n">20</td><td class="n good">100%</td><td class="n">0</td></tr>
+<tr><td class="n">25</td><td class="n warn">64%</td><td class="n">9</td></tr>
+<tr><td class="n">30</td><td class="n warn">60%</td><td class="n">12</td></tr>
+<tr><td class="n">40</td><td class="n bad">40%</td><td class="n">24</td></tr>
+<tr><td class="n">50</td><td class="n bad">36%</td><td class="n">32</td></tr>
+<tr><td class="n">60</td><td class="n bad">40%</td><td class="n">36</td></tr>
+</table>
+
+<h2>Mengapa rotasi 10 kunci API tidak menyelesaikannya</h2>
+<ul><li><b>Rotasi untuk masalah lain:</b> Rotasi kunci membagi <b>kuota token (batas harian/menit)</b>. Masalah sekarang adalah <b>konkurensi</b> — batas yang sama sekali berbeda.</li>
+<li><b>Rotasi bahkan tidak aktif untuk error ini:</b> Pada kode, perpindahan kunci hanya terjadi saat pesan batas token; 500 lain <b>langsung dilempar</b> — tanpa retry/perpindahan (aistudio.ts).</li>
+<li><b>Andai pun pindah, percuma:</b> 10 kunci (LG_BOOK_01–10) berbagi <b>akun, token, dan alamat yang sama</b>. Hanya mengetuk pintu 20-konkurensi yang sama. Terbukti: beban tersebar merata ke 10 kunci pun sukses berhenti di 20 (bila per-kunci, harusnya ~200).</li></ul>
+<div class="note">Analogi: Penyedia LLM ibarat <b>dapur yang hanya memasak 20 hidangan sekaligus</b>. 10 kunci hanyalah <b>10 kartu pembayaran</b> — ganti kartu (kuota token) tidak mengubah kapasitas dapur (konkurensi). 600 orang pesan serentak: 20 jadi, sisanya ditolak "dapur penuh".</div>
+
+<h2>Arah Perbaikan</h2>
+<ul><li><b>Antrian sisi server (batas konkurensi):</b> Batasi panggilan hulu ke ±15–18 dan <b>antrekan</b> kelebihannya — menunggu giliran, bukan gagal. (Hanya bisa di server, bukan frontend — hanya server melihat trafik semua pengguna.)</li>
+<li><b>Retry (backoff):</b> 500 ini bersifat sementara — retry 2–3× dengan backoff memulihkan banyak.</li>
+<li><b>Naikkan batas penyedia:</b> Minta LG AI Studio menaikkan batas konkurensi atau <b>akun terpisah</b> — satu-satunya cara benar-benar melayani >20 serentak.</li>
+<li><b>Mitigasi frontend:</b> Jangan kirim banyak panggilan <b>paralel</b> per pengguna (serialkan 4 artikel bab), beri UX menunggu saat generasi.</li></ul>
+
+<div class="foot">Dikonfirmasi 2026-06-19 · Akar Masalah LLM LG Magazine · Dasar: sweep konkurensi produksi + src/lib/llm/providers/aistudio.ts</div>
+</body></html>

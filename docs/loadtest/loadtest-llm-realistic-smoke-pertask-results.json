@@ -1,0 +1,100 @@
+{
+  "base_url": "https://mybook.lgacademy.com",
+  "concurrent_sessions": 1,
+  "arrival_window_s": 1,
+  "tasks_per_session": 23,
+  "heavy_calls_per_session": 11,
+  "sessions_started": 1,
+  "session_complete_rate": 0,
+  "session_duration_med_ms": 246949,
+  "session_duration_p95_ms": 246949,
+  "task_success_rate": 0.9565217391304348,
+  "heavy_ttr_med_ms": 8480,
+  "heavy_ttr_p95_ms": 25262.999999999996,
+  "light_ttr_med_ms": 4285.5,
+  "light_ttr_p95_ms": 4781.7,
+  "enqueue_ms_p95": 103,
+  "total_requests": 104,
+  "poll_404": 0,
+  "upstream_error": 1,
+  "client_timeout": 0,
+  "fallback_total": 1,
+  "fallback_rate": 0.043478260869565216,
+  "per_task": {
+    "judgeBranch": {
+      "calls": 2,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "reflectShort": {
+      "calls": 2,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "extractKeyword": {
+      "calls": 1,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "reflectPoetic": {
+      "calls": 1,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "rephraseLight": {
+      "calls": 3,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "reflectValues": {
+      "calls": 1,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "reflectStrength": {
+      "calls": 1,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "observePattern": {
+      "calls": 1,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "synthesizeStrength": {
+      "calls": 1,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "synthesizeGrowthVision": {
+      "calls": 1,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "generateVisionDirections": {
+      "calls": 1,
+      "hard_fails": 1,
+      "fallbacks": 1
+    },
+    "generateTimeHorizon": {
+      "calls": 1,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "writeChapterArticle": {
+      "calls": 4,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "writeCoverHeadline": {
+      "calls": 1,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "writeEditorNote": {
+      "calls": 2,
+      "hard_fails": 0,
+      "fallbacks": 0
+    }
+  }
+}

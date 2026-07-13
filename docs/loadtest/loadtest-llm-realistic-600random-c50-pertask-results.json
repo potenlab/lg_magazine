@@ -1,0 +1,100 @@
+{
+  "base_url": "https://mybook.lgacademy.com",
+  "concurrent_sessions": 600,
+  "arrival_window_s": 600,
+  "tasks_per_session": 23,
+  "heavy_calls_per_session": 11,
+  "sessions_started": 600,
+  "session_complete_rate": 0.8383333333333334,
+  "session_duration_med_ms": 253289,
+  "session_duration_p95_ms": 312289.95,
+  "task_success_rate": 0.9929710144927536,
+  "heavy_ttr_med_ms": 10559,
+  "heavy_ttr_p95_ms": 31482.05,
+  "light_ttr_med_ms": 4283,
+  "light_ttr_p95_ms": 8462,
+  "enqueue_ms_p95": 115,
+  "total_requests": 68761,
+  "poll_404": 0,
+  "upstream_error": 97,
+  "client_timeout": 0,
+  "fallback_total": 97,
+  "fallback_rate": 0.007028985507246377,
+  "per_task": {
+    "judgeBranch": {
+      "calls": 1200,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "reflectShort": {
+      "calls": 1200,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "extractKeyword": {
+      "calls": 600,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "reflectPoetic": {
+      "calls": 600,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "rephraseLight": {
+      "calls": 1800,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "reflectValues": {
+      "calls": 600,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "reflectStrength": {
+      "calls": 600,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "observePattern": {
+      "calls": 600,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "synthesizeStrength": {
+      "calls": 600,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "synthesizeGrowthVision": {
+      "calls": 600,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "generateVisionDirections": {
+      "calls": 600,
+      "hard_fails": 62,
+      "fallbacks": 62
+    },
+    "generateTimeHorizon": {
+      "calls": 600,
+      "hard_fails": 35,
+      "fallbacks": 35
+    },
+    "writeChapterArticle": {
+      "calls": 2400,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "writeCoverHeadline": {
+      "calls": 600,
+      "hard_fails": 0,
+      "fallbacks": 0
+    },
+    "writeEditorNote": {
+      "calls": 1200,
+      "hard_fails": 0,
+      "fallbacks": 0
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "base_url": "https://mybook.lgacademy.com",
+  "concurrent_sessions": 10,
+  "tasks_per_session": 21,
+  "heavy_calls_per_session": 7,
+  "sessions_started": 10,
+  "session_complete_rate": 0,
+  "session_duration_med_ms": 287180.5,
+  "session_duration_p95_ms": 297256.45,
+  "task_success_rate": 0.7666666666666667,
+  "heavy_latency_med_ms": 12302.45,
+  "heavy_latency_p95_ms": 50861.775099999904,
+  "light_latency_med_ms": 4153.2825,
+  "light_latency_p95_ms": 17431.213899999977,
+  "total_requests": 210,
+  "upstream_500": 0
+}

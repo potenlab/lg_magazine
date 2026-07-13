@@ -1,0 +1,23 @@
+{
+  "base_url": "https://mybook.lgacademy.com",
+  "concurrent_sessions": 600,
+  "arrival_window_s": 600,
+  "tasks_per_session": 23,
+  "heavy_calls_per_session": 11,
+  "sessions_started": 600,
+  "session_complete_rate": 0.20833333333333334,
+  "session_duration_med_ms": 239964,
+  "session_duration_p95_ms": 285630.05,
+  "task_success_rate": 0.9634057971014492,
+  "heavy_ttr_med_ms": 8796,
+  "heavy_ttr_p95_ms": 30082.05,
+  "light_ttr_med_ms": 4369,
+  "light_ttr_p95_ms": 6580,
+  "enqueue_ms_p95": 322.0999999999988,
+  "total_requests": 63095,
+  "poll_404": 0,
+  "upstream_error": 501,
+  "client_timeout": 4,
+  "fallback_total": 505,
+  "fallback_rate": 0.036594202898550726
+}

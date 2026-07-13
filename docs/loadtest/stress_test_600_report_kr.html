@@ -1,0 +1,85 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
+  @page { size: A4; margin: 15mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo","Malgun Gothic",-apple-system,"Segoe UI",Roboto,sans-serif; color:#1a1a1a; font-size:12px; line-height:1.6; margin:0; }
+  h1 { font-size:21px; margin:0 0 4px; }
+  h2 { font-size:14px; margin:20px 0 8px; padding-bottom:4px; border-bottom:2px solid #e2e8f0; }
+  .meta { font-size:10.5px; color:#555; margin-bottom:12px; }
+  .meta b { color:#222; }
+  .hero { background:#0f172a; color:#fff; border-radius:10px; padding:16px 18px; margin:12px 0; }
+  .hero .big { font-size:19px; font-weight:800; line-height:1.3; }
+  .hero .big .grn { color:#86efac; }
+  .hero p { margin:8px 0 0; font-size:11.5px; color:#cbd5e1; }
+  .cards { display:flex; gap:10px; margin:12px 0; }
+  .card { flex:1; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc; }
+  .card .v { font-size:18px; font-weight:800; color:#0f172a; }
+  .card .v.grn { color:#15803d; }
+  .card .l { font-size:10px; color:#64748b; margin-top:2px; }
+  table { width:100%; border-collapse:collapse; margin:6px 0; font-size:11px; }
+  th, td { border:1px solid #e2e8f0; padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#f1f5f9; font-weight:700; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .good { color:#15803d; font-weight:700; }
+  .warn { color:#b45309; font-weight:700; }
+  .note { background:#eff6ff; border-left:3px solid #3b82f6; padding:8px 12px; border-radius:0 6px 6px 0; font-size:11px; margin:8px 0; }
+  .ok { background:#f0fdf4; border-left-color:#16a34a; }
+  ul { margin:6px 0 6px 18px; padding:0; } li { margin:4px 0; }
+  .foot { margin-top:18px; font-size:9.5px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
+</style></head><body>
+<h1>600명 부하 테스트 결과 보고서</h1>
+<div class="meta">대상: <b>LG 매거진 (lg_magazine)</b> · 환경: <b>LG 운영 서버 (mybook.lgacademy.com / 203.247.146.226) · Next.js 16 · Docker 3 replica · nginx · 1 Gbps</b> · 작성일: <b>2026-06-08</b> · 도구: <b>k6</b></div>
+
+<div class="hero">
+  <div class="big">운영 서버는 <span class="grn">동시 600명</span>을 거의 오류 없이 처리합니다.</div>
+  <p>운영 서버를 대상으로 실제 600명 부하 테스트를 새로 수행했습니다(2분간 점진 증가 후 600명 유지). 결과는 <b>성공률 99.94%</b>, 정상 탐색 p95 <b>263ms</b>, 1 Gbps 회선의 약 10%만 사용. 목요일 600명 수업은 충분히 감당 가능합니다.</p>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="v grn">99.94%</div><div class="l">성공률 (실패 0.06%)</div></div>
+  <div class="card"><div class="v">263ms</div><div class="l">p95, 정상 탐색</div></div>
+  <div class="card"><div class="v">104.1 Mbps</div><div class="l">최대 대역폭 (1 Gbps의 ~10%)</div></div>
+  <div class="card"><div class="v">27,287</div><div class="l">완료 세션</div></div>
+</div>
+
+<h2>1. 테스트 구성</h2>
+<table>
+  <tr><th>항목</th><th>값</th></tr>
+  <tr><td>동시 사용자(VU)</td><td>600명</td></tr>
+  <tr><td>증가(ramp)</td><td>2분 (0 → 600, 수업 입장 모사)</td></tr>
+  <tr><td>피크 유지(hold)</td><td>동시 600명 2분</td></tr>
+  <tr><td>사용자 행동</td><td>최초 접속(전체 페이지+자산) → 챕터 간 탐색, 2~5초 생각시간</td></tr>
+  <tr><td>측정 범위</td><td>페이지/정적자산/인증 확인 — <b>AI 생성 엔드포인트 미포함</b> (토큰 소모 없음)</td></tr>
+</table>
+
+<h2>2. 결과</h2>
+<table>
+  <tr><th>지표</th><th class="n">결과</th><th>의미</th></tr>
+  <tr><td>성공률</td><td class="n good">99.94%</td><td>실패 0.06% — 무시 가능</td></tr>
+  <tr><td>총 요청수</td><td class="n">90,862</td><td>350.2/초 지속</td></tr>
+  <tr><td>완료 세션</td><td class="n">27,287</td><td>전체 사용자 흐름 완료</td></tr>
+  <tr><td>p95 — 정상 탐색</td><td class="n good">263ms</td><td>캐시 상태 챕터 이동</td></tr>
+  <tr><td>p95 — 전체</td><td class="n">445ms</td><td>평균 301ms</td></tr>
+  <tr><td>p95 — 홈/탐색/인증</td><td class="n">132 / 133 / 131 ms</td><td>핵심 응답 빠름</td></tr>
+  <tr><td>p95 — 최초 접속(콜드) 자산</td><td class="n warn">20초</td><td>첫 로딩 시 이미지+오디오(~15MB)</td></tr>
+  <tr><td>최대 대역폭</td><td class="n">104.1 Mbps</td><td>1 Gbps의 약 10%</td></tr>
+  <tr><td>총 전송량</td><td class="n">3.38 GB</td><td>테스트 전 구간</td></tr>
+</table>
+
+<h2>3. 해석</h2>
+<div class="note ok"><b>600명은 여유 범위 안에 있습니다.</b> 성공률 99.94%, 정상 응답 263ms 이하, 네트워크는 회선의 약 10%만 사용. 600명 이상으로도 상당한 여유가 있습니다.</div>
+<ul>
+  <li><b>정상 사용 경험은 빠름:</b> 첫 페이지 로딩 후 탐색은 p95 약 263ms.</li>
+  <li><b>최초 접속(콜드)이 가장 무거운 순간:</b> 첫 페이지가 이미지·오디오(~15MB)를 받아 p95 약 20초. 사용자당 1회성 비용이며, 자산 경량화(적용 완료)와 입장 분산으로 완화됩니다.</li>
+  <li><b>네트워크는 병목이 아님:</b> 피크 약 104.1 Mbps로 1 Gbps의 일부에 불과.</li>
+  <li><b>AI 로테이션 안전:</b> 운영에 적용된 AI Studio 10개 키 풀이 생성 부하를 별도로 처리. 본 테스트는 웹 서빙 계층을 검증.</li>
+</ul>
+
+<h2>4. 목요일(600명) 권장 사항</h2>
+<ul>
+  <li><b>입장 분산:</b> 가능하면 1~2분에 걸쳐 입장하도록 유도하여 동시 콜드 로딩 부담 완화.</li>
+  <li><b>모니터링 대기:</b> 수업 시작 시각에 컨테이너 상태/오류 로그 실시간 확인.</li>
+  <li><b>용량 측면 추가 조치 불필요</b> — 600명은 여유 있게 처리됨.</li>
+</ul>
+
+<div class="foot">생성일 2026-06-08 · 600명 부하 테스트 · 데이터: loadtest/summary-600-fresh-2026-06-08.json (k6) · 단일 클라이언트에서 실행했으므로 서버 측 대역폭 여유는 표시값보다 큽니다.</div>
+</body></html>

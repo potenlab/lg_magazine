@@ -18,6 +18,10 @@ went away.
 > target steps dropped from 10.3% → 1.3% and 5.8% → 2.0%, and virtually all of
 > the residue is a **new, unrelated infrastructure-level rejection** that hit
 > every task type equally (section 3b), not the parse problem.
+>
+> **Update (same evening):** with retry unification (3× at every layer) and
+> adaptive poll backoff deployed on top, the identical re-run scored a
+> **perfect 13,800/13,800 — 0 fallbacks, 600/600 sessions** — see section 5.
 
 ## 1. Headline numbers (July 10 A/B baseline vs this run)
 
@@ -147,11 +151,46 @@ shows is a new, task-agnostic, load-peak HTTP rejection in front of the app
 (pending one nginx-log check to name the status code), which the real client's
 enqueue retries largely absorb.
 
-## 5. Data sources
+## 5. Follow-up run the same evening — retry unification + poll backoff → **a perfect run**
+
+After the afternoon run above, two more changes shipped (commits `faa3dea`,
+`50ccc08`) and were deployed the same evening: **adaptive poll backoff**
+(poll interval 1.5s → 3s → 5s → 8s as a job ages, cutting HTTP load exactly
+at peak), **client resubmit of transient 5xx/network rejects** (the §3b
+failure mode; 3 attempts with jitter), and **all retry layers unified at 3**
+(upstream overload 2→3, parse re-ask 1→3). The identical 600-user test was
+re-run against that build:
+
+| Metric | Jul 10 A/B ("88") | Jul 13 afternoon (parser fix only) | **Jul 13 evening (all fixes)** |
+|---|---|---|---|
+| Task success | 99.4% | 96.7% | **100.0% — 13,800/13,800** |
+| Fallbacks (backup text shown) | 88 | 459 | **0** |
+| LLM job errors | 88 | 1 | **0** |
+| Perfect sessions | 517/600 | 404/600 | **600/600** |
+| Timeouts / lost jobs | 0 / 0 | 1 / 0 | **0 / 0** |
+| Total HTTP requests | 61,813 | 86,674 | 79,498 |
+| Enqueue p95 | 190ms | 374ms | 270ms |
+| Heavy step median | 8.6s | 12.9s | 10.6s |
+
+Every one of the 15 task types recorded **0 failures** — including the two
+strict-JSON steps and every step the §3b infra rejection touched in the
+afternoon.
+
+Why the §3b rejections disappeared — three factors, honestly attributed:
+the poll backoff removed ~8% of total traffic even though sessions still ran
+longer than the Jul 10 baseline (fewer polls per session at peak); the new
+client resubmit absorbs any transient reject before it can count as a
+failure; and the provider had partially recovered by evening (heavy median
+10.6s vs the afternoon's 12.9s, though still above Jul 10's 8.6s). The
+afternoon's failure condition — peak load during a slow-provider window —
+was both reduced and made survivable.
+
+## 6. Data sources
 
 | File | What |
 |---|---|
-| `docs/loadtest-llm-realistic-600-pertask-0713-postfix-results.json` | This run (per-task breakdown in `per_task`) |
+| `docs/loadtest/loadtest-llm-realistic-600-pertask-0713-retry3x-results.json` | **Evening run — all fixes, 0 failures** |
+| `docs/loadtest-llm-realistic-600-pertask-0713-postfix-results.json` | Afternoon run (per-task breakdown in `per_task`) |
 | `loadtest/summary-llm-realistic-600-pertask-0713-postfix-raw.json` | Full k6 raw summary |
 | `docs/loadtest-llm-realistic-600random-c50-results.json` | **July 10 A/B baseline (the "88" run)** |
 | `docs/loadtest-600-build-ab-jul08-vs-jul10.md` | The A/B test doc the 88 was quoted from |

@@ -16,13 +16,23 @@ is still on the single `AISTUDIO_API_CODE` (one code → ~100 magazines/day → 
 > deploy) · [aistudio_api_code_switch.md](aistudio_api_code_switch.md) (single-code,
 > superseded) · [production_deployment.md](production_deployment.md) (build/host paths).
 
+> **This server (LGAPOTENLAB, 203.247.146.226):** compose project `lg_magazine`,
+> service `lg-magazine`, 3 replicas. Actual container names:
+> `lg_magazine-lg-magazine-1`, `lg_magazine-lg-magazine-2`, `lg_magazine-lg-magazine-3`
+> (plus `lg_book_mssql` for the DB). Either targeting style works:
+>
+> - **Compose form** (run from the repo dir): `sudo docker compose -p lg_magazine exec lg-magazine <cmd>`
+> - **Direct form** (run from anywhere): `sudo docker exec lg_magazine-lg-magazine-1 <cmd>`
+>
+> `docker` needs `sudo` here (the `potenlab` user isn't in the `docker` group).
+
 ---
 
 ## 0. TL;DR — 30-second health check
 
 ```bash
 cd /path/to/lg_magazine          # repo checkout on the production VM
-PROJECT="${COMPOSE_PROJECT_NAME:-potenlab}"
+PROJECT="${COMPOSE_PROJECT_NAME:-lg_magazine}"
 
 # A) What the running container actually sees (this is the source of truth):
 sudo docker compose -p "$PROJECT" exec lg-magazine printenv AISTUDIO_API_CODES
@@ -47,7 +57,7 @@ the container first.
 
 ```bash
 cd /path/to/lg_magazine
-PROJECT="${COMPOSE_PROJECT_NAME:-potenlab}"
+PROJECT="${COMPOSE_PROJECT_NAME:-lg_magazine}"
 
 sudo docker compose -p "$PROJECT" exec lg-magazine printenv AISTUDIO_API_CODES
 sudo docker compose -p "$PROJECT" exec lg-magazine printenv AISTUDIO_API_CODE
@@ -93,7 +103,7 @@ grep -E '^AISTUDIO_API_CODES=' /path/to/lg_magazine/.env \
 ## 3. Confirm the container is current (not stale)
 
 ```bash
-PROJECT="${COMPOSE_PROJECT_NAME:-potenlab}"
+PROJECT="${COMPOSE_PROJECT_NAME:-lg_magazine}"
 sudo docker compose -p "$PROJECT" ps
 #   GATE: lg-magazine replica(s) "Up ... (healthy)".
 
@@ -161,7 +171,7 @@ Only if a gate above failed.
 
 ```bash
 cd /path/to/lg_magazine
-PROJECT="${COMPOSE_PROJECT_NAME:-potenlab}"
+PROJECT="${COMPOSE_PROJECT_NAME:-lg_magazine}"
 
 # Back up first.
 cp .env .env.backup-$(date +%Y%m%d-%H%M)

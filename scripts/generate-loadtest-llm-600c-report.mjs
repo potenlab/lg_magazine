@@ -8,12 +8,12 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 const R = JSON.parse(
-  readFileSync(new URL("../docs/loadtest/loadtest-llm-600-concurrent-results.json", import.meta.url)),
+  readFileSync(new URL("../docs/loadtest/results/loadtest-llm-600-concurrent-results.json", import.meta.url)),
 );
 let R100 = null;
 try {
   R100 = JSON.parse(
-    readFileSync(new URL("../docs/loadtest/loadtest-llm-100-async-results.json", import.meta.url)),
+    readFileSync(new URL("../docs/loadtest/results/loadtest-llm-100-async-results.json", import.meta.url)),
   );
 } catch (e) {
   R100 = null;
@@ -284,7 +284,7 @@ function render(t) {
 }
 
 for (const [key, t] of Object.entries(L)) {
-  const out = new URL(`../docs/loadtest/loadtest_llm_600c_${key}.html`, import.meta.url);
+  const out = new URL(`../docs/loadtest/reports/loadtest_llm_600c_${key}.html`, import.meta.url);
   writeFileSync(out, render(t));
   console.log("HTML written:", out.pathname);
 }

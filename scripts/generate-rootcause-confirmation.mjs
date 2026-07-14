@@ -6,7 +6,7 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 
-const D = JSON.parse(readFileSync(new URL("../docs/loadtest/llm-rootcause-confirmation.json", import.meta.url)));
+const D = JSON.parse(readFileSync(new URL("../docs/loadtest/results/llm-rootcause-confirmation.json", import.meta.url)));
 const GENERATED = "2026-06-19";
 const CEIL = D.concurrency_ceiling;
 
@@ -131,7 +131,7 @@ function render(t) {
 }
 
 for (const [key, t] of Object.entries(L)) {
-  const out = new URL(`../docs/loadtest/llm_rootcause_confirmation_${key}.html`, import.meta.url);
+  const out = new URL(`../docs/loadtest/reports/llm_rootcause_confirmation_${key}.html`, import.meta.url);
   writeFileSync(out, render(t));
   console.log("HTML written:", out.pathname);
 }

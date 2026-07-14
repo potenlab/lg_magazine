@@ -3,7 +3,7 @@
 Live server probe during the rollback test window. Each of the 15 LLM task
 types called once via POST /api/v3/llm + poll. 14/15 succeeded; the one
 systematic failure is the step that produced the 20 fallbacks in the 20-user
-load test (docs/loadtest-llm-realistic-20random-0708-results.json).
+load test (docs/loadtest/results/loadtest-llm-realistic-20random-0708-results.json).
 
 | Task | Status | Time | Note |
 |---|---|---|---|

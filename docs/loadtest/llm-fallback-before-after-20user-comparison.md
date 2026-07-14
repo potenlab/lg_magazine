@@ -89,8 +89,8 @@ real content (self-healing).
 
 | File | Contents |
 |---|---|
-| `docs/loadtest-llm-realistic-20random-0708-results.json` | Before-fix 20-user run (raw numbers) |
-| `docs/loadtest-llm-realistic-20random-results.json` | After-fix 20-user run (raw numbers) |
+| `docs/loadtest/results/loadtest-llm-realistic-20random-0708-results.json` | Before-fix 20-user run (raw numbers) |
+| `docs/loadtest/results/loadtest-llm-realistic-20random-results.json` | After-fix 20-user run (raw numbers) |
 | `docs/probe-oldbuild-0708-per-task.md` | Per-task probe on the old build (14/15 OK, the failing step + exact error) |
 | git `048fb7a` | The fix commit for the direction-cards crash |
 | git `1d03865`, `6cf1477`, `ce2d965`, `c315834`, `2b5726f` | The freeze-bug (stub-cache) fix series |

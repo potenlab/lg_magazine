@@ -26,7 +26,7 @@ went away.
 ## 1. Headline numbers (July 10 A/B baseline vs this run)
 
 Baseline = the July 10 A/B test run
-(`docs/loadtest-llm-realistic-600random-c50-results.json` — the "88 failed
+(`docs/loadtest/results/loadtest-llm-realistic-600random-c50-results.json` — the "88 failed
 cases"). The same-evening instrumented re-run (97 failures, same mechanism)
 appears only in the per-step table of section 2, because it is the only
 pre-fix run that recorded per-step data.
@@ -189,12 +189,12 @@ was both reduced and made survivable.
 
 | File | What |
 |---|---|
-| `docs/loadtest/loadtest-llm-realistic-600-pertask-0713-retry3x-results.json` | **Evening run — all fixes, 0 failures** |
-| `docs/loadtest-llm-realistic-600-pertask-0713-postfix-results.json` | Afternoon run (per-task breakdown in `per_task`) |
-| `loadtest/summary-llm-realistic-600-pertask-0713-postfix-raw.json` | Full k6 raw summary |
-| `docs/loadtest-llm-realistic-600random-c50-results.json` | **July 10 A/B baseline (the "88" run)** |
+| `docs/loadtest/results/loadtest-llm-realistic-600-pertask-0713-retry3x-results.json` | **Evening run — all fixes, 0 failures** |
+| `docs/loadtest/results/loadtest-llm-realistic-600-pertask-0713-postfix-results.json` | Afternoon run (per-task breakdown in `per_task`) |
+| `loadtest/results/summary-llm-realistic-600-pertask-0713-postfix-raw.json` | Full k6 raw summary |
+| `docs/loadtest/results/loadtest-llm-realistic-600random-c50-results.json` | **July 10 A/B baseline (the "88" run)** |
 | `docs/loadtest-600-build-ab-jul08-vs-jul10.md` | The A/B test doc the 88 was quoted from |
-| `docs/loadtest-llm-realistic-600random-c50-pertask-results.json` | July 10 instrumented re-run (per-step table only) |
+| `docs/loadtest/results/loadtest-llm-realistic-600random-c50-pertask-results.json` | July 10 instrumented re-run (per-step table only) |
 | `docs/loadtest-600-per-step-trace-jul10.md` | Per-step trace + error anatomy + fix design |
 | `scripts/loadtest-llm-realistic-async.js` | Harness with per-task instrumentation (unchanged since baseline) |
 

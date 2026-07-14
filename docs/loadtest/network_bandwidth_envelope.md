@@ -73,7 +73,7 @@ Source: [../loadtest/](../loadtest/) (k6 sweep against
 > simultaneously, this is the level at which lg_magazine could plausibly
 > crowd out a co-tenant.
 
-Raw source: [../loadtest/summary-step-1000.json](../loadtest/summary-step-1000.json) (`data_received.rate` = 15,094,171 bytes/s).
+Raw source: [loadtest/results/summary-step-1000.json](loadtest/results/summary-step-1000.json) (`data_received.rate` = 15,094,171 bytes/s).
 
 ---
 
@@ -207,8 +207,8 @@ the single highest-leverage mitigation available.
 
 - LG IT replies (Hyewon-san, 2026-05-26): two messages quoting 500 Mbps shared
   pipe + Kim Seok's bottleneck concern — full text in Appendix A below.
-- k6 load-test data: [../loadtest/summary-step-100.json](../loadtest/) through
-  [../loadtest/summary-step-1000.json](../loadtest/).
+- k6 load-test data: [loadtest/results/summary-step-100.json](../loadtest/) through
+  [loadtest/results/summary-step-1000.json](../loadtest/).
 - Deploy / scaling / nginx / WAF / rollout runbook: [production_deployment.md](production_deployment.md).
 
 ---

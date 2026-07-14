@@ -62,6 +62,6 @@
 
 | File | Run |
 |---|---|
-| `docs/loadtest-llm-realistic-600-results.json` | Jul 8 previous run (18 lanes) |
-| `docs/loadtest-llm-realistic-600random-c50-results.json` | Jul 10 current run (50 lanes) |
+| `docs/loadtest/results/loadtest-llm-realistic-600-results.json` | Jul 8 previous run (18 lanes) |
+| `docs/loadtest/results/loadtest-llm-realistic-600random-c50-results.json` | Jul 10 current run (50 lanes) |
 | `docs/loadtest-600-jun26-vs-jul10-comparison.md` | Companion doc: Jun 26 (no queue) vs Jul 10 |

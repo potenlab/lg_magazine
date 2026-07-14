@@ -277,8 +277,8 @@ re-ask on those two tasks would shrink the problem to near zero.
 
 | File | What |
 |---|---|
-| `docs/loadtest-llm-realistic-600random-c50-pertask-results.json` | This run (per-task breakdown in `per_task`) |
-| `loadtest/summary-llm-realistic-600random-c50-pertask-raw.json` | Full k6 raw summary |
+| `docs/loadtest/results/loadtest-llm-realistic-600random-c50-pertask-results.json` | This run (per-task breakdown in `per_task`) |
+| `loadtest/results/summary-llm-realistic-600random-c50-pertask-raw.json` | Full k6 raw summary |
 | `docs/loadtest-600-build-ab-jul08-vs-jul10.md` | Afternoon A/B (Jul 8 vs Jul 10 build) |
 | `scripts/loadtest-llm-realistic-async.js` | Harness with per-task instrumentation |
 

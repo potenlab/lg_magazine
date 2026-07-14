@@ -86,10 +86,10 @@ than the baseline run's.
 
 | File | What |
 |---|---|
-| `docs/loadtest/loadtest-llm-realistic-600-pertask-0713-retry3x-results.json` | **This run** (per-task breakdown, all zeros) |
-| `loadtest/summary-llm-realistic-600-pertask-0713-retry3x-raw.json` | Full k6 raw summary |
-| `docs/loadtest/loadtest-llm-realistic-600-pertask-0713-postfix-results.json` | Jul 13 afternoon run |
-| `docs/loadtest/loadtest-llm-realistic-600random-c50-results.json` | Jul 10 A/B baseline (the "88" run) |
+| `docs/loadtest/results/loadtest-llm-realistic-600-pertask-0713-retry3x-results.json` | **This run** (per-task breakdown, all zeros) |
+| `loadtest/results/summary-llm-realistic-600-pertask-0713-retry3x-raw.json` | Full k6 raw summary |
+| `docs/loadtest/results/loadtest-llm-realistic-600-pertask-0713-postfix-results.json` | Jul 13 afternoon run |
+| `docs/loadtest/results/loadtest-llm-realistic-600random-c50-results.json` | Jul 10 A/B baseline (the "88" run) |
 | `docs/loadtest/loadtest-600-per-step-before-after-jul13.md` | Afternoon before/after analysis (incl. §3b infra-rejection anatomy) |
 | `scripts/loadtest-llm-realistic-async.js` | Harness (unchanged across all three runs) |
 

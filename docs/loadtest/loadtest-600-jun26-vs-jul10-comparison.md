@@ -61,8 +61,8 @@
 
 | File | Run |
 |---|---|
-| `docs/loadtest-llm-realistic-600-results.BEFORE-fix.json` | Jun 26 before-run |
-| `docs/loadtest-llm-realistic-600-results.json` | Jul 8 previous 600-user run (18 lanes) |
-| `docs/loadtest-llm-realistic-600random-c50-results.json` | Jul 10 current-run |
-| `docs/loadtest-llm-realistic-20random-0708-results.json` / `...-20random-results.json` | 20-user A/B (rollback drill) |
+| `docs/loadtest/results/loadtest-llm-realistic-600-results.BEFORE-fix.json` | Jun 26 before-run |
+| `docs/loadtest/results/loadtest-llm-realistic-600-results.json` | Jul 8 previous 600-user run (18 lanes) |
+| `docs/loadtest/results/loadtest-llm-realistic-600random-c50-results.json` | Jul 10 current-run |
+| `docs/loadtest/results/loadtest-llm-realistic-20random-0708-results.json` / `...-20random-results.json` | 20-user A/B (rollback drill) |
 | `docs/probe-oldbuild-0708-per-task.md` | Per-task failure evidence |

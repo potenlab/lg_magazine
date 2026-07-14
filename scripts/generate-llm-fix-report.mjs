@@ -6,8 +6,8 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 
-const OLD = JSON.parse(readFileSync(new URL("../docs/loadtest/loadtest-llm-600-results.json", import.meta.url)));
-const A = JSON.parse(readFileSync(new URL("../docs/loadtest/loadtest-llm-600-async-results.json", import.meta.url)));
+const OLD = JSON.parse(readFileSync(new URL("../docs/loadtest/results/loadtest-llm-600-results.json", import.meta.url)));
+const A = JSON.parse(readFileSync(new URL("../docs/loadtest/results/loadtest-llm-600-async-results.json", import.meta.url)));
 
 const GENERATED = "2026-06-22";
 const oldOk = (OLD.per_stage["600"].success_rate * 100).toFixed(1); // 6.5
@@ -176,7 +176,7 @@ function render(t) {
 }
 
 for (const [key, t] of Object.entries(L)) {
-  const out = new URL(`../docs/loadtest/llm_queue_fix_${key}.html`, import.meta.url);
+  const out = new URL(`../docs/loadtest/reports/llm_queue_fix_${key}.html`, import.meta.url);
   writeFileSync(out, render(t));
   console.log("HTML written:", out.pathname);
 }

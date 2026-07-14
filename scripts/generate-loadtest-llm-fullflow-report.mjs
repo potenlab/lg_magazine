@@ -11,7 +11,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 const R = JSON.parse(
-  readFileSync(new URL("../docs/loadtest/loadtest-llm-realistic-600-results.json", import.meta.url)),
+  readFileSync(new URL("../docs/loadtest/results/loadtest-llm-realistic-600-results.json", import.meta.url)),
 );
 
 // ── derived numbers ──────────────────────────────────────────────────────────
@@ -452,7 +452,7 @@ function render(t) {
 }
 
 for (const [key, t] of Object.entries(L)) {
-  const out = new URL(`../docs/loadtest/loadtest_llm_fullflow_600_${key}.html`, import.meta.url);
+  const out = new URL(`../docs/loadtest/reports/loadtest_llm_fullflow_600_${key}.html`, import.meta.url);
   writeFileSync(out, render(t));
   console.log("HTML written:", out.pathname);
 }

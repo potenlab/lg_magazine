@@ -127,8 +127,8 @@ glitch heals itself.
 
 | File | Run |
 |---|---|
-| `docs/loadtest-llm-realistic-600random-0708-c50-results.json` | July 8 build @ 50 lanes (this A/B) |
-| `docs/loadtest-llm-realistic-600random-c50-results.json` | July 10 build @ 50 lanes (this A/B) |
+| `docs/loadtest/results/loadtest-llm-realistic-600random-0708-c50-results.json` | July 8 build @ 50 lanes (this A/B) |
+| `docs/loadtest/results/loadtest-llm-realistic-600random-c50-results.json` | July 10 build @ 50 lanes (this A/B) |
 | `docs/loadtest-600-jun26-vs-jul10-comparison.md` | Companion: Jun 26 (no queue) vs Jul 10 |
 | `docs/loadtest-600-jul08-vs-jul10-comparison.md` | Companion: Jul 8 run (18 lanes) vs Jul 10 |
 | `docs/probe-oldbuild-0708-per-task.md` | Per-task failure evidence on the old build |

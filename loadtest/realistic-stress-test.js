@@ -67,8 +67,8 @@ const PAGES = ["/", "/deep", "/gem", "/mix", "/claude", "/gem_deep", "/mix_deep"
 //   JS/CSS (gz):  ~783 KB  — setup() discovers these dynamically
 //   Fonts (raw):  ~7.3 MB  — NanumSeongSirCe.ttf 4.5MB, Pretendard 2.0MB, RIDI 447KB
 //   Logo SVG:       ~30 KB
-//   Intro images: ~352 KB  — table.jpg + invite_letter.png (priority=true at envelope)
-//   Owl images:  ~3.6 MB   — 12 poses × ~300 KB, preloaded by V3App on mount
+//   Intro images: ~352 KB  — table.jpg + invite_letter.jpg (priority=true at envelope)
+//   Owl image:   ~0.3 MB   — 1 look-ahead pose (post-deploy lazy-load; was 12 = 3.6 MB)
 //   Train BGM:   ~2.7 MB   — kokoreli777 mp3 (lazy after first gesture)
 //   Paper SFX:     ~22 KB  — floraphonic paper foley (lazy after first gesture)
 //   TOTAL:       ~14.8 MB raw (JS/CSS gzip saves ~1.2 MB off the text assets)
@@ -80,23 +80,15 @@ const COLD_LOAD_ASSETS = [
 
   // Intro phase backgrounds (loaded priority=true in IntroScene.tsx at first render)
   "/vision_express/common/table.jpg",         // envelope + letter BG, 128 KB
-  "/vision_express/common/invite_letter.png", // envelope image, priority=true (PNG: transparent envelope edges so background shows through)
+  "/vision_express/common/invite_letter.jpg", // envelope image, priority=true, 12 KB
 
-  // Owl persona frames — ALL 12 unique poses preloaded eagerly on V3App mount
-  // (V3App.tsx useEffect loops over personaConcept.characterImages and fires
-  //  /_next/image?url=...&w=2048&q=75 for each; direct public paths used here)
+  // Owl persona frame — POST-DEPLOY (2026-05-29): V3App now lazy-loads owl
+  // poses BY SCENE with one-ahead look-ahead instead of warming all 12 on
+  // mount. On a cold visit (landing on the owl-less intro) only the single
+  // look-ahead pose warms — verified in-browser: just l-owl-02. The other 11
+  // frames stream in as the user advances through scenes, no longer part of
+  // the cold-load burst. (Was: all 12 preloaded eagerly, ~3.6 MB.)
   "/vision_express/v3/owl/l-owl-02.png",
-  "/vision_express/v3/owl/l-owl-03.png",
-  "/vision_express/v3/owl/l-owl-04.png",
-  "/vision_express/v3/owl/l-owl-05.png",
-  "/vision_express/v3/owl/l-owl-06.png",
-  "/vision_express/v3/owl/l-owl-09.png",
-  "/vision_express/v3/owl/l-owl-10.png",
-  "/vision_express/v3/owl/l-owl-11.png",
-  "/vision_express/v3/owl/l-owl-12.png",
-  "/vision_express/v3/owl/l-owl-13.png",
-  "/vision_express/v3/owl/l-owl-14.png",
-  "/vision_express/v3/owl/l-owl-15.png",
 
   // Audio — lazy (first user gesture), but included as representative first-visit cost
   "/vision_express/kokoreli777-inside-old-train-169418.mp3", // train BGM loop, 2.7 MB

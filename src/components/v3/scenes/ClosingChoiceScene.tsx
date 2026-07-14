@@ -129,7 +129,7 @@ export function ClosingChoiceScene({
           엘아울과 나를 돌아보는 여정, 어떠셨나요? <span className="not-italic text-[#8b7050]">(선택)</span>
         </h3>
         <p className="mt-2 text-[14px] leading-relaxed text-[#6a5a44]">
-          자유로운 소감을 남겨주세요.
+          플레이 소감, 제안사항 등 자유롭게 남겨주세요.
         </p>
         <textarea
           value={feedbackDraft}
@@ -140,7 +140,7 @@ export function ClosingChoiceScene({
             if (feedbackSaved) setFeedbackSaved(false);
           }}
           rows={5}
-          placeholder="예: 처음엔 어색했는데 마지막엔 따뜻하게 마무리됐어요."
+          placeholder="예: 나에 대해서 깊게 고민해보고 성장 방향을 잡을 수 있었어요."
           className="mt-4 block w-full resize-y rounded-md border border-[#b99b6b]/40 bg-[#fffaf0] px-4 py-3.5 text-[16px] leading-[1.7] text-[#3d2414] outline-none placeholder:text-[#b3a283] focus:border-[#8b7050]"
         />
         <div className="mt-3 flex items-center justify-end gap-3">

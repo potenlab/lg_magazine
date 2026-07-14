@@ -19,6 +19,13 @@ export type LLMMode = "gem" | "claude" | "mix" | null;
  *  result-page synthesis (e.g. Sonnet). Defaults to "heavy" (safe). */
 export type LLMTier = "light" | "heavy";
 
+/** 요청 안에서 실제로 나간 provider 호출 1건의 토큰 사용량. */
+export interface LLMUsageEntry {
+  provider: string;
+  promptTokens?: number;
+  completionTokens?: number;
+}
+
 interface ModeContext {
   mode: LLMMode;
   /** ?deep=1 query 토글. true면 reflection 태스크에 "격차·대비 강조" 지시 블록을
@@ -26,6 +33,8 @@ interface ModeContext {
   deep: boolean;
   /** 라이트/헤비 모델 라우팅. route.ts가 task별로 설정한다. */
   tier: LLMTier;
+  /** route.ts가 넘긴 사용량 수집 배열. prompts.ts의 ask/askSynthesis가 채운다. */
+  usageSink?: LLMUsageEntry[];
 }
 
 const storage = new AsyncLocalStorage<ModeContext>();
@@ -35,8 +44,14 @@ export function runWithMode<T>(
   deep: boolean,
   tier: LLMTier,
   fn: () => Promise<T>,
+  usageSink?: LLMUsageEntry[],
 ): Promise<T> {
-  return storage.run({ mode, deep, tier }, fn);
+  return storage.run({ mode, deep, tier, usageSink }, fn);
+}
+
+/** 현재 요청의 usageSink에 provider 호출 사용량을 기록 (sink 없으면 no-op). */
+export function recordUsage(entry: LLMUsageEntry): void {
+  storage.getStore()?.usageSink?.push(entry);
 }
 
 export function getMode(): LLMMode {

@@ -2,7 +2,7 @@
 // Each task wraps a single provider call with task-tuned prompts in L-OWL voice.
 
 import { getProvider, getProviderFor, type LLMResult } from "@/lib/llm/provider";
-import { getDeep } from "@/lib/llm/modeContext";
+import { getDeep, recordUsage } from "@/lib/llm/modeContext";
 import { extractIdentityTitle } from "@/lib/v3/scenes/template";
 import type { V3Session } from "@/lib/v3/scenes/types";
 import { ALL_TOOL_OPTIONS } from "@/lib/v3/toolOptions";
@@ -185,6 +185,7 @@ function collapseRepeats(text: string): string {
 async function ask(user: string, maxTokens = 300, system: string = EDITOR_PERSONA): Promise<LLMResult> {
   const provider = await getProvider();
   const res = await provider.generateText({ system, user, maxTokens });
+  recordUsage({ provider: provider.name, ...res.usage });
   return { ...res, text: collapseRepeats(res.text) };
 }
 
@@ -193,7 +194,9 @@ async function ask(user: string, maxTokens = 300, system: string = EDITOR_PERSON
 //     LLM_PROVIDER_SYNTHESIS=gemini 로 2-10/3-10 종합만 Gemini로 돌리기.
 async function askSynthesis(user: string, maxTokens = 2200, system: string = SYNTHESIS_PERSONA): Promise<LLMResult> {
   const provider = await getProviderFor("synthesis");
-  return provider.generateText({ system, user, maxTokens });
+  const res = await provider.generateText({ system, user, maxTokens });
+  recordUsage({ provider: provider.name, ...res.usage });
+  return res;
 }
 
 // 종합 태스크의 {"synthesis": "..."} 응답을 견고하게 파싱한다.

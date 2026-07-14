@@ -1746,22 +1746,64 @@ export async function v3GenerateJobTrendCards(input: {
   ]
 }`;
   const r = await ask(user, 600);
-  const text = r.text.trim();
-  const m = text.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error("v3GenerateJobTrendCards: no JSON in response");
-  const obj = JSON.parse(m[0]) as {
-    trend_cards?: Array<{ direction?: string; context?: string }>;
-  };
-  const cards = (obj.trend_cards ?? [])
-    .map((c) => ({
-      direction: (c.direction ?? "").trim(),
-      context: (c.context ?? "").trim(),
-    }))
-    .filter((c) => c.direction.length > 0);
+  const cards = parseTrendCards(r.text);
   if (cards.length < 3) {
     throw new Error(`v3GenerateJobTrendCards: expected 3 cards, got ${cards.length}`);
   }
   return { cards: cards.slice(0, 3) };
+}
+
+// trend_cards 응답 파서 — parseSynthesis/parseVisionDirectionTexts와 같은 사다리.
+// (1) 펜스 제거 + 정상 JSON.parse → (2) 실패 시 "direction"/"context" 값들만
+// 정규식으로 끄집어내는 loose 추출. 모델이 카드 오브젝트의 여는 `{`를 빼먹거나
+// 마지막 값의 닫는 따옴표를 잘라먹는 구조 슬립(관측상 이 태스크에서 상시 발생)에도
+// 개별 필드 값은 멀쩡하므로 3장을 살려낸다.
+function parseTrendCards(rawText: string): { direction: string; context: string }[] {
+  const text = rawText
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+  const m = text.match(/\{[\s\S]*\}/);
+  if (m) {
+    try {
+      const obj = JSON.parse(m[0]) as {
+        trend_cards?: Array<{ direction?: string; context?: string }>;
+      };
+      const cards = (obj.trend_cards ?? [])
+        .map((c) => ({
+          direction: (c.direction ?? "").trim(),
+          context: (c.context ?? "").trim(),
+        }))
+        .filter((c) => c.direction.length > 0);
+      if (cards.length >= 3) return cards;
+      console.warn(
+        `[v3 LLM][generateJobTrendCards] JSON parsed but only ${cards.length} cards; trying loose extraction.`,
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[v3 LLM][generateJobTrendCards] strict JSON.parse failed (${msg}); trying loose extraction.`,
+      );
+    }
+  }
+
+  // 값은 따옴표·줄바꿈·중괄호를 품지 않는 한 문장이므로(persona가 수사·인용 금지)
+  // 닫는 따옴표가 잘려나가도 다음 구조 문자 직전까지를 값으로 취한다.
+  // ponytail: 값 안에 이스케이프된 따옴표가 오면 거기서 잘림 — 관측상 미발생, 발생 시 sibling들처럼 escape-aware 정규식으로 승급.
+  const pick = (key: string): string[] => {
+    const out: string[] = [];
+    const re = new RegExp(`"${key}"\\s*:\\s*"([^"\\n}]*)`, "g");
+    for (let mm = re.exec(text); mm; mm = re.exec(text)) {
+      const v = mm[1].replace(/\\+$/, "").trim();
+      if (v) out.push(v);
+    }
+    return out;
+  };
+  const directions = pick("direction");
+  const contexts = pick("context");
+  return directions.map((direction, i) => ({ direction, context: contexts[i] ?? "" }));
 }
 
 export async function v3GenerateTimeHorizon(input: {

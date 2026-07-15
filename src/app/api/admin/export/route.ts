@@ -8,6 +8,13 @@ import { aggregateLogins } from "@/lib/admin/loginStats";
 
 export const runtime = "nodejs";
 
+// DB 타임스탬프는 UTC(SYSUTCDATETIME) — 엑셀 셀에는 KST 로 변환해 넣는다.
+// sv-SE 로케일 = "YYYY-MM-DD HH:mm:ss" (정렬 가능, 엑셀 인식 OK).
+function kst(iso: string | null | undefined): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleString("sv-SE", { timeZone: "Asia/Seoul" });
+}
+
 function durationMin(startIso: string, endIso: string | null): number | "" {
   if (!startIso || !endIso) return "";
   const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
@@ -55,10 +62,10 @@ export async function GET(req: Request) {
         이름: s.name || r.userName || "",
         직무: s.job || r.job || "",
         상태: r.status === "completed" ? "완료" : "진행중",
-        시작: r.createdAt,
-        완료: r.completedAt ?? "",
+        시작: kst(r.createdAt),
+        완료: kst(r.completedAt),
         "소요(분)": durationMin(r.createdAt, r.completedAt ?? r.updatedAt),
-        "마지막 업데이트": r.updatedAt,
+        "마지막 업데이트": kst(r.updatedAt),
         "이탈 지점": r.lastSceneId ?? "",
         sessionId: r.sessionId,
 
@@ -113,14 +120,14 @@ export async function GET(req: Request) {
     이메일: u.email ?? "",
     이름: u.name ?? "",
     "로그인 횟수": u.count,
-    "첫 로그인": u.firstLogin,
-    "마지막 로그인": u.lastLogin,
+    "첫 로그인": kst(u.firstLogin),
+    "마지막 로그인": kst(u.lastLogin),
   }));
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(loginRows), "로그인");
 
   const buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = kst(new Date().toISOString()).slice(0, 10);
   const filename = cohortFilter
     ? `magazine_${cohortFilter}_${today}.xlsx`
     : `magazine_${today}.xlsx`;

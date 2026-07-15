@@ -3,7 +3,7 @@
 // This is the MSSQL drop-in replacement for the Supabase/PostgREST version that
 // lives on `main`. It keeps the EXACT same exported signatures so that
 // `src/app/api/v3/sessions/route.ts` and the admin page never need to change:
-//   - upsertV3Session(session)        → MERGE on session_id
+//   - upsertV3Session(session, userid) → MERGE on session_id (owner-guarded, W5.2)
 //   - listV3Sessions()                → SELECT TOP 200 ... ORDER BY updated_at DESC
 //   - deleteV3Sessions()              → DELETE all
 //   - deleteV3Session(sessionId)      → DELETE one
@@ -16,7 +16,7 @@
 //   MSSQL_SERVER, MSSQL_PORT(=1433), MSSQL_DATABASE, MSSQL_USER, MSSQL_PASSWORD,
 //   MSSQL_ENCRYPT(=true), MSSQL_TRUST_SERVER_CERT(=true)
 //
-// Schema: supabase/migrations/v3_sessions.mssql.sql
+// Schema: supabase/migrations/v3_sessions.mssql.sql (+ v3_sessions_userid.mssql.sql)
 
 import sql from "mssql";
 import type { V3Session } from "@/lib/v3/scenes/types";
@@ -25,6 +25,7 @@ const TABLE = "v3_sessions";
 
 export interface V3SessionRecord {
   sessionId: string;
+  userid: string | null;
   userName: string | null;
   job: string | null;
   lastSceneId: string | null;
@@ -38,6 +39,7 @@ export interface V3SessionRecord {
 interface V3SessionRow {
   id: string;
   session_id: string;
+  userid: string | null;
   user_name: string | null;
   job: string | null;
   last_scene_id: string | null;
@@ -46,6 +48,14 @@ interface V3SessionRow {
   created_at: Date | string;
   updated_at: Date | string;
   completed_at: Date | string | null;
+}
+
+/** W5.2: 다른 사용자가 소유한 sessionId 로의 upsert 시도. Route 에서 403 으로 변환. */
+export class SessionOwnershipError extends Error {
+  constructor(sessionId: string) {
+    super(`session ${sessionId} is owned by another user`);
+    this.name = "SessionOwnershipError";
+  }
 }
 
 /** True when the MSSQL env vars are present. Route handlers check this first and
@@ -106,6 +116,7 @@ function iso(value: Date | string | null): string | null {
 function mapRow(row: V3SessionRow): V3SessionRecord {
   return {
     sessionId: row.session_id,
+    userid: row.userid ?? null,
     userName: row.user_name,
     job: row.job,
     lastSceneId: row.last_scene_id,
@@ -125,7 +136,10 @@ function inferStatus(s: V3Session): "in_progress" | "completed" {
   return hasArticles && hasVision ? "completed" : "in_progress";
 }
 
-export async function upsertV3Session(session: V3Session): Promise<V3SessionRecord> {
+export async function upsertV3Session(
+  session: V3Session,
+  userid: string | null,
+): Promise<V3SessionRecord> {
   if (!session.sessionId) {
     throw new Error("upsertV3Session: session.sessionId is required");
   }
@@ -133,9 +147,14 @@ export async function upsertV3Session(session: V3Session): Promise<V3SessionReco
   const status = inferStatus(session);
   const pool = await getPool();
 
+  // W5.2: 소유권 가드 — 기존 행의 userid 가 NULL(레거시)이면 이번 요청자가
+  // 소유권을 가져가고, 다른 사용자 소유면 UPDATE 분기가 실행되지 않아
+  // OUTPUT 이 빈 결과 → SessionOwnershipError. @userid 가 NULL 인 경우
+  // (시크릿 미설정 프리뷰 env)는 기존 동작 유지하되 소유자는 바꾸지 않는다.
   const result = await pool
     .request()
     .input("session_id", sql.NVarChar(255), session.sessionId)
+    .input("userid", sql.NVarChar(255), userid)
     .input("user_name", sql.NVarChar(255), session.name || null)
     .input("job", sql.NVarChar(255), session.job || null)
     .input("last_scene_id", sql.NVarChar(255), session.lastSceneId || null)
@@ -147,19 +166,23 @@ export async function upsertV3Session(session: V3Session): Promise<V3SessionReco
       MERGE ${TABLE} WITH (HOLDLOCK) AS target
       USING (SELECT @session_id AS session_id) AS src
         ON target.session_id = src.session_id
-      WHEN MATCHED THEN UPDATE SET
+      WHEN MATCHED AND (target.userid IS NULL OR @userid IS NULL OR target.userid = @userid)
+        THEN UPDATE SET
+        userid = COALESCE(@userid, target.userid),
         user_name = @user_name, job = @job, last_scene_id = @last_scene_id,
         status = @status, data = @data, updated_at = @updated_at,
         completed_at = @completed_at
       WHEN NOT MATCHED THEN INSERT
-        (session_id, user_name, job, last_scene_id, status, data, completed_at)
-        VALUES (@session_id, @user_name, @job, @last_scene_id, @status, @data, @completed_at)
-      OUTPUT inserted.id, inserted.session_id, inserted.user_name, inserted.job,
+        (session_id, userid, user_name, job, last_scene_id, status, data, completed_at)
+        VALUES (@session_id, @userid, @user_name, @job, @last_scene_id, @status, @data, @completed_at)
+      OUTPUT inserted.id, inserted.session_id, inserted.userid, inserted.user_name, inserted.job,
              inserted.last_scene_id, inserted.status, inserted.data,
              inserted.created_at, inserted.updated_at, inserted.completed_at;
     `);
 
-  return mapRow(result.recordset[0] as V3SessionRow);
+  const row = result.recordset[0] as V3SessionRow | undefined;
+  if (!row) throw new SessionOwnershipError(session.sessionId);
+  return mapRow(row);
 }
 
 export async function listV3Sessions(): Promise<V3SessionRecord[]> {

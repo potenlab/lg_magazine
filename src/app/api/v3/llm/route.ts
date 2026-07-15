@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { validateBody } from "@/lib/llmInput";
 import {
   runWithMode,
@@ -9,8 +8,7 @@ import {
 } from "@/lib/llm/modeContext";
 import { LlmBusyError } from "@/lib/llm/providers/aistudio";
 import { enqueue } from "@/lib/llm/jobQueue";
-import { QRIUS_SESSION_COOKIE, readQriusConfig } from "@/lib/qrius/config";
-import { verifySession } from "@/lib/qrius/session";
+import { currentUserid } from "@/lib/qrius/currentUser";
 import { isMssqlConfigured } from "@/lib/v3/session/serverStorage";
 import { recordLlmUsage } from "@/lib/admin/llmUsage";
 
@@ -125,19 +123,6 @@ async function dispatch(task: Task, payload: Record<string, unknown>): Promise<u
       return v3WriteCoverHeadline(payload as Parameters<typeof v3WriteCoverHeadline>[0]);
     default:
       throw new Error(`unknown task: ${task as string}`);
-  }
-}
-
-// qrius 세션 쿠키에서 userid 추출. 시크릿 미설정(프리뷰 env)이나 무효 토큰이면
-// null — 사용량 로그의 귀속(attribution)용이라 실패해도 요청은 그대로 진행.
-async function currentUserid(): Promise<string | null> {
-  try {
-    const token = (await cookies()).get(QRIUS_SESSION_COOKIE)?.value;
-    if (!token) return null;
-    const { sessionSecret } = readQriusConfig();
-    return (await verifySession(token, sessionSecret))?.userid ?? null;
-  } catch {
-    return null;
   }
 }
 

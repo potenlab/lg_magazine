@@ -905,6 +905,25 @@ JSON 형태로만 출력:
   }
 }
 
+// 4-BEAT 종합을 BEAT별 병렬 호출 4개로 쪼갠다. 출력 토큰 총량은 단일 호출과
+// 같지만 wall-clock 은 가장 느린 한 장(~8-12s)으로 준다 (기존 단일 호출
+// 25-37s). 게이트 점유는 슬롯×초 기준 거의 동일(1×25s ≈ 4×7s)이라 피크
+// 처리량은 그대로 — 단, 잡큐(LLM_QUEUE_CONCURRENCY)와 게이트
+// (AISTUDIO_MAX_CONCURRENCY)의 1:1 전제가 종합 태스크에서 1:4 가 되므로
+// 포화 시엔 게이트 대기열이 버스트를 흡수한다 (jobQueue.ts 주석 참고).
+// 한 장이라도 파싱 실패로 비면 "" 반환 → 호출부의 기존 stub 폴백 경로.
+async function askSynthesisBeats(task: string, beatPrompts: string[]): Promise<string> {
+  const texts = await Promise.all(
+    beatPrompts.map(async (user, i) => {
+      const r = await askSynthesis(user, 700);
+      // 단일 BEAT 출력에 줄바꿈이 섞이면 조립 후 BEAT 경계(\n)가 깨진다 — 공백으로 접는다.
+      return parseSynthesis(r.text, `${task}#beat${i + 1}`).replace(/\s*\n+\s*/g, " ").trim();
+    }),
+  );
+  if (texts.some((t) => !t)) return "";
+  return texts.join("\n");
+}
+
 export async function v3SynthesizeStrength(input: {
   name: string;
   flowExperience1: string;
@@ -918,7 +937,7 @@ export async function v3SynthesizeStrength(input: {
   const valueLines = input.selectedValues
     .map((v, i) => `${i + 1}. ${v.word}${v.meaning ? ` — ${v.meaning}` : ""}`)
     .join("\n");
-  const user = `${input.name}님이 들려준 다섯 가지 재료입니다.
+  const materials = `${input.name}님이 들려준 다섯 가지 재료입니다.
 
 [1. Chapter 1 — 몰입했던 두 순간]
 경험 A: ${input.flowExperience1 || "—"}
@@ -937,28 +956,23 @@ ${input.helpRequests || "—"}
 ${input.strengthCommonAsk || "—"}
 
 [4. Chapter 2 — 가까운 사람이 본 ${input.name}님]
-${input.othersDescription || "—"}
+${input.othersDescription || "—"}`;
 
-당신은 매거진 STORY의 편집장 **엘아울(L-OWL)**이에요.
-위 네 재료로 ${input.name}님의 강점 포트레이트를 **4개의 BEAT**로 정리해요.
-이 매거진은 ${input.name}님이 읽고 무릎을 탁 칠 만한, 따뜻하지만 날카로운 엘아울의 ~어요체여야 해요.
+  const beatMap = `[BEAT 지도 — 매거진 전체 구성. 다른 BEAT가 맡은 주재료를 이 BEAT의 주재료로 쓰지 말 것]
+1) 두 장면을 잇는 것 — 두 장면을 관통하는 공통 행동·결정 방식
+2) 나의 강점 — 주변의 도움 요청이 가리키는 ${input.name}님만의 강점
+3) 타인의 시선 — 가까운 사람의 말과 자기 인식이 만나는 지점
+4) 가치의 뿌리 — 선택한 가치 단어들이 행동·결정의 이유가 되는 방식`;
 
-[출력 형식 — JSON 한 객체만, BEAT 4개 모두 본문 필수]
-{"synthesis": "[HEADLINE: 헤드라인1] 본문1\\n[HEADLINE: 헤드라인2] 본문2\\n[HEADLINE: 헤드라인3] 본문3\\n[HEADLINE: 헤드라인4] 본문4"}
+  const beatSpecs = [
+    `1) **두 장면을 잇는 것** — ${input.name}님이 들려준 두 장면을 관통하는 공통된 **행동/결정 방식**. ${input.name}님이 스스로 짚은 공통점("${input.commonPattern || "—"}")을 출발점으로 삼되, 그걸 그대로 받아쓰지 말고 두 장면의 구체 사건으로 한 단계 더 또렷하게 증명할 것. 본문에 "Chapter 1" 같은 내부 용어 절대 금지. "${input.name}님이 들려준 두 장면" 식으로 자연스럽게 호명.`,
+    `2) **나의 강점** — ${input.helpRequests?.trim() ? `주변에서 ${input.name}님에게 도움을 요청해온 **원본 답변(위 [3] 항목)**을 정면으로 다룰 것. 그 답변에 나오는 **구체 인물·상황·요청 내용 중 최소 하나**를 짧게 짚은 뒤, 그 사건이 두 장면(Ch1)과 어떻게 같은 강점을 가리키는지 한 단계 더 해석해서 ${input.name}님만의 강점 한 줄로 종합. 추출된 공통 결("${input.strengthCommonAsk || "—"}")은 보조 단서로만 쓰고, 본문은 원본 답변의 디테일에서 시작할 것. **"지속적으로/반복해서 사람들이 들고 오는" 패턴이 보이면 그 지속성 자체를 강점의 근거로 명시할 것.**` : `두 장면에서 ${input.name}님이 자주 맡았던 역할·자세에서 길어 올린, ${input.name}님만의 강점 한 줄. 본문은 두 장면의 구체 사건으로 첫 문장부터 바로 시작할 것. 입력에 없는 재료(예: "도움 요청 사례", "기록", "주변에서의 요청" 등)는 어떤 형태로도 본문에 언급·암시 절대 금지.`}`,
+    `3) **타인의 시선** — ${input.othersDescription?.trim() ? `가까운 사람의 말("${input.othersDescription}")과 ${input.name}님이 스스로 들려준 모습이 만나는 지점.` : `두 장면 속에서 주변 인물(동료·참가자·친구)이 ${input.name}님을 어떻게 봤을지 구체 사건에서 자연스럽게 길어 올린, 타인의 시선과 ${input.name}님의 자기 인식이 만나는 지점. 본문은 두 장면의 구체 사건으로 첫 문장부터 바로 시작할 것. 입력에 없는 재료(예: "가까운 사람의 말", "타인의 묘사", "주변의 평가" 등)는 어떤 형태로도 본문에 언급·암시 절대 금지.`}`,
+    `4) **가치의 뿌리** — 선택한 가치 단어들이 ${input.name}님의 행동·결정의 어떤 이유가 되는지. **${input.name}님이 고른 ${input.selectedValues.length}개 가치(${input.selectedValues.map((v) => `'${v.word}'`).join(", ")})는 본문에 반드시 모두 명시적으로 인용할 것** — 일부만 언급하면 BEAT 4 실패.`,
+  ];
 
-⚠️ **절대 규칙 — BEAT 4개를 반드시 모두 채울 것**:
-- 4개 미만은 출력 실패. 헤드라인만 있고 본문이 없는 BEAT는 출력 실패.
-- 헤드라인과 본문은 **같은 줄**에 \`[HEADLINE: …] 본문…\` 형식으로 붙여 쓸 것. 둘 사이 \\n 절대 금지.
-- 한 BEAT의 입력 재료(${"strengthCommonAsk"}, ${"othersDescription"} 등)가 비어 있으면 **다른 재료(두 장면·가치 단어·commonPattern)에서 끌어와 보완**해 본문을 채울 것. **재료·답변·데이터의 부재나 빈 상태를 본문에서 언급·암시하는 모든 표현 절대 금지** — "비어 있지만", "없지만", "부족하지만", "데이터가 없다/부족하다", "응답이 없지만", "정보가 부족해" 등 어떤 변형도 금지. 빈 경우엔 그 사실을 표 내지 말고 곧장 다른 재료로 본문을 시작할 것.
-
-[BEAT 순서 — 반드시 이 순서대로, 4개 모두 본문 필수]
-1) **두 장면을 잇는 것** — ${input.name}님이 들려준 두 장면을 관통하는 공통된 **행동/결정 방식**. ${input.name}님이 스스로 짚은 공통점("${input.commonPattern || "—"}")을 출발점으로 삼되, 그걸 그대로 받아쓰지 말고 두 장면의 구체 사건으로 한 단계 더 또렷하게 증명할 것. 본문에 "Chapter 1" 같은 내부 용어 절대 금지. "${input.name}님이 들려준 두 장면" 식으로 자연스럽게 호명.
-2) **나의 강점** — ${input.helpRequests?.trim() ? `주변에서 ${input.name}님에게 도움을 요청해온 **원본 답변(위 [3] 항목)**을 정면으로 다룰 것. 그 답변에 나오는 **구체 인물·상황·요청 내용 중 최소 하나**를 짧게 짚은 뒤, 그 사건이 두 장면(Ch1)과 어떻게 같은 강점을 가리키는지 한 단계 더 해석해서 ${input.name}님만의 강점 한 줄로 종합. 추출된 공통 결("${input.strengthCommonAsk || "—"}")은 보조 단서로만 쓰고, 본문은 원본 답변의 디테일에서 시작할 것. **"지속적으로/반복해서 사람들이 들고 오는" 패턴이 보이면 그 지속성 자체를 강점의 근거로 명시할 것.**` : `두 장면에서 ${input.name}님이 자주 맡았던 역할·자세에서 길어 올린, ${input.name}님만의 강점 한 줄. 본문은 두 장면의 구체 사건으로 첫 문장부터 바로 시작할 것. 입력에 없는 재료(예: "도움 요청 사례", "기록", "주변에서의 요청" 등)는 어떤 형태로도 본문에 언급·암시 절대 금지.`}
-3) **타인의 시선** — ${input.othersDescription?.trim() ? `가까운 사람의 말("${input.othersDescription}")과 ${input.name}님이 스스로 들려준 모습이 만나는 지점.` : `두 장면 속에서 주변 인물(동료·참가자·친구)이 ${input.name}님을 어떻게 봤을지 구체 사건에서 자연스럽게 길어 올린, 타인의 시선과 ${input.name}님의 자기 인식이 만나는 지점. 본문은 두 장면의 구체 사건으로 첫 문장부터 바로 시작할 것. 입력에 없는 재료(예: "가까운 사람의 말", "타인의 묘사", "주변의 평가" 등)는 어떤 형태로도 본문에 언급·암시 절대 금지.`}
-4) **가치의 뿌리** — 선택한 가치 단어들이 ${input.name}님의 행동·결정의 어떤 이유가 되는지. **${input.name}님이 고른 ${input.selectedValues.length}개 가치(${input.selectedValues.map((v) => `'${v.word}'`).join(", ")})는 본문에 반드시 모두 명시적으로 인용할 것** — 일부만 언급하면 BEAT 4 실패.
-
-[헤드라인 규칙 — 가장 중요]
-- 각 BEAT는 반드시 \`[HEADLINE: ...]\`로 시작.
+  const rules = `[헤드라인 규칙 — 가장 중요]
+- 반드시 \`[HEADLINE: ...]\`로 시작.
 - 헤드라인은 **잡지 표지 카피체** — 짧고(15~25자) 가슴을 치는 한 줄.
 - 예시: "판을 짜고 결과를 만드는 사람", "막막함 속에서 답을 찾아내는 자석", "안과 밖이 같은 곳을 가리키는 항해사", "${input.name}님을 움직이는 단단한 축"
 - 헤드라인은 ${input.name}님 고유의 정체성을 한 단어 비유로 종합 (사람·자석·항해사·등대·기획자·디자이너 등).
@@ -969,7 +983,7 @@ ${input.othersDescription || "—"}
   · "${input.name}님은 ~한 사람인 것 같아요"
   · "${input.name}님의 그 ~이 곧 ~이었던 거 아닐까요"
   · "~할 때 직성이 풀리는 분처럼 보여요" 같이 비춰주는 매거진 톤
-- ${input.name}님 호칭을 적극 사용 (BEAT 4장 전체에서 3~6회 자연스럽게). "당신" 단어 사용 금지 — 매거진 한 호의 주인공감을 ${input.name}님 호칭으로 살릴 것.
+- ${input.name}님 호칭을 이 BEAT 안에서 1~2회 자연스럽게 사용. "당신" 단어 사용 금지 — 매거진 한 호의 주인공감을 ${input.name}님 호칭으로 살릴 것.
 - **~입니다/~습니다 단정체 절대 금지**. "~인 것 같아요", "~처럼 보여요", "~로 들렸어요", "~네요", "~군요" 같은 엘아울의 ~어요체만 사용.
 - **내부 용어 금지**: "Chapter 1", "Chapter 2", "Ch1", "Ch2", "두 몰입 순간" 같은 우리 framing 어휘는 본문에 쓰지 말 것. 사용자 시점의 자연어("들려준 두 장면", "그때 그 순간들", "주변에서 들고 온 일들")로 풀어쓸 것.
 
@@ -991,18 +1005,39 @@ ${input.othersDescription || "—"}
 - **명사형 종결 금지** — Bold 안이든 본문 문장이든 "~하는 것.", "~만들어내는 것.", "~지키는 것." 같이 명사 "것" + 마침표로 끊지 말 것. 항상 "~하고 있어요", "~인 것 같아요", "~네요" 등 ~어요체 완결 어미로 마무리할 것.
 
 [길이·구조 — 매우 중요]
-- 각 BEAT 본문(헤드라인 제외)은 **3~5 문장, 200~320자**. 4장 합쳐 **900~1200자**.
-- **본문 내부에서 줄바꿈 절대 금지**. 헤드라인과 본문 사이도 줄바꿈 금지 — 한 BEAT는 한 줄: \`[HEADLINE: …] 본문…\`
-- BEAT 사이만 \`\\n\` 한 번으로 구분. 즉 전체 문자열에는 정확히 \`\\n\` 3개만 등장.
-- 각 BEAT는 다른 단어로 시작 (같은 도입 반복 금지).
+- 본문(헤드라인 제외)은 **3~5 문장, 200~320자**.
+- **본문 내부에서 줄바꿈 절대 금지**. 헤드라인과 본문 사이도 줄바꿈 금지 — 출력 전체가 한 줄: \`[HEADLINE: …] 본문…\`
+- 본문 첫 문장은 이 BEAT 주재료의 구체 사건으로 바로 시작할 것.
 
 [일반 금칙어]
 - "정말", "참", "굉장히", "대단", "훌륭", "멋진", "완벽", "최고", "특별", 이모지.
 - 카드 번호(01, 02), 카테고리 라벨("두 몰입 순간" 등)은 본문에 절대 포함 금지 — 라벨/번호는 UI가 따로 붙임.
-- 헤드라인은 따옴표로 감싸지 말 것. "[HEADLINE: 판을 짜고 결과를 만드는 사람]" O / "[HEADLINE: "판을 짜고…"]" X.`;
-  const r = await askSynthesis(user, 2200);
+- 헤드라인은 따옴표로 감싸지 말 것. "[HEADLINE: 판을 짜고 결과를 만드는 사람]" O / "[HEADLINE: "판을 짜고…"]" X.
+
+[출력 형식 — JSON 한 객체만, 이 BEAT 한 장만]
+{"synthesis": "[HEADLINE: 헤드라인] 본문…"}
+
+⚠️ **절대 규칙**:
+- 헤드라인만 있고 본문이 없으면 출력 실패. 다른 BEAT가 맡은 내용은 쓰지 말 것.
+- 이 BEAT의 주재료가 비어 있으면 **다른 재료(두 장면·가치 단어·공통점)에서 끌어와 보완**해 본문을 채울 것. **재료·답변·데이터의 부재나 빈 상태를 본문에서 언급·암시하는 모든 표현 절대 금지** — "비어 있지만", "없지만", "부족하지만", "데이터가 없다/부족하다", "응답이 없지만", "정보가 부족해" 등 어떤 변형도 금지. 빈 경우엔 그 사실을 표 내지 말고 곧장 다른 재료로 본문을 시작할 것.`;
+
+  const beatPrompts = beatSpecs.map(
+    (spec, i) => `${materials}
+
+당신은 매거진 STORY의 편집장 **엘아울(L-OWL)**이에요.
+위 재료로 ${input.name}님의 강점 포트레이트 매거진(4 BEAT) 중 **BEAT ${i + 1} 한 장만** 작성해요.
+이 매거진은 ${input.name}님이 읽고 무릎을 탁 칠 만한, 따뜻하지만 날카로운 엘아울의 ~어요체여야 해요.
+
+${beatMap}
+
+[이번에 작성할 BEAT ${i + 1} 스펙]
+${spec}
+
+${rules}`,
+  );
+
   // Soft fallback (empty) so the scene never blocks — caller falls back to stub.
-  return { synthesis: parseSynthesis(r.text, "synthesizeStrength") };
+  return { synthesis: await askSynthesisBeats("synthesizeStrength", beatPrompts) };
 }
 
 export async function v3SynthesizeGrowthVision(input: {
@@ -1028,7 +1063,7 @@ export async function v3SynthesizeGrowthVision(input: {
   const valueLines = input.selectedValues
     .map((v, i) => `${i + 1}. ${v.word}${v.meaning ? ` — ${v.meaning}` : ""}`)
     .join("\n");
-  const user = `${input.name}님이 ch1~ch3에서 들려준 모든 재료입니다. 편집장(엘 아울) 시선으로 ${input.name}님이 어떤 방향으로 성장하고 싶은 사람인지를 매거진 한 호처럼 통합 정리해주세요.
+  const context = `${input.name}님이 ch1~ch3에서 들려준 모든 재료입니다. 편집장(엘 아울) 시선으로 ${input.name}님이 어떤 방향으로 성장하고 싶은 사람인지를 매거진 한 호처럼 통합 정리해주세요.
 
 [Chapter 1 — 몰입의 두 순간]
 경험 A: ${input.flowExperience1 || "—"}
@@ -1097,15 +1132,6 @@ BEAT 04 · 종착지의 풍경
 - 핵심: 매거진의 클라이맥스. "${input.name}님이 닿고 싶은 풍경은…" 으로 시작해서 엘아울 ~어요체 피날레.
 - 이 BEAT에서만 '${input.topValue || "가치"}'(가장 소중한 가치)와 '${input.identityName || "정체성"}'(이름) echo 가능 — "${input.name}님을 움직이는 '${input.topValue || "가치"}'가 이 종착지의 이유인 것 같아요" 식.
 
-[출력 형식 — JSON 한 객체만, BEAT 4개 모두 본문 필수]
-{"synthesis": "[HEADLINE: 헤드라인1] 본문1\\n[HEADLINE: 헤드라인2] 본문2\\n[HEADLINE: 헤드라인3] 본문3\\n[HEADLINE: 헤드라인4] 본문4"}
-
-⚠️ **절대 규칙 — BEAT 4개를 반드시 모두 본문까지 채울 것**:
-- 헤드라인만 있고 본문이 비어 있는 BEAT는 출력 실패.
-- 헤드라인과 본문은 **같은 줄**에 \`[HEADLINE: …] 본문…\` 형식. 둘 사이 \\n 절대 금지.
-- 입력 재료(alreadyDoing, blocker 등)가 비어 있어도 Ch1 두 몰입 경험과 Ch2 강점 종합에서 재료를 끌어와 본문을 채울 것. "데이터 없음" 같은 메타 코멘트 본문 금지.
-- 전체 문자열에는 정확히 \\n 3개만 등장 (BEAT 사이 구분용).
-
 [헤드라인 규칙]
 - 각 BEAT는 반드시 \`[HEADLINE: ...]\`로 시작.
 - 헤드라인은 **잡지 표지 카피체** — 짧고(15~25자) 가슴을 치는 한 줄.
@@ -1119,7 +1145,7 @@ BEAT 04 · 종착지의 풍경
 
 [톤 규칙 — 엘아울 ~어요체]
 - **발견의 시선 + ${input.name}님 호칭**: "${input.name}님은 ~한 사람인 것 같아요", "${input.name}님의 ~가 곧 ~인 거 아닐까요", "이 안개는 ~로 걷힐 것 같아요".
-- ${input.name}님 호칭을 적극 사용 (BEAT 4장 전체에서 3~6회). "당신" 단어 사용 금지 — 매거진 한 호의 주인공감을 ${input.name}님 호칭으로 살릴 것.
+- ${input.name}님 호칭을 이 BEAT 안에서 1~2회 자연스럽게 사용. "당신" 단어 사용 금지 — 매거진 한 호의 주인공감을 ${input.name}님 호칭으로 살릴 것.
 - **~입니다/~습니다 단정체 절대 금지**. "~인 것 같아요", "~처럼 보여요", "~로 들렸어요", "~네요", "~군요" 같은 엘아울의 ~어요체만 사용.
 
 [구체 ground 정책 — 가장 중요]
@@ -1149,19 +1175,32 @@ BEAT 04 · 종착지의 풍경
 - 내부 framing: "Chapter 1/2/3", "Ch1/2/3", "두 몰입 순간", "5 BEAT" 같은 우리 어휘 본문 금지.
 
 [길이·구조]
-- 각 BEAT 본문(헤드라인 제외)은 **3~5 문장, 200~320자**. 4장 합쳐 **900~1200자**.
-- 본문 내부에 줄바꿈 금지 — 전체가 \`\\n\` 한 번만으로 BEAT 구분.
-- 각 BEAT는 다른 단어로 시작.
+- 본문(헤드라인 제외)은 **3~5 문장, 200~320자**.
+- 본문 내부 줄바꿈 절대 금지. 헤드라인과 본문 사이도 줄바꿈 금지 — 출력 전체가 한 줄.
+- 본문 첫 문장은 이 BEAT 주재료의 구체 사건으로 바로 시작할 것.
 
 [일반 금칙어]
 - "정말", "참", "굉장히", "대단", "훌륭", "멋진", "완벽", "최고", "특별", 이모지.
 - 카드 번호(01, 02), 카테고리 라벨은 본문에 절대 포함 금지 — UI가 따로 붙임.
-- 헤드라인 자체를 따옴표로 감싸지 말 것.`;
+- 헤드라인 자체를 따옴표로 감싸지 말 것.
+
+[출력 형식 — JSON 한 객체만, 이 BEAT 한 장만]
+{"synthesis": "[HEADLINE: 헤드라인] 본문…"}
+
+⚠️ **절대 규칙**:
+- 헤드라인만 있고 본문이 없으면 출력 실패. 헤드라인과 본문은 **같은 줄** — 출력 어디에도 줄바꿈이 없어야 함.
+- 다른 BEAT가 맡은 주재료는 이 본문의 주재료로 쓰지 말 것.
+- 이 BEAT의 입력 재료가 비어 있어도 Ch1 두 몰입 경험과 Ch2 강점 종합에서 재료를 끌어와 본문을 채울 것. "데이터 없음" 같은 메타 코멘트 본문 금지.`;
   // EDITORIAL_PROSE_CONSTRAINT(헤지 어미 강제·사용자 표현 차용 금지)를 더 이상
   // 붙이지 않는다 — 이 종합 BEAT의 단언체·구체 차용 요구와 정면 충돌해 출력을
   // 일반론으로 끌어내렸다. SYNTHESIS_PERSONA가 톤·조사 규칙을 대신 담당.
-  const r = await askSynthesis(user, 2400);
-  return { synthesis: parseSynthesis(r.text, "synthesizeGrowthVision") };
+  const beatPrompts = [1, 2, 3, 4].map(
+    (n) => `${context}
+
+[이번에 작성할 부분 — BEAT 0${n} 한 장만]
+위 [Ch3 재료 → BEAT 매핑]의 **BEAT 0${n}** 스펙만 따라 그 한 장을 작성하세요. 나머지 BEAT 는 다른 지면이 맡아요.`,
+  );
+  return { synthesis: await askSynthesisBeats("synthesizeGrowthVision", beatPrompts) };
 }
 
 export async function v3ExtractKeyword(input: { answer: string; rule: "flow" | "common" | "future" }): Promise<string> {

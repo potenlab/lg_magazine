@@ -1,20 +1,24 @@
-// Server-side storage for v3 sessions — Supabase upsert/list/delete.
-// Mirrors the v2 supabaseSubmissions.ts pattern but on a separate table so
-// v2/v3 schemas stay cleanly isolated.
+// Server-side storage for v3 sessions — MSSQL (production branch).
 //
-// Table: v3_sessions  (see supabase/migrations/v3_sessions.sql
-//                       + v3_sessions_userid.sql for the W5.2 owner column)
-//   session_id      TEXT UNIQUE NOT NULL
-//   userid          TEXT              -- W5.2 세션 소유자 (qrius userid)
-//   user_name       TEXT
-//   job             TEXT
-//   last_scene_id   TEXT
-//   status          TEXT NOT NULL DEFAULT 'in_progress'
-//   data            JSONB NOT NULL    -- the full V3Session blob
-//   created_at      TIMESTAMPTZ DEFAULT NOW()
-//   updated_at      TIMESTAMPTZ DEFAULT NOW()
-//   completed_at    TIMESTAMPTZ
+// This is the MSSQL drop-in replacement for the Supabase/PostgREST version that
+// lives on `main`. It keeps the EXACT same exported signatures so that
+// `src/app/api/v3/sessions/route.ts` and the admin page never need to change:
+//   - upsertV3Session(session, userid) → MERGE on session_id (owner-guarded, W5.2)
+//   - listV3Sessions()                → SELECT TOP 200 ... ORDER BY updated_at DESC
+//   - deleteV3Sessions()              → DELETE all
+//   - deleteV3Session(sessionId)      → DELETE one
+//   - isMssqlConfigured()             → renamed from main's isSupabaseConfigured
+//
+// The `data` JSONB column on Postgres becomes NVARCHAR(MAX) holding JSON text;
+// we JSON.stringify on write and JSON.parse on read.
+//
+// Env vars (set in .env on the server):
+//   MSSQL_SERVER, MSSQL_PORT(=1433), MSSQL_DATABASE, MSSQL_USER, MSSQL_PASSWORD,
+//   MSSQL_ENCRYPT(=true), MSSQL_TRUST_SERVER_CERT(=true)
+//
+// Schema: supabase/migrations/v3_sessions.mssql.sql (+ v3_sessions_userid.mssql.sql)
 
+import sql from "mssql";
 import type { V3Session } from "@/lib/v3/scenes/types";
 
 const TABLE = "v3_sessions";
@@ -40,10 +44,10 @@ interface V3SessionRow {
   job: string | null;
   last_scene_id: string | null;
   status: "in_progress" | "completed";
-  data: V3Session;
-  created_at: string;
-  updated_at: string;
-  completed_at: string | null;
+  data: string; // NVARCHAR(MAX) JSON
+  created_at: Date | string;
+  updated_at: Date | string;
+  completed_at: Date | string | null;
 }
 
 /** W5.2: 다른 사용자가 소유한 sessionId 로의 upsert 시도. Route 에서 403 으로 변환. */
@@ -54,41 +58,59 @@ export class SessionOwnershipError extends Error {
   }
 }
 
-/** True when both Supabase env vars are present. Route handlers should check
- * this first and silently no-op when false, so deployments that don't use
- * Supabase don't spam logs with errors on every fire-and-forget client save. */
-export function isSupabaseConfigured(): boolean {
-  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+/** True when the MSSQL env vars are present. Route handlers check this first and
+ * silently no-op when false. Renamed from main's `isSupabaseConfigured`; the
+ * import in `route.ts` is rewritten to match during /sync-main. */
+export function isMssqlConfigured(): boolean {
+  return Boolean(
+    process.env.MSSQL_SERVER &&
+      process.env.MSSQL_DATABASE &&
+      process.env.MSSQL_USER &&
+      process.env.MSSQL_PASSWORD,
+  );
 }
 
-function getConfig() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    throw new Error("Supabase env vars are missing (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)");
+function getConfig(): sql.config {
+  const server = process.env.MSSQL_SERVER;
+  const database = process.env.MSSQL_DATABASE;
+  const user = process.env.MSSQL_USER;
+  const password = process.env.MSSQL_PASSWORD;
+  if (!server || !database || !user || !password) {
+    throw new Error(
+      "MSSQL env vars are missing (MSSQL_SERVER / MSSQL_DATABASE / MSSQL_USER / MSSQL_PASSWORD)",
+    );
   }
-  return { url: url.replace(/\/$/, ""), key };
-}
-
-export async function supabaseFetch(path: string, init: RequestInit = {}) {
-  const { url, key } = getConfig();
-  const res = await fetch(`${url}/rest/v1/${path}`, {
-    ...init,
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-      Prefer: "return=representation",
-      ...(init.headers || {}),
+  return {
+    server,
+    database,
+    user,
+    password,
+    port: Number(process.env.MSSQL_PORT || 1433),
+    options: {
+      encrypt: (process.env.MSSQL_ENCRYPT ?? "true") !== "false",
+      trustServerCertificate:
+        (process.env.MSSQL_TRUST_SERVER_CERT ?? "true") !== "false",
     },
-    cache: "no-store",
-  });
+    pool: { max: 10, min: 0, idleTimeoutMillis: 30000 },
+  };
+}
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Supabase request failed (${res.status}): ${text}`);
+// Lazy singleton pool — survives across requests in the long-lived Node server.
+// Exported so other MSSQL call sites (e.g. src/lib/admin/cohortRules.ts) share it.
+let poolPromise: Promise<sql.ConnectionPool> | null = null;
+export function getPool(): Promise<sql.ConnectionPool> {
+  if (!poolPromise) {
+    poolPromise = new sql.ConnectionPool(getConfig()).connect().catch((err) => {
+      poolPromise = null; // allow retry on next call
+      throw err;
+    });
   }
-  return res;
+  return poolPromise;
+}
+
+function iso(value: Date | string | null): string | null {
+  if (value == null) return null;
+  return value instanceof Date ? value.toISOString() : value;
 }
 
 function mapRow(row: V3SessionRow): V3SessionRecord {
@@ -99,16 +121,15 @@ function mapRow(row: V3SessionRow): V3SessionRecord {
     job: row.job,
     lastSceneId: row.last_scene_id,
     status: row.status,
-    data: row.data,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    completedAt: row.completed_at,
+    data: typeof row.data === "string" ? (JSON.parse(row.data) as V3Session) : row.data,
+    createdAt: iso(row.created_at) ?? "",
+    updatedAt: iso(row.updated_at) ?? "",
+    completedAt: iso(row.completed_at),
   };
 }
 
 /** Heuristic for "this run looks done" — used when client doesn't pass an
- * explicit status. Magazine handoff is the last scene group, so any cached
- * chapter article + a non-empty visionLine is a strong completion signal. */
+ * explicit status. (Identical to the Supabase version.) */
 function inferStatus(s: V3Session): "in_progress" | "completed" {
   const hasArticles = Object.keys(s.chapterArticles ?? {}).length >= 4;
   const hasVision = (s.visionLine ?? "").trim().length > 0;
@@ -122,67 +143,65 @@ export async function upsertV3Session(
   if (!session.sessionId) {
     throw new Error("upsertV3Session: session.sessionId is required");
   }
-
-  // W5.2: 소유권 가드. PostgREST 의 merge-duplicates upsert 는 MSSQL MERGE 처럼
-  // 기존 행 조건부 갱신이 안 되므로, 먼저 소유자를 읽어 확인한다. 기존 userid 가
-  // 있고 요청자와 다르면 거부. 요청자 userid 가 null(시크릿 미설정 프리뷰)이면
-  // 소유권 검사를 건너뛰되 기존 소유자 값을 덮어쓰지 않는다.
-  // ponytail: read-then-write 라 미세한 TOCTOU 창이 있으나, 재검증 대상인 LG
-  // production(MSSQL)은 MERGE 로 원자적. Vercel/Supabase 측 잔여 리스크는 무시 가능.
-  const enc = encodeURIComponent(session.sessionId);
-  let owner: string | null = null;
-  {
-    const res = await supabaseFetch(`${TABLE}?select=userid&session_id=eq.${enc}`);
-    const rows = (await res.json()) as Array<{ userid: string | null }>;
-    owner = rows[0]?.userid ?? null;
-    if (userid && owner && owner !== userid) {
-      throw new SessionOwnershipError(session.sessionId);
-    }
-  }
-
-  const now = new Date().toISOString();
+  const now = new Date();
   const status = inferStatus(session);
-  const payload = {
-    session_id: session.sessionId,
-    // 요청자 userid 가 있으면 소유자로 도장, 없으면 기존 소유자 유지.
-    userid: userid ?? owner,
-    user_name: session.name || null,
-    job: session.job || null,
-    last_scene_id: session.lastSceneId || null,
-    status,
-    data: session,
-    updated_at: now,
-    completed_at: status === "completed" ? now : null,
-  };
+  const pool = await getPool();
 
-  const res = await supabaseFetch(`${TABLE}?on_conflict=session_id`, {
-    method: "POST",
-    headers: {
-      Prefer: "resolution=merge-duplicates,return=representation",
-    },
-    body: JSON.stringify(payload),
-  });
-  const rows = (await res.json()) as V3SessionRow[];
-  return mapRow(rows[0]);
+  // W5.2: 소유권 가드 — 기존 행의 userid 가 NULL(레거시)이면 이번 요청자가
+  // 소유권을 가져가고, 다른 사용자 소유면 UPDATE 분기가 실행되지 않아
+  // OUTPUT 이 빈 결과 → SessionOwnershipError. @userid 가 NULL 인 경우
+  // (시크릿 미설정 프리뷰 env)는 기존 동작 유지하되 소유자는 바꾸지 않는다.
+  const result = await pool
+    .request()
+    .input("session_id", sql.NVarChar(255), session.sessionId)
+    .input("userid", sql.NVarChar(255), userid)
+    .input("user_name", sql.NVarChar(255), session.name || null)
+    .input("job", sql.NVarChar(255), session.job || null)
+    .input("last_scene_id", sql.NVarChar(255), session.lastSceneId || null)
+    .input("status", sql.NVarChar(20), status)
+    .input("data", sql.NVarChar(sql.MAX), JSON.stringify(session))
+    .input("updated_at", sql.DateTime2, now)
+    .input("completed_at", sql.DateTime2, status === "completed" ? now : null)
+    .query(`
+      MERGE ${TABLE} WITH (HOLDLOCK) AS target
+      USING (SELECT @session_id AS session_id) AS src
+        ON target.session_id = src.session_id
+      WHEN MATCHED AND (target.userid IS NULL OR @userid IS NULL OR target.userid = @userid)
+        THEN UPDATE SET
+        userid = COALESCE(@userid, target.userid),
+        user_name = @user_name, job = @job, last_scene_id = @last_scene_id,
+        status = @status, data = @data, updated_at = @updated_at,
+        completed_at = @completed_at
+      WHEN NOT MATCHED THEN INSERT
+        (session_id, userid, user_name, job, last_scene_id, status, data, completed_at)
+        VALUES (@session_id, @userid, @user_name, @job, @last_scene_id, @status, @data, @completed_at)
+      OUTPUT inserted.id, inserted.session_id, inserted.userid, inserted.user_name, inserted.job,
+             inserted.last_scene_id, inserted.status, inserted.data,
+             inserted.created_at, inserted.updated_at, inserted.completed_at;
+    `);
+
+  const row = result.recordset[0] as V3SessionRow | undefined;
+  if (!row) throw new SessionOwnershipError(session.sessionId);
+  return mapRow(row);
 }
 
 export async function listV3Sessions(): Promise<V3SessionRecord[]> {
-  const res = await supabaseFetch(`${TABLE}?select=*&order=updated_at.desc&limit=200`);
-  const rows = (await res.json()) as V3SessionRow[];
-  return rows.map(mapRow);
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .query(`SELECT TOP 200 * FROM ${TABLE} ORDER BY updated_at DESC`);
+  return (result.recordset as V3SessionRow[]).map(mapRow);
 }
 
 export async function deleteV3Sessions(): Promise<void> {
-  await supabaseFetch(`${TABLE}?session_id=not.is.null`, {
-    method: "DELETE",
-    headers: { Prefer: "return=minimal" },
-  });
+  const pool = await getPool();
+  await pool.request().query(`DELETE FROM ${TABLE}`);
 }
 
 export async function deleteV3Session(sessionId: string): Promise<void> {
-  const encoded = encodeURIComponent(sessionId);
-  await supabaseFetch(`${TABLE}?session_id=eq.${encoded}`, {
-    method: "DELETE",
-    headers: { Prefer: "return=minimal" },
-  });
+  const pool = await getPool();
+  await pool
+    .request()
+    .input("session_id", sql.NVarChar(255), sessionId)
+    .query(`DELETE FROM ${TABLE} WHERE session_id = @session_id`);
 }

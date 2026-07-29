@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 
 export async function GET() {
   if (!isSupabaseConfigured()) {
-    return NextResponse.json({ skipped: true, reason: "supabase_not_configured" });
+    return NextResponse.json({ skipped: true, reason: "storage_not_configured" });
   }
   try {
     const [events, rules] = await Promise.all([listQriusLogins(), listCohortRules()]);

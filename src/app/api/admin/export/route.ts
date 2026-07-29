@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
+import XlsxPopulate from "xlsx-populate";
 import { listV3Sessions, isSupabaseConfigured } from "@/lib/v3/session/serverStorage";
 import { listCohortRules } from "@/lib/admin/cohortRules";
 import { assignCohort, UNASSIGNED_LABEL } from "@/lib/admin/assignCohort";
@@ -36,7 +37,7 @@ function fmtValueDefs(defs: Record<string, string> | undefined): string {
 
 export async function GET(req: Request) {
   if (!isSupabaseConfigured()) {
-    return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
+    return NextResponse.json({ error: "storage_not_configured" }, { status: 503 });
   }
 
   const { searchParams } = new URL(req.url);
@@ -125,7 +126,15 @@ export async function GET(req: Request) {
   }));
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(loginRows), "로그인");
 
-  const buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;
+  let buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;
+
+  // 열람 암호 = 관리자 비밀번호 (ECMA-376 표준 암호화 — 엑셀이 열 때 암호를 묻는다).
+  // SheetJS 커뮤니티판은 암호화 미지원이라 xlsx-populate 로 재저장한다.
+  const password = process.env.ADMIN_PASSWORD;
+  if (password) {
+    const wb = await XlsxPopulate.fromDataAsync(buf);
+    buf = await wb.outputAsync({ password });
+  }
 
   const today = kst(new Date().toISOString()).slice(0, 10);
   const filename = cohortFilter

@@ -18,7 +18,7 @@ export const runtime = "nodejs";
 // disabled — local play continues working from localStorage. Every handler
 // below short-circuits with a 200 + `skipped:true` so the client's
 // fire-and-forget POST doesn't generate 500s on every state change.
-const SKIPPED_REASON = "supabase_not_configured";
+const SKIPPED_REASON = "storage_not_configured";
 
 // W5.2 모의해킹 조치: GET(전체 목록)/DELETE(삭제)는 어드민 전용 작업인데
 // /api/v3/* 라 proxy의 어드민 게이트 밖에 있었다 — 일반 로그인 사용자가 전체

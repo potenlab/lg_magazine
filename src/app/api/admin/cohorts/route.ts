@@ -14,7 +14,7 @@ function supabaseReady(): boolean {
   return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
-const SKIPPED = { rules: [], skipped: true, reason: "supabase_not_configured" };
+const SKIPPED = { rules: [], skipped: true, reason: "storage_not_configured" };
 
 export async function GET() {
   if (!supabaseReady()) return NextResponse.json(SKIPPED);

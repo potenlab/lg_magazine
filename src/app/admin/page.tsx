@@ -397,7 +397,7 @@ export default function AdminPage() {
         const payload = (await v3Res.json()) as { records?: V3SessionRecord[]; skipped?: boolean };
         setV3Records(payload.records || []);
         setSource(payload.skipped ? "unavailable" : "supabase");
-        if (payload.skipped) setError("Supabase가 설정되지 않았습니다.");
+        if (payload.skipped) setError("데이터베이스가 설정되지 않았습니다.");
       } else {
         setV3Records([]);
         setSource("unavailable");
@@ -598,10 +598,10 @@ export default function AdminPage() {
             <p className="text-[11px] font-semibold tracking-[0.24em] text-[#9b8768]">MAGAZINE ADMIN</p>
             <h1 className="mt-2 text-2xl font-semibold">응답 관리자</h1>
             <p className="mt-2 text-sm text-[#7d705f]">
-              Supabase에 저장된 v3 세션을 차수별로 모아보고, 챕터별 대화 흐름을 확인합니다.
+              저장된 v3 세션을 차수별로 모아보고, 챕터별 대화 흐름을 확인합니다.
             </p>
             <p className="mt-2 text-xs text-[#9b8768]">
-              현재 데이터 소스: {source === "supabase" ? "Supabase" : "연결 없음"}
+              데이터 연결: {source === "supabase" ? "정상" : "연결 없음"}
               {error ? ` · ${error}` : ""}
             </p>
           </div>
@@ -689,7 +689,7 @@ export default function AdminPage() {
           {loginStats && (
             <div className="overflow-hidden rounded-md border border-[#e4dccd] bg-white shadow-sm">
               <div className="flex items-center justify-between gap-2 border-b border-[#eee7dc] px-4 py-3">
-                <p className="text-sm font-semibold">로그인 현황 (LG SSO)</p>
+                <p className="text-sm font-semibold">로그인 현황</p>
                 <p className="text-xs text-[#8d7d66]">
                   등록 {loginStats.uniqueUsers}명 · 로그인 {loginStats.totalLogins}회
                 </p>

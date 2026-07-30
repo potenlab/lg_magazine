@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 // proxy.ts 가 /api/admin/* 를 이미 ADMIN_COOKIE 로 게이트한다. 그래서 여기서는
 // MSSQL 미설정만 방어하면 된다.
 
-const SKIPPED = { rules: [], skipped: true, reason: "mssql_not_configured" };
+const SKIPPED = { rules: [], skipped: true, reason: "storage_not_configured" };
 
 export async function GET() {
   if (!isMssqlConfigured()) return NextResponse.json(SKIPPED);

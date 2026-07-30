@@ -71,8 +71,14 @@ export function aggregateLogins(events: LoginEvent[], rules: CohortRule[]): Logi
 
     const cohort = assignCohort(e.loggedInAt, rules) ?? UNASSIGNED_LABEL;
     cohortLogins.set(cohort, (cohortLogins.get(cohort) ?? 0) + 1);
+  }
+
+  // 사용자는 "첫 로그인" 시각의 차수에 한 번만 귀속시킨다 — 차수별 인원수 합이
+  // 항상 전체 등록 인원수와 일치하도록 (로그인 횟수는 이벤트 시각 기준 그대로).
+  for (const u of byUser.values()) {
+    const cohort = assignCohort(u.firstLogin, rules) ?? UNASSIGNED_LABEL;
     if (!cohortUsers.has(cohort)) cohortUsers.set(cohort, new Set());
-    cohortUsers.get(cohort)!.add(e.userid);
+    cohortUsers.get(cohort)!.add(u.userid);
   }
 
   // 익명 사용자는 첫 로그인 순서로 user#1, user#2 … 안정적인 번호를 붙인다.

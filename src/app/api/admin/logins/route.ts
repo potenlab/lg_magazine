@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 
 export async function GET() {
   if (!isMssqlConfigured()) {
-    return NextResponse.json({ skipped: true, reason: "mssql_not_configured" });
+    return NextResponse.json({ skipped: true, reason: "storage_not_configured" });
   }
   try {
     const [events, rules] = await Promise.all([listQriusLogins(), listCohortRules()]);

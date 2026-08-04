@@ -131,10 +131,12 @@ export async function upsertV3Session(
   // production(MSSQL)은 MERGE 로 원자적. Vercel/Supabase 측 잔여 리스크는 무시 가능.
   const enc = encodeURIComponent(session.sessionId);
   let owner: string | null = null;
+  let existingCompletedAt: string | null = null;
   {
-    const res = await supabaseFetch(`${TABLE}?select=userid&session_id=eq.${enc}`);
-    const rows = (await res.json()) as Array<{ userid: string | null }>;
+    const res = await supabaseFetch(`${TABLE}?select=userid,completed_at&session_id=eq.${enc}`);
+    const rows = (await res.json()) as Array<{ userid: string | null; completed_at: string | null }>;
     owner = rows[0]?.userid ?? null;
+    existingCompletedAt = rows[0]?.completed_at ?? null;
     if (userid && owner && owner !== userid) {
       throw new SessionOwnershipError(session.sessionId);
     }
@@ -152,7 +154,9 @@ export async function upsertV3Session(
     status,
     data: session,
     updated_at: now,
-    completed_at: status === "completed" ? now : null,
+    // 완료 시각은 최초 1회만 찍는다. 매 저장마다 now 로 덮으면 완료한 사람이
+    // 다시 열기만 해도 완료 타임라인과 어드민 소요시간이 뒤로 밀린다.
+    completed_at: status === "completed" ? (existingCompletedAt ?? now) : existingCompletedAt,
   };
 
   const res = await supabaseFetch(`${TABLE}?on_conflict=session_id`, {

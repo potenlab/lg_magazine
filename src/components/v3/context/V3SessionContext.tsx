@@ -88,11 +88,21 @@ export function V3SessionProvider({ children }: { children: ReactNode }) {
   // hammer MSSQL. The two timers are independent so localStorage stays
   // up to date even if the network is slow.
   const serverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 마지막으로 서버에 보낸 payload. 내용이 그대로면 다시 보내지 않는다 —
+  // 이 effect 는 마운트 직후에도 한 번 돌기 때문에, 액티비티를 열기만 해도
+  // 서버 저장이 일어나 updated_at/completed_at 이 현재 시각으로 밀렸다.
+  const syncedPayload = useRef<string | null>(null);
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
     if (serverTimer.current) clearTimeout(serverTimer.current);
+    const payload = JSON.stringify(session);
+    if (syncedPayload.current === null) syncedPayload.current = payload; // 마운트 시점 스냅샷
     timer.current = setTimeout(() => saveSession(session), 300);
-    serverTimer.current = setTimeout(() => syncToServer(session), 1500);
+    serverTimer.current = setTimeout(() => {
+      if (payload === syncedPayload.current) return;
+      syncedPayload.current = payload;
+      syncToServer(session);
+    }, 1500);
     return () => {
       if (timer.current) clearTimeout(timer.current);
       if (serverTimer.current) clearTimeout(serverTimer.current);

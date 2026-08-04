@@ -170,8 +170,18 @@ export async function upsertV3Session(
         THEN UPDATE SET
         userid = COALESCE(@userid, target.userid),
         user_name = @user_name, job = @job, last_scene_id = @last_scene_id,
-        status = @status, data = @data, updated_at = @updated_at,
-        completed_at = @completed_at
+        status = @status, data = @data,
+        -- 내용이 그대로면 updated_at 을 올리지 않는다. 클라이언트도 같은 payload 는
+        -- 안 보내도록 고쳤지만(main 과 공통), 캐시된 옛 번들을 띄워둔 탭은 여전히
+        -- 마운트 직후 저장을 보낸다 — 그때 어드민 "소요시간"(진행중 =
+        -- updated_at - created_at)이 부풀지 않도록 서버에서도 막는다.
+        -- ponytail: nvarchar(max) 통짜 비교 — 행이 만 단위면 해시 컬럼으로 전환.
+        updated_at = CASE WHEN target.data = @data THEN target.updated_at ELSE @updated_at END,
+        -- 완료 시각은 최초 1회만 찍는다. 완료한 사람이 다시 열기만 해도
+        -- completed_at 이 now 로 덮여 완료 타임라인이 뒤로 밀렸다. (main 과 동일 동작)
+        completed_at = CASE WHEN @status = 'completed'
+                            THEN COALESCE(target.completed_at, @completed_at)
+                            ELSE target.completed_at END
       WHEN NOT MATCHED THEN INSERT
         (session_id, userid, user_name, job, last_scene_id, status, data, completed_at)
         VALUES (@session_id, @userid, @user_name, @job, @last_scene_id, @status, @data, @completed_at)

@@ -74,7 +74,10 @@ export async function GET(request: Request) {
     });
   }
 
-  const token = await signSession(buildSessionPayload(user.userid), cfg.sessionSecret);
+  // 세션 쿠키도 로그인 로그와 같은 식별자로 서명한다. user.userid 로 서명하면
+  // CNS 신원 미수신 구간에서 빈 문자열이 들어가 세션이 소유자 없이 저장되고,
+  // 어드민에서 로그인 기록과 활동 기록을 연결할 수 없다 (user#N 문제).
+  const token = await signSession(buildSessionPayload(recorded.userid), cfg.sessionSecret);
   cookieStore.set(QRIUS_SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",

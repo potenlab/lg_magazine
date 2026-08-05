@@ -137,7 +137,11 @@ export async function upsertV3Session(
     const rows = (await res.json()) as Array<{ userid: string | null; completed_at: string | null }>;
     owner = rows[0]?.userid ?? null;
     existingCompletedAt = rows[0]?.completed_at ?? null;
-    if (userid && owner && owner !== userid) {
+    // anon-* 는 신원이 아니라 브라우저 쿠키 단위 임시 식별자다. 쿠키가 만료되거나
+    // 지워지면 같은 사람도 새 anon id 를 받는데, 이때 소유권으로 막아버리면 본인
+    // 세션인데도 저장이 403 으로 조용히 실패한다. 실제 LG 계정 id 에 대해서만 막는다.
+    const ownerIsAnon = owner?.startsWith("anon-") ?? false;
+    if (userid && owner && owner !== userid && !ownerIsAnon) {
       throw new SessionOwnershipError(session.sessionId);
     }
   }

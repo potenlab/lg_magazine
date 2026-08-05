@@ -116,10 +116,17 @@ export async function GET(req: Request) {
 
   // LG SSO 로그인 현황 — 사용자별 집계 (차수 필터와 무관하게 전체).
   const loginStats = aggregateLogins(loginEvents, rules);
+  // 로그인 로그에는 이름이 없다(CNS 신원 미수신). 세션에 도장된 userid 로 활동
+  // 기록을 찾아 참가자가 입력한 이름을 채운다. sessions 는 최근 업데이트순.
+  const nameByUserid = new Map<string, string>();
+  for (const r of sessions) {
+    const name = r.data.name || r.userName;
+    if (r.userid && name && !nameByUserid.has(r.userid)) nameByUserid.set(r.userid, name);
+  }
   const loginRows = loginStats.users.map((u) => ({
     사용자: u.label,
     이메일: u.email ?? "",
-    이름: u.name ?? "",
+    이름: u.name ?? nameByUserid.get(u.userid) ?? "",
     "로그인 횟수": u.count,
     "첫 로그인": kst(u.firstLogin),
     "마지막 로그인": kst(u.lastLogin),

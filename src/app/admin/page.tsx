@@ -445,6 +445,18 @@ export default function AdminPage() {
     });
   }, [v3Records, cohortRules]);
 
+  // 로그인 표에 쓸 이름 — 세션에 도장된 userid 로 활동 기록을 찾아 참가자가
+  // 직접 입력한 이름을 가져온다. v3Records 는 최근 업데이트순이라 첫 매치가
+  // 가장 최근 이름이다. 연결되는 세션이 없으면 user#N 표시를 그대로 둔다.
+  const nameByUserid = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of v3Records) {
+      const name = r.data.name || r.userName;
+      if (r.userid && name && !map.has(r.userid)) map.set(r.userid, name);
+    }
+    return map;
+  }, [v3Records]);
+
   // 필터 탭 옵션: 전체 + 등록된 차수(startAt 오름차순) + 미지정
   const cohortTabs = useMemo(() => {
     const names = cohortRules.map((r) => r.name);
@@ -722,7 +734,12 @@ export default function AdminPage() {
                     <tbody>
                       {loginStats.users.map((u) => (
                         <tr key={u.userid} className="border-t border-[#f2ece0]">
-                          <td className="py-1 pr-2 break-all">{u.label}</td>
+                          <td className="py-1 pr-2 break-all">
+                            {nameByUserid.get(u.userid) ?? u.label}
+                            {nameByUserid.has(u.userid) && (
+                              <span className="ml-1 text-[#a8997f]">({u.label})</span>
+                            )}
+                          </td>
                           <td className="py-1 pr-2 break-all">{u.email ?? "-"}</td>
                           <td className="py-1 pr-2">{u.count}</td>
                           <td className="py-1 whitespace-nowrap">{formatDate(u.lastLogin)}</td>

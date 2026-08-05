@@ -166,7 +166,11 @@ export async function upsertV3Session(
       MERGE ${TABLE} WITH (HOLDLOCK) AS target
       USING (SELECT @session_id AS session_id) AS src
         ON target.session_id = src.session_id
-      WHEN MATCHED AND (target.userid IS NULL OR @userid IS NULL OR target.userid = @userid)
+      -- anon-* 는 신원이 아니라 브라우저 쿠키 단위 임시 식별자다. 쿠키가 만료·삭제되면
+      -- 같은 사람도 새 anon id 를 받는데, 소유권으로 막으면 본인 세션인데도 저장이
+      -- 403 으로 조용히 실패한다. 실제 LG 계정 id 에 대해서만 막는다. (main 과 동일)
+      WHEN MATCHED AND (target.userid IS NULL OR @userid IS NULL OR target.userid = @userid
+                        OR target.userid LIKE 'anon-%')
         THEN UPDATE SET
         userid = COALESCE(@userid, target.userid),
         user_name = @user_name, job = @job, last_scene_id = @last_scene_id,

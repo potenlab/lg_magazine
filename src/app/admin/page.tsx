@@ -51,6 +51,18 @@ function fromLocalInput(local: string): string {
   return local ? new Date(local).toISOString() : "";
 }
 
+function Hint({ text }: { text: string }) {
+  // 세션 수와 로그인 수를 혼동하는 문의가 반복돼 라벨 옆에 기준을 붙여둔다.
+  return (
+    <span
+      title={text}
+      className="inline-flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full border border-[#d8cbb8] text-[9px] font-semibold text-[#8d7d66]"
+    >
+      ?
+    </span>
+  );
+}
+
 type UnifiedItem = {
   key: string;
   name: string;
@@ -542,6 +554,19 @@ export default function AdminPage() {
     return { total, completed, inProgress: total - completed, avgMin };
   }, [filtered]);
 
+  // 접속자는 로그인 기준, 응답 시작은 세션 기준. 차수별 인원은 loginCohorts 가
+  // 이미 firstLogin 으로 버킷팅해 두었으니 그대로 재사용한다.
+  const funnel = useMemo(() => {
+    const visitors = cohortFilter
+      ? (loginCohorts.find((c) => c.name === cohortFilter)?.people ?? 0)
+      : loginPeople.length;
+    return {
+      visitors,
+      started: filtered.length,
+      dropped: Math.max(0, visitors - filtered.length),
+    };
+  }, [cohortFilter, loginCohorts, loginPeople, filtered]);
+
   const toggleChapter = (chapter: string) => {
     setOpenChapters((prev) =>
       prev.includes(chapter) ? prev.filter((item) => item !== chapter) : [...prev, chapter],
@@ -672,8 +697,9 @@ export default function AdminPage() {
         </div>
 
         <div className="mx-auto mt-4 flex max-w-7xl flex-wrap items-center gap-2">
+          <Hint text="질문 응답을 1개 이상 작성하여 세션이 생성된 유저 수입니다." />
           {cohortTabs.map((tab) => {
-            const label = tab === "" ? "전체" : tab;
+            const label = tab === "" ? "참여 세션" : tab;
             const count =
               tab === ""
                 ? withCohort.length
@@ -700,6 +726,24 @@ export default function AdminPage() {
 
       <section className="mx-auto mt-6 grid max-w-7xl gap-5 px-6 pb-6 lg:grid-cols-[380px_1fr]">
         <aside className="space-y-4">
+          <div
+            className="grid grid-cols-3 gap-2 rounded-md border border-[#e4dccd] bg-white p-3 shadow-sm"
+            title="접속자는 로그인 기준, 응답 시작은 세션 기준입니다. 집계 기준이 달라 정확히 상쇄되지 않을 수 있습니다."
+          >
+            <div>
+              <p className="text-[10px] text-[#8d7d66]">전체 접속자</p>
+              <p className="mt-1 text-xl font-semibold">{funnel.visitors}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-[#8d7d66]">응답 시작</p>
+              <p className="mt-1 text-xl font-semibold">{funnel.started}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-[#8d7d66]">미응답/이탈</p>
+              <p className="mt-1 text-xl font-semibold">{funnel.dropped}</p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-4 gap-2">
             <div className="rounded-md bg-white p-3 shadow-sm">
               <p className="text-[10px] text-[#8d7d66]">전체</p>
@@ -722,7 +766,10 @@ export default function AdminPage() {
           {loginStats && (
             <div className="overflow-hidden rounded-md border border-[#e4dccd] bg-white shadow-sm">
               <div className="flex items-center justify-between gap-2 border-b border-[#eee7dc] px-4 py-3">
-                <p className="text-sm font-semibold">로그인 현황</p>
+                <p className="flex items-center gap-1.5 text-sm font-semibold">
+                  접속/명단 현황
+                  <Hint text="사이트에 1회 이상 로그인한 전체 유저 수 및 차수별 명단입니다." />
+                </p>
                 <p className="text-xs text-[#8d7d66]">
                   등록 {loginPeople.length}명 · 로그인 {loginStats.totalLogins}회
                 </p>

@@ -5,7 +5,7 @@ import { listV3Sessions, isMssqlConfigured } from "@/lib/v3/session/serverStorag
 import { listCohortRules } from "@/lib/admin/cohortRules";
 import { assignCohort, UNASSIGNED_LABEL } from "@/lib/admin/assignCohort";
 import { listQriusLogins } from "@/lib/admin/qriusLogins";
-import { aggregateLogins } from "@/lib/admin/loginStats";
+import { aggregateLogins, groupLoginUsersByName } from "@/lib/admin/loginStats";
 
 export const runtime = "nodejs";
 
@@ -123,11 +123,12 @@ export async function GET(req: Request) {
     const name = r.data.name || r.userName;
     if (r.userid && name && !nameByUserid.has(r.userid)) nameByUserid.set(r.userid, name);
   }
-  const loginRows = loginStats.users.map((u) => ({
-    사용자: u.label,
-    이메일: u.email ?? "",
-    이름: u.name ?? nameByUserid.get(u.userid) ?? "",
+  // 집계 단위는 "승객명"(참가자가 활동에서 입력한 이름). 이름을 못 찾은
+  // 브라우저는 user#N 으로 각각 남는다 — 어드민 화면과 동일한 기준.
+  const loginRows = groupLoginUsersByName(loginStats.users, nameByUserid).map((u) => ({
+    승객명: u.label,
     "로그인 횟수": u.count,
+    "기기 수": u.devices ?? 1,
     "첫 로그인": kst(u.firstLogin),
     "마지막 로그인": kst(u.lastLogin),
   }));

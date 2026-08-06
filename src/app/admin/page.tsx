@@ -13,7 +13,7 @@ import { registerPdfFonts } from "@/lib/v3/pdf/fonts";
 import { assembleMagazineDataFromSession } from "@/lib/v3/pdf/assembleFromSession";
 import type { CohortRule } from "@/lib/admin/cohortRules";
 import { assignCohort, UNASSIGNED_LABEL } from "@/lib/admin/assignCohort";
-import type { LoginStats } from "@/lib/admin/loginStats";
+import { groupLoginUsersByName, type LoginStats } from "@/lib/admin/loginStats";
 
 function formatDate(value: string) {
   if (!value) return "-";
@@ -457,6 +457,27 @@ export default function AdminPage() {
     return map;
   }, [v3Records]);
 
+  // 로그인 현황을 "사람"(승객명) 단위로 재집계. 이름을 못 찾은 브라우저는
+  // user#N 그대로 각각 남는다. 헤더 인원수와 차수 칩도 이 목록에서 파생시켜
+  // 표에 보이는 줄 수와 항상 일치하게 한다.
+  const loginPeople = useMemo(
+    () => (loginStats ? groupLoginUsersByName(loginStats.users, nameByUserid) : []),
+    [loginStats, nameByUserid],
+  );
+
+  const loginCohorts = useMemo(() => {
+    const acc = new Map<string, { people: number; logins: number }>();
+    for (const p of loginPeople) {
+      const key = assignCohort(p.firstLogin, cohortRules) ?? UNASSIGNED_LABEL;
+      const cur = acc.get(key) ?? { people: 0, logins: 0 };
+      acc.set(key, { people: cur.people + 1, logins: cur.logins + p.count });
+    }
+    const order = [...cohortRules.map((r) => r.name), UNASSIGNED_LABEL];
+    return order
+      .filter((name) => acc.has(name))
+      .map((name) => ({ name, ...acc.get(name)! }));
+  }, [loginPeople, cohortRules]);
+
   // 필터 탭 옵션: 전체 + 등록된 차수(startAt 오름차순) + 미지정
   const cohortTabs = useMemo(() => {
     const names = cohortRules.map((r) => r.name);
@@ -703,45 +724,45 @@ export default function AdminPage() {
               <div className="flex items-center justify-between gap-2 border-b border-[#eee7dc] px-4 py-3">
                 <p className="text-sm font-semibold">로그인 현황</p>
                 <p className="text-xs text-[#8d7d66]">
-                  등록 {loginStats.uniqueUsers}명 · 로그인 {loginStats.totalLogins}회
+                  등록 {loginPeople.length}명 · 로그인 {loginStats.totalLogins}회
                 </p>
               </div>
-              {loginStats.byCohort.length > 0 && (
+              {loginCohorts.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 border-b border-[#f2ece0] px-4 py-2.5">
-                  {loginStats.byCohort.map((c) => (
+                  {loginCohorts.map((c) => (
                     <span
                       key={c.name}
                       className="rounded-full border border-[#d8cbb8] px-2 py-0.5 text-[11px] text-[#5d4d3b]"
                     >
-                      {c.name} {c.uniqueUsers}명 · {c.logins}회
+                      {c.name} {c.people}명 · {c.logins}회
                     </span>
                   ))}
                 </div>
               )}
               <div className="max-h-52 overflow-y-auto px-4 py-2">
-                {loginStats.users.length === 0 ? (
+                {loginPeople.length === 0 ? (
                   <p className="py-2 text-xs text-[#7d705f]">아직 로그인 기록이 없습니다.</p>
                 ) : (
                   <table className="w-full text-left text-[11px]">
                     <thead>
                       <tr className="text-[#8d7d66]">
-                        <th className="py-1 pr-2 font-normal">사용자</th>
-                        <th className="py-1 pr-2 font-normal">이메일</th>
+                        <th className="py-1 pr-2 font-normal">승객명</th>
                         <th className="py-1 pr-2 font-normal">횟수</th>
+                        <th className="py-1 pr-2 font-normal">첫 로그인</th>
                         <th className="py-1 font-normal">마지막 로그인</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {loginStats.users.map((u) => (
+                      {loginPeople.map((u) => (
                         <tr key={u.userid} className="border-t border-[#f2ece0]">
                           <td className="py-1 pr-2 break-all">
-                            {nameByUserid.get(u.userid) ?? u.label}
-                            {nameByUserid.has(u.userid) && (
-                              <span className="ml-1 text-[#a8997f]">({u.label})</span>
+                            {u.label}
+                            {(u.devices ?? 1) > 1 && (
+                              <span className="ml-1 text-[#a8997f]">· 기기 {u.devices}</span>
                             )}
                           </td>
-                          <td className="py-1 pr-2 break-all">{u.email ?? "-"}</td>
                           <td className="py-1 pr-2">{u.count}</td>
+                          <td className="py-1 whitespace-nowrap">{formatDate(u.firstLogin)}</td>
                           <td className="py-1 whitespace-nowrap">{formatDate(u.lastLogin)}</td>
                         </tr>
                       ))}

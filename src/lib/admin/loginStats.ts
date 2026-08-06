@@ -22,6 +22,8 @@ export interface LoginUserStat {
   count: number;
   firstLogin: string;
   lastLogin: string;
+  /** 같은 사람으로 합쳐진 브라우저 수. 1 이면 표시하지 않는다. */
+  devices?: number;
 }
 
 export interface LoginCohortStat {
@@ -104,4 +106,41 @@ export function aggregateLogins(events: LoginEvent[], rules: CohortRule[]): Logi
     }));
 
   return { totalLogins: events.length, uniqueUsers: byUser.size, users, byCohort };
+}
+
+/**
+ * 로그인 통계를 "사람" 단위로 다시 묶는다.
+ *
+ * LG(CNS)에서 실명·이메일을 받을 수 없어 **참가자가 활동에서 입력한 승객명을
+ * 사람의 식별자로 쓰기로 합의**했다(2026-08-05, 이민재/이혜원). 기본 집계 단위인
+ * userid 는 브라우저 쿠키 단위라 한 사람이 휴대폰·PC 로 접속하면 두 줄이 되는데,
+ * 이름이 같으면 한 줄로 합친다.
+ *
+ * 이름이 연결되지 않은 브라우저(로그인만 하고 활동을 시작하지 않은 경우)는
+ * 합칠 근거가 없으므로 user#N 라벨 그대로 각각 남는다.
+ *
+ * ponytail: 동명이인은 한 사람으로 합쳐진다 — 이메일을 수집하지 않기로 한 이상
+ * 구분할 방법이 없다. 실명/사번이 내려오기 시작하면 그 값을 키로 바꾼다.
+ */
+export function groupLoginUsersByName(
+  users: LoginUserStat[],
+  nameByUserid: Map<string, string>,
+): LoginUserStat[] {
+  const byKey = new Map<string, LoginUserStat>();
+  for (const u of users) {
+    const name = nameByUserid.get(u.userid);
+    const key = name ? `name:${name}` : `id:${u.userid}`;
+    const prev = byKey.get(key);
+    if (!prev) {
+      byKey.set(key, { ...u, label: name ?? u.label, devices: 1 });
+      continue;
+    }
+    prev.count += u.count;
+    prev.devices = (prev.devices ?? 1) + 1;
+    if (u.firstLogin < prev.firstLogin) prev.firstLogin = u.firstLogin;
+    if (u.lastLogin > prev.lastLogin) prev.lastLogin = u.lastLogin;
+    prev.email ??= u.email;
+    prev.name ??= u.name;
+  }
+  return [...byKey.values()].sort((a, b) => (a.lastLogin < b.lastLogin ? 1 : -1));
 }

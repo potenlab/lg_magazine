@@ -114,11 +114,8 @@ docker compose config --services 2>/dev/null | grep -qx mssql && MSSQL_IN_COMPOS
 # it. Looked for in the repo dir and the parent (where the .tar.gz is dropped).
 # Pick the newest bundle (timestamped names sort chronologically); ignore the
 # -latest symlink (may not survive scp). Looks in the repo dir and its parent.
-IMAGES_TAR=""
-for dir in "." ".."; do
-  cand="$(ls -1 "$dir"/lg_magazine-images*.tar.gz 2>/dev/null | grep -v -- '-latest' | sort | tail -1)"
-  [ -n "$cand" ] && { IMAGES_TAR="$cand"; break; }
-done
+. ./scripts/pick-images-bundle.sh
+IMAGES_TAR="$(pick_images_bundle .)"
 
 if [ -n "$IMAGES_TAR" ]; then
   log "Loading prebuilt images from $IMAGES_TAR (offline mode — skipping build)"

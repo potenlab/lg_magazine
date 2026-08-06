@@ -25,9 +25,9 @@ SUDO=(); [ "${EUID:-$(id -u)}" -ne 0 ] && SUDO=(sudo)
 log(){  printf '\n\033[1;36m==> %s\033[0m\n' "$*"; }
 warn(){ printf '\033[1;33m[!] %s\033[0m\n' "$*"; }
 
-# 1. load newest images bundle (repo dir or parent); ignore the -latest symlink
-IMG="$(ls -1 ./lg_magazine-images-*.tar.gz ../lg_magazine-images-*.tar.gz 2>/dev/null \
-        | grep -v -- '-latest' | sort | tail -1 || true)"
+# 1. load newest images bundle — repo dir or parent (~/, where scp drops it).
+. ./scripts/pick-images-bundle.sh
+IMG="$(pick_images_bundle .)"
 if [ -n "${IMG:-}" ]; then
   log "Loading image bundle: $IMG"
   gunzip -c "$IMG" | "${SUDO[@]}" docker load

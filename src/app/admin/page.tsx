@@ -477,18 +477,37 @@ export default function AdminPage() {
     [loginStats, nameByUserid],
   );
 
+  // 로그인 인원에도 차수를 도장 — 접속/명단 현황 블록이 상단 차수 탭을
+  // 따라 필터링될 수 있게 한다. 버킷 기준은 first login 시각.
+  const loginPeopleWithCohort = useMemo(
+    () =>
+      loginPeople.map((p) => ({
+        ...p,
+        cohort: assignCohort(p.firstLogin, cohortRules) ?? UNASSIGNED_LABEL,
+      })),
+    [loginPeople, cohortRules],
+  );
+
   const loginCohorts = useMemo(() => {
     const acc = new Map<string, { people: number; logins: number }>();
-    for (const p of loginPeople) {
-      const key = assignCohort(p.firstLogin, cohortRules) ?? UNASSIGNED_LABEL;
-      const cur = acc.get(key) ?? { people: 0, logins: 0 };
-      acc.set(key, { people: cur.people + 1, logins: cur.logins + p.count });
+    for (const p of loginPeopleWithCohort) {
+      const cur = acc.get(p.cohort) ?? { people: 0, logins: 0 };
+      acc.set(p.cohort, { people: cur.people + 1, logins: cur.logins + p.count });
     }
     const order = [...cohortRules.map((r) => r.name), UNASSIGNED_LABEL];
     return order
       .filter((name) => acc.has(name))
       .map((name) => ({ name, ...acc.get(name)! }));
-  }, [loginPeople, cohortRules]);
+  }, [loginPeopleWithCohort, cohortRules]);
+
+  // 차수 탭 선택 시 접속/명단 현황에 보여줄 인원. 미선택이면 전체.
+  const filteredLoginPeople = useMemo(
+    () =>
+      cohortFilter
+        ? loginPeopleWithCohort.filter((p) => p.cohort === cohortFilter)
+        : loginPeopleWithCohort,
+    [loginPeopleWithCohort, cohortFilter],
+  );
 
   // 필터 탭 옵션: 전체 + 등록된 차수(startAt 오름차순) + 미지정
   const cohortTabs = useMemo(() => {
@@ -771,12 +790,19 @@ export default function AdminPage() {
                   <Hint text="사이트에 1회 이상 로그인한 전체 유저 수 및 차수별 명단입니다." />
                 </p>
                 <p className="text-xs text-[#8d7d66]">
-                  등록 {loginPeople.length}명 · 로그인 {loginStats.totalLogins}회
+                  등록 {filteredLoginPeople.length}명 · 로그인{" "}
+                  {cohortFilter
+                    ? filteredLoginPeople.reduce((s, p) => s + p.count, 0)
+                    : loginStats.totalLogins}
+                  회
                 </p>
               </div>
               {loginCohorts.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 border-b border-[#f2ece0] px-4 py-2.5">
-                  {loginCohorts.map((c) => (
+                  {(cohortFilter
+                    ? loginCohorts.filter((c) => c.name === cohortFilter)
+                    : loginCohorts
+                  ).map((c) => (
                     <span
                       key={c.name}
                       className="rounded-full border border-[#d8cbb8] px-2 py-0.5 text-[11px] text-[#5d4d3b]"
@@ -787,7 +813,7 @@ export default function AdminPage() {
                 </div>
               )}
               <div className="max-h-52 overflow-y-auto px-4 py-2">
-                {loginPeople.length === 0 ? (
+                {filteredLoginPeople.length === 0 ? (
                   <p className="py-2 text-xs text-[#7d705f]">아직 로그인 기록이 없습니다.</p>
                 ) : (
                   <table className="w-full text-left text-[11px]">
@@ -800,7 +826,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {loginPeople.map((u) => (
+                      {filteredLoginPeople.map((u) => (
                         <tr key={u.userid} className="border-t border-[#f2ece0]">
                           <td className="py-1 pr-2 break-all">
                             {u.label}

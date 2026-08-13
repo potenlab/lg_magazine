@@ -126,7 +126,7 @@ export function ClosingChoiceScene({
           className="mt-2 font-serif text-[20px] italic leading-snug text-[#3d2414]"
           style={{ fontFamily: "var(--font-ridi-batang), serif" }}
         >
-          엘아울과 나를 돌아보는 여정, 어떠셨나요? <span className="not-italic text-[#8b7050]">(선택)</span>
+          엘아울과 나를 돌아보는 여정, 어떠셨나요?
         </h3>
         <p className="mt-2 text-[14px] leading-relaxed text-[#6a5a44]">
           플레이 소감, 제안사항 등 자유롭게 남겨주세요.

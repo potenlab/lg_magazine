@@ -279,9 +279,11 @@ export const stubLLM: LLMContract = {
     return "스스로 길을 내는";
   },
 
-  async observePattern({ name, selectedValue }) {
+  async observePattern({ selectedValue }) {
+    // The scene already prefixes "{name}님은", so the situation is a bare noun
+    // phrase like the real LLM output (no name — it used to print the name twice).
     return {
-      situationPattern: `${name}님은 새로운 무언가를 만들어야 하는 자리`,
+      situationPattern: `새로운 무언가를 만들어야 하는 자리`,
       behaviorPattern: `${selectedValue}${josa(selectedValue, "을/를")} 향해 스스로 길을 내실 때`,
     };
   },
@@ -352,11 +354,14 @@ export const stubLLM: LLMContract = {
     const visionLine = session.visionLine
       ? `${session.visionLine} 길을 그리고 있었다.`
       : "";
+    // Only the participant's own answers here — the old fallback invented
+    // details ("퇴근 전 10분", "개인 노트 한 페이지") that were shown to everyone.
+    const firstStep = session.firstStep?.trim()
+      ? `그리고 내일 아침의 첫 걸음으로 "${firstSentence(session.firstStep)}"라고 적었다. `
+      : "";
     return (
-      `우리는 묵묵히 자기 빛을 쌓아온 한 사람을 만났다. ${pron}의 이야기를 들으며, 우리는 ${pron}가 이미 자기만의 답을 가지고 있음을 깨달았다. ` +
-      `완벽한 문서가 아니라 퇴근 전 10분으로 시작하는 사람, 거창한 제안 대신 개인 노트 한 페이지를 먼저 여는 사람. ` +
-      `${pron}는 조용한 기록이 언젠가 팀 전체의 나침반이 되리라는 걸, 말하지 않아도 알고 있었다.\n\n` +
-      `${valuesLine}${visionLine}`.trim() +
+      `우리는 묵묵히 자기 빛을 쌓아온 한 사람을 만났다. ${pron}의 이야기를 들으며, 우리는 ${pron}가 이미 자기만의 답을 가지고 있음을 깨달았다.\n\n` +
+      `${valuesLine}${visionLine} ${firstStep}`.trim() +
       `\n\n이 한 호가 ${pron}의 다음 여정에 작은 등불이 되기를.`
     );
   },

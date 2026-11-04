@@ -6,6 +6,8 @@ import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useStubRetryGate } from "@/lib/v3/useStubRetryGate";
+import { LlmRetryNotice } from "@/components/v3/ui/LlmRetryNotice";
 import { useEditorWait } from "@/lib/v3/useEditorWait";
 import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
 import { renderTemplate } from "@/lib/v3/scenes/template";
@@ -27,6 +29,7 @@ type Beat = "narration1" | "mirror";
 export function Ch1KeywordScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance: (n: SceneId) => void }) {
   const { session, patch } = useV3Session();
   const waitMsg = useEditorWait();
+  const gate = useStubRetryGate();
   const [mirror, setMirror] = useState(session.ch1PoeticMirror);
   const narration = spec.narration ? renderTemplate(spec.narration, session) : undefined;
   // Skip the narration1 beat entirely if no narration is provided — the
@@ -49,21 +52,26 @@ export function Ch1KeywordScene({ spec, onAdvance }: { spec: SceneSpec; onAdvanc
         storyB: session.flowExperience2,
       });
       if (cancelled) return;
-      setMirror(m.text);
-      // stub(fromStub) 은 화면엔 보여주되 세션 캐시 금지 — 재진입 시 재호출되도록.
-      if (!m.fromStub) patch({ ch1PoeticMirror: m.text });
+      const show = () => setMirror(m.text);
+      // stub fallback: offer a retry before showing the generic line, never cache it.
+      if (m.fromStub && gate.hold(show)) return;
+      patch({ ch1PoeticMirror: m.text });
+      show();
     })();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [gate.attempt]);
 
   // narration1 is a stage direction (compact). mirror is the editorial
   // climax — content-sized so the line gets visual weight.
+  // gate.blocked: the retry notice switches the stage to "content", so restore
+  // this scene's stage once the notice closes.
   useEffect(() => {
+    if (gate.blocked) return;
     setStage(beat === "narration1" ? "narration" : "reflection");
-  }, [beat, setStage]);
+  }, [beat, setStage, gate.blocked]);
 
   const advance = () => {
     if (beat === "narration1") {
@@ -94,6 +102,8 @@ export function Ch1KeywordScene({ spec, onAdvance }: { spec: SceneSpec; onAdvanc
   }, [mirror, beat]);
 
   const canAdvance = beat === "mirror" && Boolean(mirror);
+
+  if (gate.blocked) return <LlmRetryNotice gate={gate} name={session.name} />;
 
   return (
     <div

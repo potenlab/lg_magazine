@@ -6,6 +6,8 @@ import { PaginatedNarration } from "@/components/v3/ui/PaginatedNarration";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useStubRetryGate } from "@/lib/v3/useStubRetryGate";
+import { LlmRetryNotice } from "@/components/v3/ui/LlmRetryNotice";
 import { useEditorWait } from "@/lib/v3/useEditorWait";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { DialogStageContext } from "@/components/v3/V3App";
@@ -14,6 +16,7 @@ import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 export function PatternConfirmScene({ spec, onAdvance }: { spec: SceneSpec; onAdvance: (n: SceneId) => void }) {
   const { session, patch } = useV3Session();
   const waitMsg = useEditorWait();
+  const gate = useStubRetryGate();
   const [loaded, setLoaded] = useState(false);
   const [narrationDone, setNarrationDone] = useState(false);
   const [mirror, setMirror] = useState({
@@ -36,30 +39,33 @@ export function PatternConfirmScene({ spec, onAdvance }: { spec: SceneSpec; onAd
         valueDef: session.valueDefinitions[session.topValue] ?? "",
       });
       if (cancelled) return;
-      setMirror({ situation: r.situationPattern, behavior: r.behaviorPattern });
-      // stub fallback은 캐시 금지 — 다음 진입 때 재호출되도록.
-      if (!r.fromStub) {
-        patch({ patternMirrorSituation: r.situationPattern, patternMirrorBehavior: r.behaviorPattern });
-      }
-      setLoaded(true);
+      const show = () => {
+        setMirror({ situation: r.situationPattern, behavior: r.behaviorPattern });
+        setLoaded(true);
+      };
+      // stub fallback: offer a retry before showing the template, never cache it.
+      if (r.fromStub && gate.hold(show)) return;
+      patch({ patternMirrorSituation: r.situationPattern, patternMirrorBehavior: r.behaviorPattern });
+      show();
     })();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [gate.attempt]);
 
   const lines = (spec.lines ?? []).map((l) => renderTemplate(l, session));
   const narration = spec.narration ? renderTemplate(spec.narration, session) : undefined;
   const [showLines, setShowLines] = useState(!narration);
   const { setStage } = useContext(DialogStageContext);
   useEffect(() => {
+    if (gate.blocked) return; // the retry notice sets its own stage
     // Compact while LLM is fetching the pattern OR while showing the
     // italic narration prelude — both render only one or two italic lines
     // and shouldn't claim the full input-sized dialog box.
     const compact = !loaded || (!showLines && narration);
     setStage(compact ? "narration" : "content");
-  }, [loaded, showLines, narration, setStage]);
+  }, [loaded, showLines, narration, setStage, gate.blocked]);
 
   const resolveNext = (confirmedNow: boolean): SceneId | undefined => {
     if (typeof spec.next === "function") {
@@ -78,6 +84,8 @@ export function PatternConfirmScene({ spec, onAdvance }: { spec: SceneSpec; onAd
     const target = resolveNext(false);
     if (target) onAdvance(target);
   };
+
+  if (gate.blocked) return <LlmRetryNotice gate={gate} name={session.name} />;
 
   if (!loaded) {
     return <NarrationBlock text={waitMsg} />;

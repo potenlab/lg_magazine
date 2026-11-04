@@ -6,6 +6,8 @@ import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useStubRetryGate } from "@/lib/v3/useStubRetryGate";
+import { LlmRetryNotice } from "@/components/v3/ui/LlmRetryNotice";
 import { useEditorWait } from "@/lib/v3/useEditorWait";
 import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
 import { renderTemplate } from "@/lib/v3/scenes/template";
@@ -28,6 +30,7 @@ export function ValueReflectionScene({
 }) {
   const { session, patch } = useV3Session();
   const waitMsg = useEditorWait();
+  const gate = useStubRetryGate();
   const [reflection, setReflection] = useState(session.valueReflection);
   const hasNarration = Boolean(spec.narration);
   const [beat, setBeat] = useState<Beat>(hasNarration ? "narration" : "reflection");
@@ -49,19 +52,23 @@ export function ValueReflectionScene({
     (async () => {
       const m = await llm.reflectValues({ name: session.name, values });
       if (cancelled) return;
-      setReflection(m.text);
-      // stub(fromStub) 은 화면엔 보여주되 세션 캐시 금지 — 재진입 시 재호출되도록.
-      if (!m.fromStub) patch({ valueReflection: m.text });
+      const show = () => setReflection(m.text);
+      // stub fallback: offer a retry before showing the generic line, never cache it.
+      if (m.fromStub && gate.hold(show)) return;
+      patch({ valueReflection: m.text });
+      show();
     })();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [gate.attempt]);
 
+  // gate.blocked: restore this scene's stage after the retry notice closes.
   useEffect(() => {
+    if (gate.blocked) return;
     setStage(beat === "narration" ? "narration" : "reflection");
-  }, [beat, setStage]);
+  }, [beat, setStage, gate.blocked]);
 
   const advance = () => {
     if (beat === "narration") {
@@ -90,6 +97,8 @@ export function ValueReflectionScene({
   }, [reflection, beat]);
 
   const canAdvance = beat === "reflection" && Boolean(reflection);
+
+  if (gate.blocked) return <LlmRetryNotice gate={gate} name={session.name} />;
 
   return (
     <div

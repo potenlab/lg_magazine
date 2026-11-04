@@ -4,6 +4,8 @@ import { useContext, useEffect, useState } from "react";
 import { NarrationBlock } from "@/components/v3/ui/NarrationBlock";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useStubRetryGate } from "@/lib/v3/useStubRetryGate";
+import { LlmRetryNotice } from "@/components/v3/ui/LlmRetryNotice";
 import { useEditorWait } from "@/lib/v3/useEditorWait";
 import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
 import { renderTemplate } from "@/lib/v3/scenes/template";
@@ -28,6 +30,7 @@ export function StrengthConfirmScene({
 }) {
   const { session, patch } = useV3Session();
   const waitMsg = useEditorWait();
+  const gate = useStubRetryGate();
   const [loaded, setLoaded] = useState(
     Boolean(session.strengthCommonAsk && session.strengthLinkedValue),
   );
@@ -54,27 +57,33 @@ export function StrengthConfirmScene({
         values,
       });
       if (cancelled) return;
-      setCommonAsk(r.commonAsk);
       // stub의 commonAsk는 고정 일반 문구 — 세션에 캐시하면 Ch2 종합·비전
       // 프롬프트 입력까지 오염된다. linkedValue는 사용자가 고른 가치 단어라
       // 항상 안전. stub일 때 commonAsk를 비워두면 다음 진입 때 재호출된다.
-      patch(
-        r.fromStub
-          ? { strengthLinkedValue: r.linkedValue }
-          : { strengthCommonAsk: r.commonAsk, strengthLinkedValue: r.linkedValue },
-      );
-      setLoaded(true);
+      const show = () => {
+        setCommonAsk(r.commonAsk);
+        patch(
+          r.fromStub
+            ? { strengthLinkedValue: r.linkedValue }
+            : { strengthCommonAsk: r.commonAsk, strengthLinkedValue: r.linkedValue },
+        );
+        setLoaded(true);
+      };
+      // stub fallback: offer a retry before showing the generic line.
+      if (r.fromStub && gate.hold(show)) return;
+      show();
     })();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [gate.attempt]);
 
   useEffect(() => {
+    if (gate.blocked) return; // the retry notice sets its own stage
     const compact = !loaded || (!showLines && hasNarration);
     setStage(compact ? "narration" : "content");
-  }, [loaded, showLines, hasNarration, setStage]);
+  }, [loaded, showLines, hasNarration, setStage, gate.blocked]);
 
   const advance = () => {
     // Mark the reflection as accepted for admin/data hygiene — there's no
@@ -84,6 +93,8 @@ export function StrengthConfirmScene({
     else if (typeof spec.next === "function") onAdvance(spec.next(session));
   };
   useEnterToAdvance(advance, loaded);
+
+  if (gate.blocked) return <LlmRetryNotice gate={gate} name={session.name} />;
 
   if (!loaded) {
     return <NarrationBlock text={waitMsg} />;

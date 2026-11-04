@@ -8,6 +8,8 @@ import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
 import { useEditorWait } from "@/lib/v3/useEditorWait";
 import { useEnterToAdvance } from "@/lib/v3/useEnterToAdvance";
+import { useStubRetryGate } from "@/lib/v3/useStubRetryGate";
+import { LlmRetryNotice } from "@/components/v3/ui/LlmRetryNotice";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
@@ -34,6 +36,7 @@ export function StrengthSynthesisScene({
   const [synthesis, setSynthesis] = useState<string>(session.strengthSynthesis);
   const [loaded, setLoaded] = useState<boolean>(Boolean(session.strengthSynthesis));
   const { setStage } = useContext(DialogStageContext);
+  const gate = useStubRetryGate();
 
   useEffect(() => {
     setStage("content");
@@ -58,12 +61,15 @@ export function StrengthSynthesisScene({
         });
         if (cancelled) return;
         const text = (r.synthesis ?? "").trim();
-        setSynthesis(text);
-        // stub fallback(`fromStub: true`)일 때는 캐시 금지 — 일반 템플릿이
-        // 세션에 박혀버리면 사용자가 재진입해도 LLM을 다시 호출하지 못하고
-        // 영구히 stub 출력만 보게 됨. 실제 LLM 응답만 저장.
-        if (text && !r.fromStub) patch({ strengthSynthesis: text });
-        setLoaded(true);
+        const show = () => {
+          setSynthesis(text);
+          setLoaded(true);
+        };
+        // stub fallback: ask the participant to retry before showing the
+        // generic template, and never cache it (re-entry must call the AI again).
+        if (r.fromStub && gate.hold(show)) return;
+        if (text) patch({ strengthSynthesis: text });
+        show();
       } catch (err) {
         console.error("[v3] synthesizeStrength failed:", err);
         if (!cancelled) setLoaded(true);
@@ -73,13 +79,15 @@ export function StrengthSynthesisScene({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [gate.attempt]);
 
   const advance = () => {
     if (typeof spec.next === "string") onAdvance(spec.next);
     else if (typeof spec.next === "function") onAdvance(spec.next(session));
   };
   useEnterToAdvance(advance, Boolean(loaded && synthesis));
+
+  if (gate.blocked) return <LlmRetryNotice gate={gate} name={session.name} />;
 
   if (!loaded || !synthesis) {
     // 매거진 도출 직전 버퍼는 LLM synthesis 호출이라 일반 응답보다 훨씬 오래

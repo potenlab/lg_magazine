@@ -9,7 +9,7 @@
 //    호출자에게 돌려준다 (호출자가 session.patch 로 저장).
 
 import type { V3Session } from "@/lib/v3/scenes/types";
-import { llm } from "@/lib/v3/llm";
+import { llm, isStubText } from "@/lib/v3/llm";
 import { cleanArticleField } from "@/lib/v3/llm/articleSanitize";
 import { buildAppendixThreads } from "@/lib/v3/pdf/buildAppendix";
 import type { MagazineData } from "@/lib/v3/pdf/MagazinePDF";
@@ -58,19 +58,29 @@ export async function assembleMagazineDataFromSession(session: V3Session): Promi
     ),
   ]);
 
-  if (needCover) cachePatch.coverHeadline = coverHeadline;
-  if (needIntro) cachePatch.editorIntro = editorIntro;
-  if (needOutro) cachePatch.editorOutro = editorOutro;
+  // Fallback (stub) text is shown in this PDF but never cached: caching it
+  // saved the generic template into the participant's record for good, so
+  // every later download and the admin PDF repeated it.
+  if (needCover && !isStubText(coverHeadline)) cachePatch.coverHeadline = coverHeadline;
+  if (needIntro && !isStubText(editorIntro)) cachePatch.editorIntro = editorIntro;
+  if (needOutro && !isStubText(editorOutro)) cachePatch.editorOutro = editorOutro;
 
   // 결과 articles 조합: 캐시 우선, 필요했던 것은 freshArticles 에서 꺼냄.
   const articles: Record<number, Article> = { ...cachedArticles };
+  const cacheable: Record<number, Article> = { ...cachedArticles };
+  let newlyCached = 0;
   let freshIdx = 0;
   for (const n of needArticle) {
-    articles[n] = freshArticles[freshIdx++];
+    const fresh = freshArticles[freshIdx++] as Article & { fromStub?: boolean };
+    articles[n] = fresh;
+    if (isUsable(fresh) && !fresh.fromStub) {
+      cacheable[n] = fresh;
+      newlyCached++;
+    }
   }
-  if (needArticle.length > 0) {
-    // 새로 생성한 게 있으면 chapterArticles 도 cachePatch 에 포함.
-    cachePatch.chapterArticles = articles;
+  if (newlyCached > 0) {
+    // 새로 생성한 실제 기사만 chapterArticles 캐시에 포함.
+    cachePatch.chapterArticles = cacheable;
   }
 
   return {

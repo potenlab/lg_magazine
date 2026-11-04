@@ -33,7 +33,7 @@ export const runtime = "nodejs";
 // 일반적 템플릿으로만 나오는 회귀의 원인. Pro 플랜에선 60초까지 연장 가능.
 export const maxDuration = 60;
 
-type Task =
+export type Task =
   | "judgeBranch"
   | "reflectShort"
   | "rephraseLight"
@@ -75,6 +75,17 @@ const LIGHT_TASKS = new Set<Task>([
 
 function tierFor(task: Task): LLMTier {
   return LIGHT_TASKS.has(task) ? "light" : "heavy";
+}
+
+// One JSON line per failed request. Queued (async) jobs are logged by jobQueue.
+function logFailure(err: unknown, ctx: { task: string; tier: LLMTier } | null): void {
+  const base = { task: ctx?.task ?? null, tier: ctx?.tier ?? null };
+  if (err instanceof LlmBusyError) {
+    console.log(JSON.stringify({ evt: "llm_busy", ...base, retryAfterSec: err.retryAfterSec }));
+    return;
+  }
+  const error = (err instanceof Error ? err.message : String(err)).slice(0, 300);
+  console.log(JSON.stringify({ evt: "llm_error", ...base, error }));
 }
 
 async function dispatch(task: Task, payload: Record<string, unknown>): Promise<unknown> {
@@ -119,6 +130,7 @@ async function dispatch(task: Task, payload: Record<string, unknown>): Promise<u
 }
 
 export async function POST(req: Request) {
+  let logCtx: { task: string; tier: LLMTier } | null = null;
   try {
     const body = (await req.json()) as V3LLMBody;
     if (!body.task || !body.payload) {
@@ -137,10 +149,12 @@ export async function POST(req: Request) {
     // Async path: enqueue and return a job id immediately — the client polls for
     // the result, so the request never waits (and never times out) under load.
     const tier = tierFor(body.task);
+    logCtx = { task: body.task, tier };
 
     if (ASYNC_ENABLED) {
-      const jobId = enqueue(() =>
-        runWithMode(mode, deep, tier, () => dispatch(body.task, body.payload)),
+      const jobId = enqueue(
+        () => runWithMode(mode, deep, tier, () => dispatch(body.task, body.payload)),
+        { tier, label: body.task },
       );
       return NextResponse.json({ jobId }, { status: 202 });
     }
@@ -148,6 +162,7 @@ export async function POST(req: Request) {
     const result = await runWithMode(mode, deep, tier, () => dispatch(body.task, body.payload));
     return NextResponse.json({ result });
   } catch (err) {
+    logFailure(err, logCtx);
     // Concurrency queue saturated → tell the client to back off and retry,
     // rather than surfacing a 500/504 it can't distinguish from a hard failure.
     if (err instanceof LlmBusyError) {

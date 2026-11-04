@@ -112,9 +112,57 @@ const BUSY_RETRY_MS = 3_000;
 // the same instant and re-create the spike.
 const retryPause = () => wait(BUSY_RETRY_MS + Math.random() * 2_000);
 
+// Any failed job is worth resubmitting (upstream 5xx after the server's own
+// retries, an unparseable answer, a lost job) — except when the client already
+// waited out its deadline, the job aged out of the server queue, or every API
+// code hit its daily cap. Those fail the same way again, and a resubmit only
+// adds load to a backlog that is already too long.
 function isRecoverableJobError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
-  return msg.includes("job expired or not found") || msg.includes("llm_busy");
+  // "/api error 4xx" except 429 (busy): the request itself was rejected (e.g. input too long).
+  return !isDeadlineError(msg) && !msg.includes("exhausted") && !/\/api error 4(?!29)\d\d/.test(msg);
+}
+
+function isDeadlineError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("client deadline") || msg.includes("expired_in_queue");
+}
+
+// Heavy tasks run behind waiting screens, so after the fast retries fail they
+// get one more full attempt after a pause before the scene sees a fallback.
+const PATIENT_RETRY_MS = 10_000;
+// No NEW resubmit starts after this long (a job already in line keeps waiting
+// up to JOB_CLIENT_DEADLINE_MS). Bounds how long a participant can sit on a
+// waiting screen when the AI keeps failing.
+const RETRY_BUDGET_LIGHT_MS = 90_000;
+const RETRY_BUDGET_HEAVY_MS = 180_000;
+
+/** Report a fallback to the server so failures can be counted per cohort.
+ *  Fire-and-forget: reporting must never break or slow down a scene. */
+function reportFallback(task: string, err: unknown): void {
+  try {
+    const reason = (err instanceof Error ? err.message : String(err ?? "")).slice(0, 200);
+    const body = JSON.stringify({ task, reason });
+    if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+      // text/plain: a JSON-typed beacon blob is rejected by some Chromium versions.
+      navigator.sendBeacon("/api/v3/llm/fallback", new Blob([body], { type: "text/plain;charset=UTF-8" }));
+    } else if (typeof fetch === "function") {
+      void fetch("/api/v3/llm/fallback", { method: "POST", body, keepalive: true }).catch(() => {});
+    }
+  } catch {
+    // ignore
+  }
+}
+
+// String-returning tasks can't carry a `fromStub` flag, so remember which
+// strings came from the stub. Callers use isStubText() to avoid caching them.
+const stubTexts = new Set<string>();
+function markStub(text: string): string {
+  if (text) stubTexts.add(text);
+  return text;
+}
+export function isStubText(text: string | null | undefined): boolean {
+  return !!text && stubTexts.has(text);
 }
 
 // Heavy synthesis tasks run behind explicit waiting screens, so a long quota
@@ -135,6 +183,19 @@ const LONG_WAIT_TASKS = new Set([
 ]);
 
 async function callTask<T>(task: string, payload: unknown): Promise<T> {
+  const heavy = LONG_WAIT_TASKS.has(task);
+  const budgetEnd = Date.now() + (heavy ? RETRY_BUDGET_HEAVY_MS : RETRY_BUDGET_LIGHT_MS);
+  try {
+    return await callTaskOnce<T>(task, payload, budgetEnd);
+  } catch (err) {
+    const pause = PATIENT_RETRY_MS + Math.random() * 5_000;
+    if (!heavy || !isRecoverableJobError(err) || Date.now() + pause > budgetEnd) throw err;
+    await wait(pause);
+    return await callTaskOnce<T>(task, payload, budgetEnd);
+  }
+}
+
+async function callTaskOnce<T>(task: string, payload: unknown, budgetEnd: number): Promise<T> {
   const { mode, deep } = readUrlConfig();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (mode) headers["x-llm-mode"] = mode;
@@ -142,13 +203,17 @@ async function callTask<T>(task: string, payload: unknown): Promise<T> {
   const body = JSON.stringify({ task, payload });
 
   for (let resubmits = 0; ; resubmits++) {
+    // Checked at each decision: a poll can take minutes, so a value computed
+    // up front would be stale.
+    // 5s = the longest retry pause, so a resubmit never starts after the budget.
+    const canResubmit = () => resubmits < RESUBMIT_MAX && Date.now() + 5_000 < budgetEnd;
     let res: Response;
     try {
       res = await fetch("/api/v3/llm", { method: "POST", headers, body });
     } catch (err) {
       // Network blip (connection reset/refused mid-spike) — same transient
       // class as a 5xx below; retry instead of dropping straight to stub.
-      if (resubmits < RESUBMIT_MAX) {
+      if (canResubmit()) {
         await retryPause();
         continue;
       }
@@ -158,7 +223,7 @@ async function callTask<T>(task: string, payload: unknown): Promise<T> {
     // Server said "busy, retry in N seconds" — honor it instead of treating
     // a 3-second congestion blip as a hard failure (which put stub content
     // on screen permanently for that scene).
-    if (res.status === 429 && resubmits < RESUBMIT_MAX) {
+    if (res.status === 429 && canResubmit()) {
       const after = Number(res.headers.get("Retry-After")) || 3;
       if (LONG_WAIT_TASKS.has(task) || after <= 5) {
         await wait(Math.min(after, 120) * 1000);
@@ -178,8 +243,8 @@ async function callTask<T>(task: string, payload: unknown): Promise<T> {
       } catch (err) {
         // Jobs live in one replica's memory — a deploy/rebalance 404s every
         // in-flight poll. Resubmitting the task is the intended recovery.
-        if (resubmits < RESUBMIT_MAX && isRecoverableJobError(err)) {
-          await wait(BUSY_RETRY_MS);
+        if (canResubmit() && isRecoverableJobError(err)) {
+          await retryPause();
           continue;
         }
         throw err;
@@ -189,7 +254,7 @@ async function callTask<T>(task: string, payload: unknown): Promise<T> {
     // Transient rejection in front of the app (nginx/replica 5xx during a
     // load spike — the Jul 13 600-user run's dominant failure). The blip
     // clears in seconds; a jittered resubmit lands after it.
-    if (res.status >= 500 && resubmits < RESUBMIT_MAX) {
+    if (res.status >= 500 && canResubmit()) {
       await retryPause();
       continue;
     }
@@ -203,11 +268,28 @@ async function callTask<T>(task: string, payload: unknown): Promise<T> {
   }
 }
 
+// Consecutive dropped polls tolerated before giving up on this job.
+const POLL_NETWORK_FAILURES_MAX = 5;
+
 async function pollJob<T>(jobId: string): Promise<T> {
   const started = Date.now();
+  let networkFailures = 0;
   for (;;) {
     await wait(pollDelay(Date.now() - started));
-    const res = await fetch(`/api/v3/llm/jobs?id=${encodeURIComponent(jobId)}`);
+    let res: Response;
+    try {
+      res = await fetch(`/api/v3/llm/jobs?id=${encodeURIComponent(jobId)}`);
+      networkFailures = 0;
+    } catch (err) {
+      // A dropped poll (Wi-Fi blip, stalled connection) doesn't mean the job
+      // failed — it is still queued or running on the server. Keep polling the
+      // same job instead of resubmitting a duplicate to the back of the line.
+      if (++networkFailures >= POLL_NETWORK_FAILURES_MAX) throw err;
+      if (Date.now() - started > JOB_CLIENT_DEADLINE_MS) {
+        throw new Error("v3 LLM job timed out (client deadline)");
+      }
+      continue;
+    }
     if (res.status === 404) throw new Error("v3 LLM job expired or not found");
     if (res.ok) {
       const job = (await res.json()) as { status: string; result?: T; error?: string };
@@ -245,6 +327,7 @@ export const realLLM: LLMContract = {
       );
     } catch (err) {
       console.warn("[v3 LLM] judgeBranch fell back to heuristic:", err);
+      reportFallback("judgeBranch", err);
       return judgeBranchHeuristic(rule, answer);
     }
   },
@@ -254,7 +337,8 @@ export const realLLM: LLMContract = {
       return await callTask<string>("reflectShort", input);
     } catch (err) {
       console.warn("[v3 LLM] reflectShort fell back to stub:", err);
-      return stubLLM.reflectShort(input);
+      reportFallback("reflectShort", err);
+      return markStub(await stubLLM.reflectShort(input));
     }
   },
 
@@ -263,7 +347,8 @@ export const realLLM: LLMContract = {
       return await callTask<string>("rephraseLight", input);
     } catch (err) {
       console.warn("[v3 LLM] rephraseLight fell back to stub:", err);
-      return stubLLM.rephraseLight(input);
+      reportFallback("rephraseLight", err);
+      return markStub(await stubLLM.rephraseLight(input));
     }
   },
 
@@ -272,7 +357,8 @@ export const realLLM: LLMContract = {
       return await callTask<string>("comfortReassure", input);
     } catch (err) {
       console.warn("[v3 LLM] comfortReassure fell back to stub:", err);
-      return stubLLM.comfortReassure(input);
+      reportFallback("comfortReassure", err);
+      return markStub(await stubLLM.comfortReassure(input));
     }
   },
 
@@ -281,12 +367,14 @@ export const realLLM: LLMContract = {
       const r = await callTask<string>("reflectPoetic", input);
       if (!r?.trim()) {
         console.warn("[v3 LLM][STUB-FALLBACK] reflectPoetic: empty output → using generic stub.");
+        reportFallback("reflectPoetic", "empty or incomplete output");
         const s = await stubLLM.reflectPoetic(input);
         return { ...s, fromStub: true };
       }
       return { text: r };
     } catch (err) {
       console.warn("[v3 LLM][STUB-FALLBACK] reflectPoetic threw → using generic stub:", err);
+      reportFallback("reflectPoetic", err);
       const s = await stubLLM.reflectPoetic(input);
       return { ...s, fromStub: true };
     }
@@ -297,12 +385,14 @@ export const realLLM: LLMContract = {
       const r = await callTask<string>("reflectValues", input);
       if (!r?.trim()) {
         console.warn("[v3 LLM][STUB-FALLBACK] reflectValues: empty output → using generic stub.");
+        reportFallback("reflectValues", "empty or incomplete output");
         const s = await stubLLM.reflectValues(input);
         return { ...s, fromStub: true };
       }
       return { text: r };
     } catch (err) {
       console.warn("[v3 LLM][STUB-FALLBACK] reflectValues threw → using generic stub:", err);
+      reportFallback("reflectValues", err);
       const s = await stubLLM.reflectValues(input);
       return { ...s, fromStub: true };
     }
@@ -313,6 +403,7 @@ export const realLLM: LLMContract = {
       return await callTask<{ commonAsk: string; linkedValue: string }>("reflectStrength", input);
     } catch (err) {
       console.warn("[v3 LLM][STUB-FALLBACK] reflectStrength threw → using generic stub:", err);
+      reportFallback("reflectStrength", err);
       const s = await stubLLM.reflectStrength(input);
       return { ...s, fromStub: true };
     }
@@ -325,12 +416,14 @@ export const realLLM: LLMContract = {
       // route to stub in that case so the scene always has something to show.
       if (!r.synthesis?.trim()) {
         console.warn("[v3 LLM][STUB-FALLBACK] synthesizeStrength: empty synthesis from server → using generic stub. Output will look general.");
+        reportFallback("synthesizeStrength", "empty or incomplete output");
         const s = await stubLLM.synthesizeStrength(input);
         return { ...s, fromStub: true };
       }
       return r;
     } catch (err) {
       console.warn("[v3 LLM][STUB-FALLBACK] synthesizeStrength threw → using generic stub:", err);
+      reportFallback("synthesizeStrength", err);
       const s = await stubLLM.synthesizeStrength(input);
       return { ...s, fromStub: true };
     }
@@ -341,12 +434,14 @@ export const realLLM: LLMContract = {
       const r = await callTask<{ synthesis: string }>("synthesizeGrowthVision", input);
       if (!r.synthesis?.trim()) {
         console.warn("[v3 LLM][STUB-FALLBACK] synthesizeGrowthVision: empty synthesis from server → using generic stub. Output will look general.");
+        reportFallback("synthesizeGrowthVision", "empty or incomplete output");
         const s = await stubLLM.synthesizeGrowthVision(input);
         return { ...s, fromStub: true };
       }
       return r;
     } catch (err) {
       console.warn("[v3 LLM][STUB-FALLBACK] synthesizeGrowthVision threw → using generic stub:", err);
+      reportFallback("synthesizeGrowthVision", err);
       const s = await stubLLM.synthesizeGrowthVision(input);
       return { ...s, fromStub: true };
     }
@@ -357,6 +452,7 @@ export const realLLM: LLMContract = {
       return await callTask<{ directions: string[] }>("generateVisionDirections", input);
     } catch (err) {
       console.warn("[v3 LLM][STUB-FALLBACK] generateVisionDirections threw → using generic stub:", err);
+      reportFallback("generateVisionDirections", err);
       const s = await stubLLM.generateVisionDirections(input);
       return { ...s, fromStub: true };
     }
@@ -370,12 +466,14 @@ export const realLLM: LLMContract = {
       );
       if (!r.cards || r.cards.length < 3) {
         console.warn("[v3 LLM][STUB-FALLBACK] generateJobTrendCards: insufficient cards → using generic stub.");
+        reportFallback("generateJobTrendCards", "empty or incomplete output");
         const s = await stubLLM.generateJobTrendCards(input);
         return { ...s, fromStub: true };
       }
       return r;
     } catch (err) {
       console.warn("[v3 LLM][STUB-FALLBACK] generateJobTrendCards threw → using generic stub:", err);
+      reportFallback("generateJobTrendCards", err);
       const s = await stubLLM.generateJobTrendCards(input);
       return { ...s, fromStub: true };
     }
@@ -386,6 +484,7 @@ export const realLLM: LLMContract = {
       return await callTask<{ horizon: string[] }>("generateTimeHorizon", input);
     } catch (err) {
       console.warn("[v3 LLM][STUB-FALLBACK] generateTimeHorizon threw → using generic stub:", err);
+      reportFallback("generateTimeHorizon", err);
       const s = await stubLLM.generateTimeHorizon(input);
       return { ...s, fromStub: true };
     }
@@ -396,7 +495,8 @@ export const realLLM: LLMContract = {
       return await callTask<string>("extractKeyword", input);
     } catch (err) {
       console.warn("[v3 LLM] extractKeyword fell back to stub:", err);
-      return stubLLM.extractKeyword(input);
+      reportFallback("extractKeyword", err);
+      return markStub(await stubLLM.extractKeyword(input));
     }
   },
 
@@ -405,6 +505,7 @@ export const realLLM: LLMContract = {
       return await callTask<{ situationPattern: string; behaviorPattern: string }>("observePattern", input);
     } catch (err) {
       console.warn("[v3 LLM][STUB-FALLBACK] observePattern threw → using template stub:", err);
+      reportFallback("observePattern", err);
       const s = await stubLLM.observePattern(input);
       return { ...s, fromStub: true };
     }
@@ -418,6 +519,7 @@ export const realLLM: LLMContract = {
       );
     } catch (err) {
       console.warn("[v3 LLM][STUB-FALLBACK] writeChapterArticle threw → using template stub:", err);
+      reportFallback("writeChapterArticle", err);
       const s = await stubLLM.writeChapterArticle(input);
       return { ...s, fromStub: true };
     }
@@ -428,7 +530,8 @@ export const realLLM: LLMContract = {
       return await callTask<string>("writeEditorNote", input);
     } catch (err) {
       console.warn("[v3 LLM] writeEditorNote fell back to stub:", err);
-      return stubLLM.writeEditorNote(input);
+      reportFallback("writeEditorNote", err);
+      return markStub(await stubLLM.writeEditorNote(input));
     }
   },
 
@@ -437,7 +540,8 @@ export const realLLM: LLMContract = {
       return await callTask<string>("writeCoverHeadline", input);
     } catch (err) {
       console.warn("[v3 LLM] writeCoverHeadline fell back to stub:", err);
-      return stubLLM.writeCoverHeadline(input);
+      reportFallback("writeCoverHeadline", err);
+      return markStub(await stubLLM.writeCoverHeadline(input));
     }
   },
 };

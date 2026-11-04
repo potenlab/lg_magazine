@@ -8,6 +8,8 @@ import { EditorialInline } from "@/components/v3/ui/EditorialText";
 import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
 import { llm } from "@/lib/v3/llm";
+import { useStubRetryGate } from "@/lib/v3/useStubRetryGate";
+import { LlmRetryNotice } from "@/components/v3/ui/LlmRetryNotice";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { SceneSpec, SceneId } from "@/lib/v3/scenes/types";
 
@@ -74,6 +76,7 @@ export function GrowthVisionSynthesisScene({
   // 없고 (사용자 피드백: "너가 뭔데 날 판단해"), 단지 "다음 단계로 넘어간다"
   // 는 단계 전환 감을 살리기 위한 의도된 대기.
   const [judging, setJudging] = useState(false);
+  const gate = useStubRetryGate();
 
   useEffect(() => {
     setStage("content");
@@ -108,10 +111,15 @@ export function GrowthVisionSynthesisScene({
         });
         if (cancelled) return;
         const text = (r.synthesis ?? "").trim();
-        setSynthesis(text);
-        // stub fallback일 때는 캐시 금지 — Chapter2MagazineScene 동일 사유.
-        if (text && !r.fromStub) patch({ growthVisionSynthesis: text });
-        setLoaded(true);
+        const show = () => {
+          setSynthesis(text);
+          setLoaded(true);
+        };
+        // stub fallback: ask the participant to retry before showing the
+        // generic template, and never cache it (re-entry must call the AI again).
+        if (r.fromStub && gate.hold(show)) return;
+        if (text) patch({ growthVisionSynthesis: text });
+        show();
       } catch (err) {
         console.error("[v3] synthesizeGrowthVision failed:", err);
         if (!cancelled) setLoaded(true);
@@ -121,7 +129,7 @@ export function GrowthVisionSynthesisScene({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [gate.attempt]);
 
   // Fetch personalized direction recommendations in parallel with the BEAT
   // synthesis. Failure is silent — the section just doesn't render.
@@ -161,6 +169,8 @@ export function GrowthVisionSynthesisScene({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  if (gate.blocked) return <LlmRetryNotice gate={gate} name={session.name} />;
 
   if (!loaded || !synthesis) {
     return (

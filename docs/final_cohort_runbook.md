@@ -44,7 +44,18 @@ cd ../lg_magazine-prod && ./pack-images.sh
 
 Next time, skip `worktree add` and run `git checkout --detach origin/production` inside `../lg_magazine-prod`.
 
-Upload `lg_magazine-images-<timestamp>.tar.gz` to the server's home folder (`~`), then on the server:
+If the build stops with `exec /bin/sh: exec format error`, Docker on the Mac can't run Intel (amd64) programs yet.
+Colima needs this once per restart: `docker run --privileged --rm tonistiigi/binfmt --install amd64`.
+
+The server already has the database image, so for a code-only update upload just the app image. It is much
+smaller to push through the U-Cloud VM. `redeploy.sh` loads the newest `lg_magazine-images*.tar.gz` by the date
+in its name:
+
+```bash
+docker save lg-magazine:latest | gzip > lg_magazine-images-$(date +%Y%m%d-%H%M%S)-app.tar.gz
+```
+
+Upload `lg_magazine-images-<timestamp>.tar.gz` (or the `-app` one) to the server's home folder (`~`), then on the server:
 
 ```
 cd ~/lg_magazine

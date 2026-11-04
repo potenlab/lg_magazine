@@ -193,12 +193,15 @@ Find the server block for the domain:
 sudo grep -RlE "mybook\.lgacademy\.com" /etc/nginx/
 ```
 
-### 3a. Upstream — 3 replicas, round-robin (file: `/etc/nginx/conf.d/lg-magazine-upstream.conf`)
+### 3a. Upstream — 3 replicas, sticky by login cookie (file: `/etc/nginx/conf.d/lg-magazine-upstream.conf`)
+
+With `LLM_ASYNC=1` the AI job queue lives in each replica's memory, so a job's
+submit and its polls must reach the same replica. Do **not** use plain
+round-robin (2 of 3 polls would 404 and participants would get fallback text).
 
 ```nginx
-# Load-balances the 3 app replicas. Round-robin is safe — the app is stateless
-# (sessions are HMAC cookies, persistent data is in Supabase).
 upstream lg_magazine {
+    hash $cookie_qrius_session consistent;
     server 127.0.0.1:3002 max_fails=3 fail_timeout=15s;
     server 127.0.0.1:3003 max_fails=3 fail_timeout=15s;
     server 127.0.0.1:3004 max_fails=3 fail_timeout=15s;

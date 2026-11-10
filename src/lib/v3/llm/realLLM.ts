@@ -83,16 +83,39 @@ export function readUrlConfig(): { mode: "gem" | "claude" | "mix" | null; deep: 
   }
 }
 
-// Client poll cadence + a generous safety deadline for a genuinely stuck job.
+// How long the browser waits for one job. Long-wait tasks (behind waiting
+// screens) get a generous safety deadline. Dialog replies only wait until
+// their retry budget runs out (RETRY_BUDGET_LIGHT_MS, counted from the first
+// try), so the scene offers "다시 시도" after about 90 s in total instead of
+// leaving the participant on a waiting screen. A late resubmit still gets at
+// least DIALOG_MIN_WAIT_MS.
 const JOB_CLIENT_DEADLINE_MS = 6 * 60_000;
+const DIALOG_MIN_WAIT_MS = 5_000;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// Adaptive poll cadence: fast while the job is young (light tasks finish in
-// a few seconds), slower the longer it waits — a long wait means a slow
+// Long-poll: each check asks the server to hold the request up to this many
+// seconds and answer the moment the job finishes, so a reply shows as soon as
+// it is ready (no poll gap) and a reply costs one or two requests, not seven.
+const LONG_POLL_WAIT_S = 15;
+// A check that comes back faster than this without a finished job was not
+// held (an older server mid-deploy, a short check, or an error status): wait
+// pollDelay first.
+const LONG_POLL_MIN_HOLD_MS = 1_000;
+// At most this many held checks per page. Over HTTP/1.1 a browser opens only 6
+// connections per site; a scene that starts 7 tasks at once must not park all
+// of them on held checks and block images and session saves. Other jobs use
+// short timed checks until a held slot frees up. Long-wait jobs may hold only
+// one, so a dialog reply always finds a free held slot.
+const MAX_HELD_POLLS = 2;
+const MAX_HELD_LONG_WAIT = 1;
+let heldPolls = 0;
+let heldLongWait = 0;
+
+// Fallback poll cadence when the server does not hold the request: fast while
+// the job is young, slower the longer it waits — a long wait means a slow
 // provider / deep queue, and hammering /jobs every 1.5s is exactly what
 // amplified HTTP load at peak in the Jul 13 600-user run (see
-// docs/loadtest-600-per-step-before-after-jul13.md §3b). Worst case this adds
-// ~6s of poll lag to a wait that is already minutes long.
+// docs/loadtest-600-per-step-before-after-jul13.md §3b).
 function pollDelay(elapsedMs: number): number {
   if (elapsedMs < 10_000) return 1_500;
   if (elapsedMs < 30_000) return 3_000;
@@ -131,9 +154,10 @@ function isDeadlineError(err: unknown): boolean {
 // Heavy tasks run behind waiting screens, so after the fast retries fail they
 // get one more full attempt after a pause before the scene sees a fallback.
 const PATIENT_RETRY_MS = 10_000;
-// No NEW resubmit starts after this long (a job already in line keeps waiting
-// up to JOB_CLIENT_DEADLINE_MS). Bounds how long a participant can sit on a
-// waiting screen when the AI keeps failing.
+// No NEW resubmit starts after this long. A dialog job in line also stops
+// waiting at this point; a long-wait job keeps waiting up to
+// JOB_CLIENT_DEADLINE_MS. Bounds how long a participant can sit on a waiting
+// screen when the AI keeps failing.
 const RETRY_BUDGET_LIGHT_MS = 90_000;
 const RETRY_BUDGET_HEAVY_MS = 180_000;
 
@@ -238,8 +262,12 @@ async function callTaskOnce<T>(task: string, payload: unknown, budgetEnd: number
     // the user simply waits in line. Sync server still returns 200 + { result }.
     if (res.status === 202) {
       const { jobId } = (await res.json()) as { jobId: string };
+      const longWait = LONG_WAIT_TASKS.has(task);
+      const deadlineMs = longWait
+        ? JOB_CLIENT_DEADLINE_MS
+        : Math.max(DIALOG_MIN_WAIT_MS, budgetEnd - Date.now());
       try {
-        return await pollJob<T>(jobId);
+        return await pollJob<T>(jobId, deadlineMs, longWait);
       } catch (err) {
         // Jobs live in one replica's memory — a deploy/rebalance 404s every
         // in-flight poll. Resubmitting the task is the intended recovery.
@@ -271,25 +299,44 @@ async function callTaskOnce<T>(task: string, payload: unknown, budgetEnd: number
 // Consecutive dropped polls tolerated before giving up on this job.
 const POLL_NETWORK_FAILURES_MAX = 5;
 
-async function pollJob<T>(jobId: string): Promise<T> {
+async function pollJob<T>(jobId: string, deadlineMs: number, longWait: boolean): Promise<T> {
   const started = Date.now();
+  const timedOut = () => new Error("v3 LLM job timed out (client deadline)");
   let networkFailures = 0;
   for (;;) {
-    await wait(pollDelay(Date.now() - started));
-    let res: Response;
+    // Ask right away and, if a held slot is free, let the server hold the
+    // request until the job is done — but never past this job's deadline.
+    const remainingMs = deadlineMs - (Date.now() - started);
+    const hold = heldPolls < MAX_HELD_POLLS && (!longWait || heldLongWait < MAX_HELD_LONG_WAIT);
+    const waitS = Math.max(1, Math.min(LONG_POLL_WAIT_S, Math.ceil(remainingMs / 1000)));
+    const query = `id=${encodeURIComponent(jobId)}` + (hold ? `&wait=${waitS}` : "");
+    const askedAt = Date.now();
+    let res: Response | null = null;
+    let fetchError: unknown = null;
+    if (hold) {
+      heldPolls++;
+      if (longWait) heldLongWait++;
+    }
     try {
-      res = await fetch(`/api/v3/llm/jobs?id=${encodeURIComponent(jobId)}`);
-      networkFailures = 0;
+      res = await fetch(`/api/v3/llm/jobs?${query}`);
     } catch (err) {
+      fetchError = err;
+    } finally {
+      if (hold) {
+        heldPolls--;
+        if (longWait) heldLongWait--;
+      }
+    }
+    if (!res) {
       // A dropped poll (Wi-Fi blip, stalled connection) doesn't mean the job
       // failed — it is still queued or running on the server. Keep polling the
       // same job instead of resubmitting a duplicate to the back of the line.
-      if (++networkFailures >= POLL_NETWORK_FAILURES_MAX) throw err;
-      if (Date.now() - started > JOB_CLIENT_DEADLINE_MS) {
-        throw new Error("v3 LLM job timed out (client deadline)");
-      }
+      if (++networkFailures >= POLL_NETWORK_FAILURES_MAX) throw fetchError;
+      if (Date.now() - started > deadlineMs) throw timedOut();
+      await wait(pollDelay(Date.now() - started));
       continue;
     }
+    networkFailures = 0;
     if (res.status === 404) throw new Error("v3 LLM job expired or not found");
     if (res.ok) {
       const job = (await res.json()) as { status: string; result?: T; error?: string };
@@ -297,9 +344,10 @@ async function pollJob<T>(jobId: string): Promise<T> {
       if (job.status === "error") throw new Error(job.error || "v3 LLM job failed");
       // queued / running → keep waiting
     }
-    if (Date.now() - started > JOB_CLIENT_DEADLINE_MS) {
-      throw new Error("v3 LLM job timed out (client deadline)");
-    }
+    if (Date.now() - started > deadlineMs) throw timedOut();
+    // Not held (a short check, an older server, or an error status): don't
+    // spin — fall back to the timed cadence.
+    if (Date.now() - askedAt < LONG_POLL_MIN_HOLD_MS) await wait(pollDelay(Date.now() - started));
   }
 }
 

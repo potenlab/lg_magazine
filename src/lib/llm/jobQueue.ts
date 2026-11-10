@@ -50,6 +50,10 @@ interface Job {
   startedAt?: number;
   finishedAt?: number;
   slowLogged?: boolean;
+  /** Last time the browser asked about this job (enqueue, poll, or held poll). */
+  lastSeenAt: number;
+  /** Long-poll requests waiting for this job to finish (see waitForJob). */
+  waiters?: Array<() => void>;
 }
 
 // At most this many jobs execute concurrently (per process). Keep it ≤
@@ -69,10 +73,27 @@ const HEAVY_AGING_MS = (() => {
 })();
 // How long a finished job's result is retained for polling before cleanup.
 const JOB_TTL_MS = Number(process.env.LLM_JOB_TTL_MS ?? 120_000);
-// Queued jobs older than the client's 6-minute polling deadline (realLLM
-// JOB_CLIENT_DEADLINE_MS) have no listener left — running them would burn
-// upstream slots on dead work and starve live users into fallback.
+// Queued jobs nobody is waiting for any more must not run — that would burn
+// upstream slots on dead work and starve live users into fallback. Two checks:
+// older than the client's longest deadline (realLLM JOB_CLIENT_DEADLINE_MS, 6
+// min), or not asked about for a while (the browser gave up — a dialog reply
+// stops waiting after ~90 s — or the tab closed). A live browser asks at least
+// every ~15 s (held poll) or ~8 s (timed poll). Heavy jobs get longer: a phone
+// that locks on a waiting screen pauses the browser, and the magazine writing
+// should keep its place for when the participant comes back.
 const QUEUE_MAX_AGE_MS = Number(process.env.LLM_QUEUE_MAX_AGE_MS ?? 6 * 60_000);
+const ABANDON_MS: Record<LLMTier, number> = {
+  light: envMs("LLM_JOB_ABANDON_MS", 30_000),
+  heavy: envMs("LLM_JOB_ABANDON_HEAVY_MS", 3 * 60_000),
+};
+
+/** A positive millisecond value from env; empty or invalid falls back, so a
+ *  blank line in .env can't turn a limit into 0 (dropping every queued job). */
+function envMs(name: string, fallback: number): number {
+  const raw = process.env[name]?.trim();
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
 // A job that waits in line longer than this is logged once as llm_job_slow.
 const SLOW_QUEUE_MS = Number(process.env.LLM_JOB_SLOW_MS ?? 30_000);
 
@@ -99,6 +120,14 @@ function noteSlow(job: Job, queuedMs: number): void {
   });
 }
 
+/** Release every long-poll request waiting on a job that just finished. */
+function wake(job: Job): void {
+  const waiters = job.waiters;
+  if (!waiters) return;
+  job.waiters = undefined;
+  for (const w of waiters) w();
+}
+
 /** Drop finished jobs whose result has aged past the TTL (keeps the map bounded). */
 function sweep(): void {
   const cutoff = Date.now() - JOB_TTL_MS;
@@ -107,19 +136,32 @@ function sweep(): void {
   }
 }
 
-/** Oldest live job in a lane. Jobs that waited too long are failed and dropped. */
+/** Oldest live job in a lane. Jobs nobody is waiting for are failed and dropped. */
 function head(tier: LLMTier, now: number): Job | undefined {
   const lane = lanes[tier];
   while (lane.length > 0) {
     const job = jobs.get(lane[0]);
     if (job && job.status === "queued") {
       const queuedMs = now - job.createdAt;
-      if (queuedMs <= QUEUE_MAX_AGE_MS) return job;
-      job.status = "error";
-      job.error = "expired_in_queue";
-      job.finishedAt = now;
-      noteSlow(job, queuedMs);
-      logEvent("llm_job_error", job, { error: job.error, queuedMs, runMs: null });
+      const unseenMs = now - job.lastSeenAt;
+      const held = (job.waiters?.length ?? 0) > 0;
+      if (!held && unseenMs > ABANDON_MS[job.tier]) {
+        // The browser stopped asking: it already showed its own fallback (or
+        // the tab is gone), so this is not counted as an llm_job_error.
+        job.status = "error";
+        job.error = "abandoned";
+        job.finishedAt = now;
+        logEvent("llm_job_abandoned", job, { queuedMs, unseenMs });
+      } else if (queuedMs <= QUEUE_MAX_AGE_MS) {
+        return job;
+      } else {
+        job.status = "error";
+        job.error = "expired_in_queue";
+        job.finishedAt = now;
+        noteSlow(job, queuedMs);
+        logEvent("llm_job_error", job, { error: job.error, queuedMs, runMs: null });
+        wake(job);
+      }
     }
     lane.shift();
   }
@@ -165,6 +207,7 @@ function start(job: Job, now: number): void {
       job.finishedAt = Date.now();
       running--;
       runningByTier[job.tier]--;
+      wake(job);
       pump(); // a slot freed — pull the next queued job
     });
 }
@@ -185,7 +228,8 @@ export function enqueue(run: () => Promise<unknown>, opts: EnqueueOptions = {}):
   const id = randomUUID();
   const tier: LLMTier = opts.tier === "light" ? "light" : "heavy";
   const label = opts.label ? opts.label.slice(0, 100) : null;
-  jobs.set(id, { id, status: "queued", tier, label, run, createdAt: Date.now() });
+  const now = Date.now();
+  jobs.set(id, { id, status: "queued", tier, label, run, createdAt: now, lastSeenAt: now });
   lanes[tier].push(id);
   pump();
   return id;
@@ -216,6 +260,7 @@ function positionOf(job: Job): number {
 export function getJob(id: string): JobView | null {
   const job = jobs.get(id);
   if (!job) return null;
+  job.lastSeenAt = Date.now();
   // Polls arrive every few seconds, so this is where a long wait gets noticed.
   if (job.status === "queued") noteSlow(job, Date.now() - job.createdAt);
   return {
@@ -224,6 +269,30 @@ export function getJob(id: string): JobView | null {
     ...(job.status === "done" ? { result: job.result } : {}),
     ...(job.status === "error" ? { error: job.error } : {}),
   };
+}
+
+/** Wait until a job finishes, at most maxWaitMs (long-poll). Resolves at once if
+ *  the job is unknown or already finished, early if `signal` aborts (the
+ *  browser went away), and never rejects. The caller then reads getJob(). */
+export function waitForJob(id: string, maxWaitMs: number, signal?: AbortSignal): Promise<void> {
+  const job = jobs.get(id);
+  if (!job) return Promise.resolve();
+  job.lastSeenAt = Date.now();
+  if (job.status === "done" || job.status === "error") return Promise.resolve();
+  if (!(maxWaitMs > 0) || signal?.aborted) return Promise.resolve();
+  return new Promise<void>((resolve) => {
+    const finish = () => {
+      job.lastSeenAt = Date.now();
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", finish);
+      const i = job.waiters?.indexOf(finish) ?? -1;
+      if (i >= 0) job.waiters!.splice(i, 1);
+      resolve();
+    };
+    const timer = setTimeout(finish, maxWaitMs);
+    signal?.addEventListener("abort", finish, { once: true });
+    (job.waiters ??= []).push(finish);
+  });
 }
 
 /** Live counters (for diagnostics/logging). */

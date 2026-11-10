@@ -229,5 +229,111 @@ ok(got === "queuedLight,queuedHeavy", `empty env keeps the 60s default, not 0 (g
 got = await agingRun("abc", 150);
 ok(got === "queuedLight,queuedHeavy", `invalid env keeps the 60s default (got ${got})`);
 
+// --- TEST 9: long-poll waitForJob ---------------------------------------------
+console.log("\nTest 9 — waitForJob returns the moment a job finishes, or at its limit");
+{
+  const q = await loadQueue({
+    LLM_QUEUE_CONCURRENCY: "1",
+    LLM_QUEUE_MAX_AGE_MS: "360000",
+    LLM_JOB_SLOW_MS: "60000",
+  });
+  const elapsed = async (p) => {
+    const t0 = Date.now();
+    await p;
+    return Date.now() - t0;
+  };
+
+  const fast = q.enqueue(() => sleep(120).then(() => "fast-result"), { tier: "light" });
+  let ms = await elapsed(q.waitForJob(fast, 5_000));
+  ok(ms >= 100 && ms < 400, `woke when the job finished, not at the 5 s limit (${ms} ms)`);
+  ok(q.getJob(fast).status === "done" && q.getJob(fast).result === "fast-result", "result is ready right after waking");
+
+  ms = await elapsed(q.waitForJob(fast, 5_000));
+  ok(ms < 20, `already finished → returns at once (${ms} ms)`);
+  ms = await elapsed(q.waitForJob("no-such-id", 5_000));
+  ok(ms < 20, `unknown id → returns at once (${ms} ms)`);
+
+  const failing = q.enqueue(() => sleep(80).then(() => { throw new Error("boom"); }), { tier: "light" });
+  ms = await elapsed(q.waitForJob(failing, 5_000));
+  ok(ms < 400 && q.getJob(failing).status === "error", `woke on a failed job too (${ms} ms)`);
+
+  const slow = q.enqueue(() => sleep(600).then(() => "slow"), { tier: "heavy" });
+  ms = await elapsed(q.waitForJob(slow, 150));
+  ok(ms >= 140 && ms < 400 && q.getJob(slow).status === "running", `stops at the limit while still running (${ms} ms)`);
+
+  const ac = new AbortController();
+  setTimeout(() => ac.abort(), 100);
+  ms = await elapsed(q.waitForJob(slow, 5_000, ac.signal));
+  ok(ms >= 90 && ms < 400, `stops early when the browser goes away (${ms} ms)`);
+
+  const queued = q.enqueue(() => sleep(50).then(() => "behind"), { tier: "heavy" });
+  ok(q.getJob(queued).status === "queued", "second job waits behind the slow one (cap=1)");
+  const [a, b] = await Promise.all([elapsed(q.waitForJob(queued, 5_000)), elapsed(q.waitForJob(queued, 5_000))]);
+  ok(q.getJob(queued).status === "done" && Math.abs(a - b) < 50,
+    `two waiters on a queued job both wake when it finishes (${a} / ${b} ms)`);
+
+  ms = await elapsed(q.waitForJob(slow, 0));
+  ok(ms < 20, `wait of 0 returns at once (${ms} ms)`);
+}
+
+// --- TEST 10: queued jobs nobody asks about are dropped, not run ---------------
+console.log("\nTest 10 — a queued job the browser stopped asking about is dropped, not run");
+{
+  const q = await loadQueue({
+    LLM_QUEUE_CONCURRENCY: "1",
+    LLM_QUEUE_MAX_AGE_MS: "360000",
+    LLM_JOB_ABANDON_MS: "150",
+  });
+  const ran = [];
+  const job = (name, ms) => () => sleep(ms).then(() => (ran.push(name), name));
+  q.enqueue(job("blocker", 400), { tier: "heavy", label: "blocker" });
+  const gone = q.enqueue(job("gone", 10), { tier: "light", label: "gone" }); // never asked about again
+  const polled = q.enqueue(job("polled", 10), { tier: "light", label: "polled" });
+  const held = q.enqueue(job("held", 10), { tier: "light", label: "held" });
+  const timer = setInterval(() => q.getJob(polled), 50); // a live browser checking
+  const heldDone = q.waitForJob(held, 5_000); // a live browser holding a check
+  await sleep(700);
+  clearInterval(timer);
+  await heldDone;
+  ok(q.getJob(gone).status === "error" && q.getJob(gone).error === "abandoned", "the unwatched job was dropped as abandoned");
+  ok(!ran.includes("gone"), `the unwatched job never ran (ran: ${ran.join(",")})`);
+  ok(q.getJob(polled).status === "done", "the job a browser kept checking ran");
+  ok(q.getJob(held).status === "done", "the job with a held check ran");
+  const ab = events.filter((e) => e.evt === "llm_job_abandoned");
+  ok(ab.length === 1 && ab[0].label === "gone", `one llm_job_abandoned log line (${JSON.stringify(ab)})`);
+  ok(eventsFor("llm_job_error", "gone").length === 0, "not counted as llm_job_error");
+}
+
+// --- TEST 11: heavy jobs get longer before being dropped; blank env is safe ---
+console.log("\nTest 11 — heavy jobs keep their place longer; a blank setting keeps the default");
+{
+  const q = await loadQueue({
+    LLM_QUEUE_CONCURRENCY: "1",
+    LLM_JOB_ABANDON_MS: "100",
+    LLM_JOB_ABANDON_HEAVY_MS: "400",
+  });
+  q.enqueue(() => sleep(250), { tier: "heavy", label: "blocker-a" });
+  const heavyShort = q.enqueue(() => sleep(10).then(() => "h"), { tier: "heavy", label: "heavy-250" });
+  const lightShort = q.enqueue(() => sleep(10).then(() => "l"), { tier: "light", label: "light-250" });
+  await sleep(450);
+  ok(q.getJob(lightShort).error === "abandoned", "light job unwatched for 250 ms is dropped (limit 100 ms)");
+  ok(q.getJob(heavyShort).status === "done", "heavy job unwatched for 250 ms still runs (limit 400 ms)");
+
+  q.enqueue(() => sleep(600), { tier: "heavy", label: "blocker-b" });
+  const heavyLong = q.enqueue(() => sleep(10), { tier: "heavy", label: "heavy-600" });
+  await sleep(800);
+  ok(q.getJob(heavyLong).error === "abandoned", "heavy job unwatched for 600 ms is dropped (limit 400 ms)");
+
+  const q2 = await loadQueue({
+    LLM_QUEUE_CONCURRENCY: "1",
+    LLM_JOB_ABANDON_MS: "",
+    LLM_JOB_ABANDON_HEAVY_MS: "  ",
+  });
+  q2.enqueue(() => sleep(200), { tier: "heavy", label: "blocker-c" });
+  const blankLight = q2.enqueue(() => sleep(10).then(() => "ran"), { tier: "light", label: "blank-env" });
+  await sleep(350);
+  ok(q2.getJob(blankLight).status === "done", "blank LLM_JOB_ABANDON_MS keeps the 30 s default (job not dropped)");
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

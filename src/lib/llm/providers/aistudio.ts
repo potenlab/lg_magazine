@@ -85,6 +85,29 @@ const QUEUE_TIMEOUT_MS = Number(process.env.AISTUDIO_QUEUE_TIMEOUT_MS ?? 20_000)
 const OVERLOAD_MAX_RETRIES = Number(process.env.AISTUDIO_OVERLOAD_RETRIES ?? 3);
 const OVERLOAD_BASE_MS = 400;
 
+// Longest one upstream call may take. Without a limit, Node's fetch waits up to
+// 5 minutes on a stuck connection while the participant sits on a waiting
+// screen. Short replies normally take 2–3 s (10–12 s on a slow model), magazine
+// writing 10–30 s. The limits catch stuck calls, so they leave room for a slow
+// model at peak. A call that runs out is tried once more on the next code.
+const LIGHT_CALL_TIMEOUT_MS = envMs("AISTUDIO_LIGHT_TIMEOUT_MS", 35_000);
+const HEAVY_CALL_TIMEOUT_MS = envMs("AISTUDIO_HEAVY_TIMEOUT_MS", 120_000);
+const TIMEOUT_RETRIES = 1;
+const AUTH_TIMEOUT_MS = envMs("AISTUDIO_AUTH_TIMEOUT_MS", 15_000);
+
+/** A positive millisecond value from env; empty or invalid falls back, so a
+ *  blank line in .env can't turn a limit into 0 (every call timing out). */
+function envMs(name: string, fallback: number): number {
+  const raw = process.env[name]?.trim();
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+function isTimeout(err: unknown): boolean {
+  const name = (err as { name?: string } | null)?.name;
+  return name === "TimeoutError" || name === "AbortError";
+}
+
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /** Thrown when the concurrency queue is saturated and no slot freed in time,
@@ -180,6 +203,8 @@ export class AIStudioProvider implements LLMProvider {
   private password: string;
   private empNo: string;
   private cached: CachedToken | null = null;
+  // The token request in progress, shared by every call that needs a token.
+  private jwtInFlight: Promise<string> | null = null;
   // Two lanes (heavy/light) so frequent one-liners can run on a cheap model
   // while summaries/synthesis stay on the strong one. Each lane keeps its own
   // code pool, cooldowns, cursor, and gate. Persisted on the singleton provider
@@ -239,11 +264,20 @@ export class AIStudioProvider implements LLMProvider {
   // upstream account's ~20-concurrent ceiling. Excess requests queue; a request
   // that waits too long throws LlmBusyError (→ HTTP 429).
   async generateText(req: LLMRequest): Promise<LLMResult> {
-    const lane = getTier() === "light" ? this.light : this.heavy;
-    return lane.gate.run(() => this.generateGated(req, lane));
+    const tier = getTier();
+    const lane = tier === "light" ? this.light : this.heavy;
+    // By task tier, not lane: with no light codes set, short replies share the
+    // heavy lane but should still give up on a stuck call quickly.
+    const timeoutMs = tier === "light" ? LIGHT_CALL_TIMEOUT_MS : HEAVY_CALL_TIMEOUT_MS;
+    return lane.gate.run(() => this.generateGated(req, lane, tier, timeoutMs));
   }
 
-  private async generateGated(req: LLMRequest, lane: Lane): Promise<LLMResult> {
+  private async generateGated(
+    req: LLMRequest,
+    lane: Lane,
+    tier: string,
+    timeoutMs: number,
+  ): Promise<LLMResult> {
     const parameters: ParameterEntry[] = [
       { key: "SYSTEM", value: req.system },
       { key: "USER", value: req.user },
@@ -252,6 +286,7 @@ export class AIStudioProvider implements LLMProvider {
 
     let quotaHits = 0;
     let overloadRetries = OVERLOAD_MAX_RETRIES;
+    let timeoutRetries = TIMEOUT_RETRIES;
     // Try each code at most once per call, rotating past any that are quota-capped.
     for (let attempt = 0; attempt < lane.codes.length; attempt++) {
       const idx = this.nextAvailableCode(lane);
@@ -259,12 +294,29 @@ export class AIStudioProvider implements LLMProvider {
       const code = lane.codes[idx];
       const url = `${this.base}/genai/${code}/prompt/${lane.promptIndex}`;
 
-      let res = await this.callPrompt(url, body, await this.getJwt());
-      if (res.status === 401) {
-        this.cached = null;
-        res = await this.callPrompt(url, body, await this.getJwt());
+      let res: Response;
+      let raw: string;
+      try {
+        const jwt = await this.getJwt();
+        res = await this.callPrompt(url, body, jwt, timeoutMs);
+        if (res.status === 401) {
+          // Drop only the token that failed: another call may already have
+          // fetched a fresh one.
+          if (this.cached?.jwt === jwt) this.cached = null;
+          res = await this.callPrompt(url, body, await this.getJwt(), timeoutMs);
+        }
+        // The time limit covers reading the body too (same abort signal).
+        raw = await res.text();
+      } catch (err) {
+        if (!isTimeout(err)) throw err;
+        console.log(JSON.stringify({ evt: "llm_upstream_timeout", code, tier, timeoutMs }));
+        if (timeoutRetries > 0) {
+          timeoutRetries--;
+          attempt--; // like an overload retry: don't use up the code-rotation budget
+          continue; // nextAvailableCode moves on to the next code
+        }
+        throw new Error(`aistudio call (${code}): no answer within ${timeoutMs} ms`);
       }
-      const raw = await res.text();
 
       if (raw.includes(QUOTA_PHRASE)) {
         // Per-minute limits mention "분"(minute); anything else is the daily cap.
@@ -335,7 +387,7 @@ export class AIStudioProvider implements LLMProvider {
     return -1;
   }
 
-  private callPrompt(url: string, body: string, jwt: string): Promise<Response> {
+  private callPrompt(url: string, body: string, jwt: string, timeoutMs: number): Promise<Response> {
     return fetch(url, {
       method: "POST",
       headers: {
@@ -343,29 +395,45 @@ export class AIStudioProvider implements LLMProvider {
         "Content-Type": "application/json",
       },
       body,
+      signal: AbortSignal.timeout(timeoutMs),
     });
   }
 
-  private async getJwt(): Promise<string> {
+  private getJwt(): Promise<string> {
     const now = Math.floor(Date.now() / 1000);
-    if (this.cached && this.cached.expiresAt - 30 > now) return this.cached.jwt;
-    if (this.cached?.refreshToken) {
-      try {
-        await this.refreshToken();
-        return this.cached!.jwt;
-      } catch {
-        this.cached = null;
-      }
-    }
-    await this.issueToken();
-    return this.cached!.jwt;
+    if (this.cached && this.cached.expiresAt - 30 > now) return Promise.resolve(this.cached.jwt);
+    // One token request at a time: when the hourly token expires at peak,
+    // every call in flight would otherwise ask AI Studio for a new one at once.
+    this.jwtInFlight ??= this.fetchJwt().finally(() => {
+      this.jwtInFlight = null;
+    });
+    return this.jwtInFlight;
   }
 
-  private async issueToken(): Promise<void> {
+  private async fetchJwt(): Promise<string> {
+    try {
+      if (this.cached?.refreshToken) {
+        try {
+          return await this.refreshToken();
+        } catch {
+          this.cached = null;
+        }
+      }
+      return await this.issueToken();
+    } catch (err) {
+      // Report it as a login problem, so it is not logged and retried as a
+      // slow model answer.
+      if (isTimeout(err)) throw new Error(`aistudio auth: no answer within ${AUTH_TIMEOUT_MS} ms`);
+      throw err;
+    }
+  }
+
+  private async issueToken(): Promise<string> {
     const res = await fetch(`${this.base}/genai/auth/token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ID: this.workspaceId, Password: this.password }),
+      signal: AbortSignal.timeout(AUTH_TIMEOUT_MS),
     });
     if (!res.ok) {
       throw new Error(`aistudio auth: ${res.status} ${await res.text()}`);
@@ -380,14 +448,18 @@ export class AIStudioProvider implements LLMProvider {
       refreshToken: pickFirst(data, REFRESH_KEYS) ?? "",
       expiresAt: decodeJwtExp(jwt),
     };
+    return jwt;
   }
 
-  private async refreshToken(): Promise<void> {
-    if (!this.cached?.refreshToken) throw new Error("aistudio refresh: no cached refresh token");
+  private async refreshToken(): Promise<string> {
+    // Read before the await: a 401 on another call may clear `cached` meanwhile.
+    const refreshToken = this.cached?.refreshToken;
+    if (!refreshToken) throw new Error("aistudio refresh: no cached refresh token");
     const res = await fetch(`${this.base}/genai/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ID: this.workspaceId, RefreshToken: this.cached.refreshToken }),
+      body: JSON.stringify({ ID: this.workspaceId, RefreshToken: refreshToken }),
+      signal: AbortSignal.timeout(AUTH_TIMEOUT_MS),
     });
     if (!res.ok) {
       throw new Error(`aistudio refresh: ${res.status} ${await res.text()}`);
@@ -399,8 +471,9 @@ export class AIStudioProvider implements LLMProvider {
     }
     this.cached = {
       jwt,
-      refreshToken: pickFirst(data, REFRESH_KEYS) ?? this.cached.refreshToken,
+      refreshToken: pickFirst(data, REFRESH_KEYS) ?? refreshToken,
       expiresAt: decodeJwtExp(jwt),
     };
+    return jwt;
   }
 }

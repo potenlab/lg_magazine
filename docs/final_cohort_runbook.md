@@ -192,7 +192,14 @@ sudo docker compose logs --since 4h lg-magazine | grep -c '"evt":"llm_fallback"'
 sudo docker compose logs --since 4h lg-magazine | grep -o '"evt":"llm_fallback","task":"[a-zA-Z]*"' | sort | uniq -c | sort -rn
 sudo docker compose logs --since 4h lg-magazine | grep -c '"evt":"llm_job_error"'
 sudo docker compose logs --since 4h lg-magazine | grep -c '"evt":"llm_job_slow"'
+sudo docker compose logs --since 4h lg-magazine | grep -c '"evt":"llm_upstream_timeout"'
+sudo docker compose logs --since 4h lg-magazine | grep -c '"evt":"llm_job_abandoned"'
 ```
+
+`llm_upstream_timeout` counts AI Studio calls that took longer than the limit (35 s for short replies, 120 s for
+writing) and were cut off and tried once more. Many of them mean AI Studio is slow or stuck that day.
+`llm_job_abandoned` counts queued jobs dropped because the browser stopped asking (it already showed "다시 시도", or
+the tab closed). Both exist only on builds after 2026-11-10.
 
 Zero or near-zero `llm_fallback` means participants saw real AI answers. The count includes failures a participant
 then fixed with "다시 시도", so it overstates what people finally saw. Before the cohort, check once that the report

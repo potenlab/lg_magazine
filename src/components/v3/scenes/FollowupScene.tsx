@@ -9,7 +9,7 @@ import { StoryButtonV3 } from "@/components/v3/ui/StoryButtonV3";
 import { renderTemplate } from "@/lib/v3/scenes/template";
 import { paginateMirror } from "@/lib/v3/paginateMirror";
 import { useV3Session } from "@/components/v3/context/V3SessionContext";
-import { llm } from "@/lib/v3/llm";
+import { llm, isStubText } from "@/lib/v3/llm";
 import { useEditorWait } from "@/lib/v3/useEditorWait";
 import { DialogStageContext } from "@/components/v3/V3App";
 import type { Branch, SceneSpec, SceneId, V3Session, BranchSpec } from "@/lib/v3/scenes/types";
@@ -34,6 +34,10 @@ function findExitBranch(branches?: SceneSpec["branches"]): Branch {
   }
   return "D";
 }
+
+// Exit line when the AI reply failed and the exit branch has no fixed lines.
+// A plain hand-off: it doesn't pretend to have read the answer.
+const FALLBACK_EXIT_LINE = "{name}님의 이야기, 잘 받아 적었어요.";
 
 export function FollowupScene({
   spec,
@@ -130,7 +134,11 @@ export function FollowupScene({
         pool && pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
 
       setBranch(finalBranch);
-      setReflection(refl);
+      // When the AI reply failed, refl is the stub's fixed sentence — the same
+      // words for every participant (the August "prepared answers" feedback).
+      // Show no reflection instead: the branch opener + question still read
+      // naturally, and the exit falls back to a plain hand-off line below.
+      setReflection(isStubText(refl) ? "" : refl);
       setOpener(pickedOpener);
       setExhausted(forcedExit);
       setLoading(false);
@@ -159,7 +167,10 @@ export function FollowupScene({
       ? exitSpec.exhaustedLines
       : exitSpec?.lines;
     const exitLines = (rawExitLines ?? []).map((l) => renderTemplate(l, session));
-    const text = exitLines.length > 0 ? exitLines.join("\n") : reflection;
+    const text =
+      exitLines.length > 0
+        ? exitLines.join("\n")
+        : reflection || renderTemplate(FALLBACK_EXIT_LINE, session);
     return (
       <FollowupExitBody
         reflection={text}

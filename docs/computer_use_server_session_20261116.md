@@ -86,18 +86,20 @@ sudo grep -rn "log_format\|access_log" /etc/nginx/
 sudo ls -la /var/log/nginx/
 ```
 
-If `date` printed **KST**, run these three:
+If `date` printed **KST**, run these three. The whole command runs inside `sudo sh -c` because user `potenlab` can't list `/var/log/nginx`, so a plain `access.log*` would never expand (found on 16 November):
 ```
-sudo zgrep -hE "28/Oct/2026:08:[0-3]" /var/log/nginx/access.log* | wc -l
-```
-```
-sudo zgrep -hE "28/Oct/2026:08:[0-3]" /var/log/nginx/access.log* | awk '{print $9}' | sort | uniq -c
+sudo sh -c 'zcat -f /var/log/nginx/access.log*' | grep -E "28/Oct/2026:08:[0-3]" | wc -l
 ```
 ```
-sudo zgrep -hE "28/Oct/2026:08:[0-3]" /var/log/nginx/access.log* | awk '$9 >= 400'
+sudo sh -c 'zcat -f /var/log/nginx/access.log*' | grep -E "28/Oct/2026:08:[0-3]" | awk '{print $9}' | sort | uniq -c
+```
+```
+sudo sh -c 'zcat -f /var/log/nginx/access.log*' | grep -E "28/Oct/2026:08:[0-3]" | awk '$9 >= 400'
 ```
 
 If `date` printed **UTC**, run the same three with `27/Oct/2026:23:[0-3]` in place of `28/Oct/2026:08:[0-3]`.
+
+Two limits found on 16 November: the server keeps only about 10 days of nginx logs, and `/etc/nginx/conf.d/lg-book.conf` has `access_log off;` for most locations, so most site requests are never logged.
 
 If the first one prints `0`, the 28 October logs were probably rotated away. Report that; it's an answer too. If the last one prints many lines, copy only the first 30.
 

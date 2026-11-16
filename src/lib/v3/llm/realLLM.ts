@@ -4,6 +4,7 @@
 import type { LLMContract } from "./contract";
 import type { Branch } from "@/lib/v3/scenes/types";
 import { stubLLM } from "./stub";
+import { cleanDeep } from "./cleanText";
 import { judgeBranchHeuristic, ruleForScene, type BranchRule } from "@/lib/v3/judging/heuristics";
 
 // Per-rule "you've clearly answered enough" exit branches. Used by the length
@@ -207,6 +208,10 @@ const LONG_WAIT_TASKS = new Set([
 ]);
 
 async function callTask<T>(task: string, payload: unknown): Promise<T> {
+  return cleanDeep(await callTaskRetrying<T>(task, payload));
+}
+
+async function callTaskRetrying<T>(task: string, payload: unknown): Promise<T> {
   const heavy = LONG_WAIT_TASKS.has(task);
   const budgetEnd = Date.now() + (heavy ? RETRY_BUDGET_HEAVY_MS : RETRY_BUDGET_LIGHT_MS);
   try {

@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { validateBody } from "@/lib/llmInput";
-import { runWithMode, type LLMMode, type LLMTier } from "@/lib/llm/modeContext";
+import {
+  runWithMode,
+  type LLMMode,
+  type LLMTier,
+  type LLMUsageEntry,
+} from "@/lib/llm/modeContext";
 import { LlmBusyError } from "@/lib/llm/providers/aistudio";
 import { enqueue } from "@/lib/llm/jobQueue";
+import { currentUserid } from "@/lib/qrius/currentUser";
 
 // When set, LLM work is queued (202 + jobId) and the client polls
 // /api/v3/llm/jobs?id=... for the result, instead of blocking the request.
@@ -151,16 +157,53 @@ export async function POST(req: Request) {
     const tier = tierFor(body.task);
     logCtx = { task: body.task, tier };
 
+    // 요청 1건당 구조화 로그 1줄 → Vercel 로그에서 `"evt":"llm_usage"`로 검색해
+    // userid별 토큰/호출량을 집계한다 (테스트 데이에도 그대로 사용).
+    const userid = await currentUserid();
+    const usage: LLMUsageEntry[] = [];
+    const startedAt = Date.now();
+    const logUsage = () => {
+      const record = {
+        userid,
+        sessionId: body.sessionId ?? null,
+        task: body.task,
+        tier,
+        mode,
+        ms: Date.now() - startedAt,
+        calls: usage.length,
+        promptTokens: usage.reduce((s, u) => s + (u.promptTokens ?? 0), 0),
+        completionTokens: usage.reduce((s, u) => s + (u.completionTokens ?? 0), 0),
+        providers: usage.map((u) => u.provider),
+      };
+      console.log(JSON.stringify({ evt: "llm_usage", ...record }));
+    };
+
     if (ASYNC_ENABLED) {
       const jobId = enqueue(
-        () => runWithMode(mode, deep, tier, () => dispatch(body.task, body.payload)),
+        async () => {
+          try {
+            return await runWithMode(mode, deep, tier, () => dispatch(body.task, body.payload), usage);
+          } finally {
+            logUsage();
+          }
+        },
         { tier, label: body.task },
       );
       return NextResponse.json({ jobId }, { status: 202 });
     }
 
-    const result = await runWithMode(mode, deep, tier, () => dispatch(body.task, body.payload));
-    return NextResponse.json({ result });
+    try {
+      const result = await runWithMode(
+        mode,
+        deep,
+        tier,
+        () => dispatch(body.task, body.payload),
+        usage,
+      );
+      return NextResponse.json({ result });
+    } finally {
+      logUsage();
+    }
   } catch (err) {
     logFailure(err, logCtx);
     // Concurrency queue saturated → tell the client to back off and retry,

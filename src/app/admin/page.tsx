@@ -387,7 +387,7 @@ export default function AdminPage() {
   const [v3Records, setV3Records] = useState<V3SessionRecord[]>([]);
   const [cohortRules, setCohortRules] = useState<CohortRule[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
-  const [source, setSource] = useState<"supabase" | "unavailable">("unavailable");
+  const [source, setSource] = useState<"connected" | "unavailable">("unavailable");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [openChapters, setOpenChapters] = useState<string[]>(["Chapter 1"]);
@@ -408,7 +408,7 @@ export default function AdminPage() {
       if (v3Res.ok) {
         const payload = (await v3Res.json()) as { records?: V3SessionRecord[]; skipped?: boolean };
         setV3Records(payload.records || []);
-        setSource(payload.skipped ? "unavailable" : "supabase");
+        setSource(payload.skipped ? "unavailable" : "connected");
         if (payload.skipped) setError("데이터베이스가 설정되지 않았습니다.");
       } else {
         setV3Records([]);
@@ -678,7 +678,7 @@ export default function AdminPage() {
               저장된 v3 세션을 차수별로 모아보고, 챕터별 대화 흐름을 확인합니다.
             </p>
             <p className="mt-2 text-xs text-[#9b8768]">
-              데이터 연결: {source === "supabase" ? "정상" : "연결 없음"}
+              데이터 연결: {source === "connected" ? "정상" : "연결 없음"}
               {error ? ` · ${error}` : ""}
             </p>
           </div>

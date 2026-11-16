@@ -49,6 +49,9 @@ export function splitCols(body: string, leftRatio = 0.62): [string, string] {
  * "좌단만 짧고 우단만 긴" 불균형을 막는다(우단이 문장 도중부터 이어짐). 문단 경계는 보존.
  * 마지막 단어가 목표를 살짝 넘어도 되도록 +1줄 여유. 한글 14pt: 줄당 글자수 ≈ 폭/12.
  */
+/** 문장 끝 토큰: 마침표·물음표·느낌표(닫는 따옴표·괄호가 뒤에 붙어도 됨). */
+const SENTENCE_END = /[.!?。…][)"'”’」』]*$/;
+
 export function splitColsToFit(
   body: string,
   colWidthPt: number,
@@ -84,6 +87,15 @@ export function splitColsToFit(
     cut = i;
   }
   if (cut >= tokens.length) cut = tokens.length - 1; // 우단에 최소 한 단어
+
+  // 우단이 한 줄짜리 꼬리(예: "말한 호기심이었다.")면 문장 중간에서 끊긴 조각처럼 보인다.
+  // 이때는 그 문장의 시작(또는 문단 시작)부터 우단으로 넘겨, 우단이 온전한 문장으로 시작하게 한다.
+  // 좌단이 절반 넘게 비지 않는 범위에서만 당긴다.
+  if (estLines(tokens.slice(cut)) < 2) {
+    let s = cut;
+    while (s > 1 && tokens[s - 1].pi === tokens[s].pi && !SENTENCE_END.test(tokens[s - 1].w)) s--;
+    if (s > 1 && s >= cut / 2) cut = s;
+  }
 
   const join = (arr: { w: string; pi: number }[]) =>
     arr.reduce((out, it, k) => (k === 0 ? it.w : out + (it.pi === arr[k - 1].pi ? " " : "\n\n") + it.w), "");

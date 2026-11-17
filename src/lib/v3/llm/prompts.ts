@@ -456,7 +456,10 @@ REASON: <한 문장 근거, 30자 이내>`;
   // 형식을 못 맞추면 throw(→500) 대신 휴리스틱으로 폴백한다 — 어떤 입력에도
   // 라우트가 절대 500을 내지 않게 하는 안전망. (클라도 동일 휴리스틱을 갖고
   // 있지만, 서버가 200으로 정상 분기를 돌려주면 불필요한 에러 round-trip이 사라진다.)
-  const MAX_ATTEMPTS = 2;
+  // 4회까지 시도한다(기존 2회). 판정은 100토큰짜리 가벼운 호출이라 추가 시도
+  // 비용·지연이 미미하고, 600명 피크에서 AI Studio가 잠깐 혼잡할 때 규칙 폴백으로
+  // 바로 떨어지지 않고 실제 AI 분기를 받아낼 확률이 크게 오른다.
+  const MAX_ATTEMPTS = 4;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const user =
       attempt === 0
@@ -464,7 +467,22 @@ REASON: <한 문장 근거, 30자 이내>`;
         : `${baseUser}
 
 [⚠️ 재요청] 직전 출력이 형식을 어겼습니다. 인사·되묻기·설명·문장 금지. 첫 줄을 정확히 "BRANCH: " 로 시작해 ${allowed} 중 한 글자만 내세요.`;
-    const r = await ask(user, 100, CLASSIFIER_PERSONA);
+    let r: LLMResult;
+    try {
+      r = await ask(user, 100, CLASSIFIER_PERSONA);
+    } catch (err) {
+      // 업스트림 일시 오류(429·5xx·혼잡)도 형식 위반과 똑같이 "재시도 대상"으로
+      // 본다. 예전에는 ask()가 throw 하면 그대로 잡(job) 실패→클라 휴리스틱 폴백
+      // 이었다. 짧게(0.4~1s, jitter) 쉬고 다시 시도하되, 마지막 시도면 루프를
+      // 빠져나가 휴리스틱으로 폴백한다.
+      console.warn(
+        `[v3JudgeBranch] attempt ${attempt + 1} upstream error: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      if (attempt < MAX_ATTEMPTS - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 400 + Math.random() * 600));
+      }
+      continue;
+    }
     const text = r.text.trim();
     const bm = text.match(/BRANCH:\s*([ABCD])/i);
     const rm = text.match(/REASON:\s*([^\n]+)/);

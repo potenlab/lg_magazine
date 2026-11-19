@@ -4,7 +4,7 @@
 // lives on `main`. It keeps the EXACT same exported signatures so that
 // `src/app/api/v3/sessions/route.ts` and the admin page never need to change:
 //   - upsertV3Session(session, userid) → MERGE on session_id (owner-guarded, W5.2)
-//   - listV3Sessions()                → SELECT TOP 200 ... ORDER BY updated_at DESC
+//   - listV3Sessions()                → SELECT TOP 50000 ... ORDER BY updated_at DESC
 //   - deleteV3Sessions()              → DELETE all
 //   - deleteV3Session(sessionId)      → DELETE one
 //   - isMssqlConfigured()             → renamed from main's isSupabaseConfigured
@@ -199,11 +199,15 @@ export async function upsertV3Session(
   return mapRow(row);
 }
 
+// The admin page and the Excel export group these rows into cohorts in memory,
+// so this must return EVERY session. It used to be TOP 200: on 2026-11-19 a live
+// 200+ person cohort filled all 200 slots and earlier cohorts showed 0.
+// TOP 50000 is only a safety cap, same as listQriusLogins().
 export async function listV3Sessions(): Promise<V3SessionRecord[]> {
   const pool = await getPool();
   const result = await pool
     .request()
-    .query(`SELECT TOP 200 * FROM ${TABLE} ORDER BY updated_at DESC`);
+    .query(`SELECT TOP 50000 * FROM ${TABLE} ORDER BY updated_at DESC`);
   return (result.recordset as V3SessionRow[]).map(mapRow);
 }
 

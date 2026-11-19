@@ -101,10 +101,11 @@ Expected: MVP 4차 and 5차 show their earlier counts (not 0), and MVP 6차 can 
 
 A row with `calls = 0` means every retry failed and the participant got a fallback instead of an AI reply.
 
-Failed AI requests today (from 00:00 KST):
+Failed AI requests today (from 00:00 KST), with the participant's name and where they were in the flow:
 ```
-sudo docker compose exec -T mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$PW" -No -d lg_magazine -W -s "|" -Q "SELECT DATEADD(hour,9,created_at) AS at_kst, task, tier, ms, userid FROM dbo.llm_usage WHERE created_at >= '2026-11-18T15:00:00' AND calls = 0 ORDER BY created_at"
+sudo docker compose exec -T mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$PW" -No -d lg_magazine -W -s "|" -Q "SELECT DATEADD(hour,9,u.created_at) AS at_kst, u.task, u.tier, u.ms, s.user_name, s.status, s.last_scene_id FROM dbo.llm_usage u LEFT JOIN dbo.v3_sessions s ON s.session_id = u.session_id WHERE u.created_at >= '2026-11-18T15:00:00' AND u.calls = 0 ORDER BY u.created_at"
 ```
+The CEO reports that **4 participants** were affected. Check whether this list has 4 distinct names, and report them.
 
 Totals today, for the rate:
 ```
